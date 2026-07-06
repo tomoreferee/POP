@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 
 // ─── Supabase Config ─────────────────────────────────────────────────────────
 // TODO: ใส่ URL และ anon key จาก Supabase Project Settings → API
-const SUPABASE_URL = "https://qqzmpkpoanltxqzfeozf.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxem1wa3BvYW5sdHhxemZlb3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5ODg0MTYsImV4cCI6MjA5ODU2NDQxNn0.20p6PlzoAjy8GSTF0pbzeZt9r6t6AgrPLzjIH5sSeK8";
+const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   realtime: { params: { eventsPerSecond: 10 } },
 });
@@ -2495,7 +2495,11 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                               {logs.map((l, li) => (
                                 <div key={li} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: logColor(l.type), background: `${logBg(l.type)}44`, borderRadius: 4, padding: "2px 4px", textAlign: "left", lineHeight: 1.4 }}>
                                   <span style={{ flex: 1 }}>
-                                    <span style={{ fontWeight: 700 }}>{l.badTime ? "⚡ Bad Time" : l.type}</span> {l.name}{l.target ? ` · ${l.target}` : ""}
+                                    {l.badTime ? (
+                                      <><span style={{ fontWeight: 700 }}>⚡ Bad Time</span> {l.target}</>
+                                    ) : (
+                                      <><span style={{ fontWeight: 700 }}>{l.type}</span> {l.name}{l.target ? ` · ${l.target}` : ""}</>
+                                    )}
                                   </span>
                                   <button
                                     onClick={() => setDeleteLogConfirm(l.idx)}
@@ -3195,7 +3199,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                           borderRadius: 4, padding: "1px 5px", fontSize: 8, fontWeight: 700,
                           color: logColor(l.type), lineHeight: 1.5,
                         }} title={`${l.badTime ? "Bad Time" : l.type} H${l.holeIdx + 1}${l.target ? " · " + l.target : ""}${l.name ? " · " + l.name : ""}`}>
-                          {l.badTime ? "⚡ Bad Time" : l.type} H{l.holeIdx + 1}
+                          {l.badTime ? `⚡ Bad Time ${l.target || ""} H${l.holeIdx + 1}` : `${l.type} H${l.holeIdx + 1}`}
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteLogConfirm({ groupId: g.id, idx: l.idx }); }}
                             title="Delete this log"
