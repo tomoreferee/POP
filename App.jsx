@@ -2309,6 +2309,16 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             )}
           </div>
 
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 12, color: "#8890b8", fontWeight: 700 }}>Flag:</span>
+            <button onClick={() => openActionModal("WN", currentHole)}
+              style={{ flex: 1, background: "#2a1a00", border: "1px solid #ffd96688", color: "#ffd966", borderRadius: 8, padding: "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
+            <button onClick={() => openActionModal("MN", currentHole)}
+              style={{ flex: 1, background: "#001a2a", border: "1px solid #4e9af188", color: "#4e9af1", borderRadius: 8, padding: "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
+            <button onClick={() => openActionModal("TM", currentHole)}
+              style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+          </div>
+
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
             {[["stamp", "🏁 Timestamp now"], ["manual", "✏️ Enter difference manually"]].map(([mode, label]) => (
               <button key={mode} onClick={() => { setInputMode(mode); setRecordedEnd(null); }}
@@ -3666,7 +3676,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                     <div style={{ fontSize: 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
                                     {holeLogs.map((l, li) => (
                                       <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px" }}>
-                                        {l.badTime ? `⚡ TM Bad Time${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
+                                        {l.badTime ? `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                       </div>
                                     ))}
                                     {showMnPreview && (
@@ -3699,7 +3709,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                   <div style={{ fontSize: 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
                                   {holeLogs.map((l, li) => (
                                     <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
-                                      {l.badTime ? `⚡ TM Bad Time${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
+                                      {l.badTime ? `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                     </div>
                                   ))}
                                   {showMnPreviewDone && (
