@@ -391,17 +391,18 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
         if (cur) { cur.offHole = l.holeIdx + 1; runs.push(cur); cur = null; }
         return;
       }
-      if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, idx: l.idx };
-      else cur.lastHole = l.holeIdx + 1;
+      if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, idx: l.idx, target: l.target || "" };
+      else { cur.lastHole = l.holeIdx + 1; if (l.target) cur.target = l.target; }
     });
     if (cur) runs.push(cur);
     return runs.map((r, i) => {
       const isLast = i === runs.length - 1;
+      const targetSuffix = r.target ? ` (${r.target})` : "";
       const label = r.offHole
-        ? `${type} H${r.startHole} → off H${r.offHole}`
+        ? `${type} H${r.startHole} → off H${r.offHole}${targetSuffix}`
         : (isLast && isActiveNow)
-          ? `${type} H${r.startHole} → ongoing`
-          : `${type} H${r.startHole} → H${r.lastHole} (off)`;
+          ? `${type} H${r.startHole} → ongoing${targetSuffix}`
+          : `${type} H${r.startHole} → H${r.lastHole} (off)${targetSuffix}`;
       return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label };
     });
   };
@@ -2678,7 +2679,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                               )}
                               {isFutureTM && !logs.some(l => l.type === "TM") && (
                                 <div style={{ fontSize: 11, color: "#ff6ec7", background: "#2a002066", border: "1px dashed #ff6ec744", borderRadius: 4, padding: "2px 4px", textAlign: "center", lineHeight: 1.4 }}>
-                                  ⏱ TM {tmTarget ? `${tmTarget} ` : ""}{tmName ? `- ${tmName}` : ""}
+                                  ⏱ TM {tmName ? `- ${tmName}` : ""}
                                 </div>
                               )}
                             </div>
@@ -3665,7 +3666,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                     <div style={{ fontSize: 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
                                     {holeLogs.map((l, li) => (
                                       <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px" }}>
-                                        {l.badTime ? `⚡ TM Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type} {l.target ? `${l.target} ` : ""}{l.name ? `- ${l.name}` : ""}</>}
+                                        {l.badTime ? `⚡ TM Bad Time${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                       </div>
                                     ))}
                                     {showMnPreview && (
@@ -3675,7 +3676,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                     )}
                                     {showTmPreview && (
                                       <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002055", border: "1px dashed #ff6ec755", borderRadius: 4, padding: "1px 4px" }}>
-                                        ⏱ TM {data?.tmTarget ? `${data.tmTarget} ` : ""}{data?.tmName ? `- ${data.tmName}` : ""}
+                                        ⏱ TM {data?.tmName ? `- ${data.tmName}` : ""}
                                       </div>
                                     )}
                                   </td>
@@ -3698,7 +3699,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                   <div style={{ fontSize: 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
                                   {holeLogs.map((l, li) => (
                                     <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
-                                      {l.badTime ? `⚡ TM Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type} {l.target ? `${l.target} ` : ""}{l.name ? `- ${l.name}` : ""}</>}
+                                      {l.badTime ? `⚡ TM Bad Time${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                     </div>
                                   ))}
                                   {showMnPreviewDone && (
@@ -3708,7 +3709,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                   )}
                                   {showTmPreviewDone && (
                                     <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002055", border: "1px dashed #ff6ec755", borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
-                                      ⏱ TM {data?.tmTarget ? `${data.tmTarget} ` : ""}{data?.tmName ? `- ${data.tmName}` : ""}
+                                      ⏱ TM {data?.tmName ? `- ${data.tmName}` : ""}
                                     </div>
                                   )}
                                 </td>
