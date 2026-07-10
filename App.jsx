@@ -2431,17 +2431,9 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               ✓ Confirm H{currentHole + 1} &nbsp;→&nbsp; {currentSlot < 17 ? `H${holeOrder[currentSlot + 1] + 1}` : "Finish"}
             </button>
           )}
-        </div>
-        )}
 
-        {done && (
-          <div style={{ background: "#141626", border: "1px solid #6effa044", borderRadius: 14, padding: 32, marginBottom: 20, textAlign: "center" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 48, color: "#6effa0", letterSpacing: 4 }}>✓ All 18 holes complete</div>
-            <div style={{ color: "#9aa2c7", marginTop: 8 }}>{group.name} has finished all holes</div>
-          </div>
-        )}
-
-        {/* MN Active Banner */}
+          <div style={{ marginTop: canConfirm ? 16 : 0 }}>
+          {/* MN Active Banner */}
         {mnActive && (
           <div style={{
             background: "#001a2a", border: "1px solid #4e9af1aa",
@@ -2535,6 +2527,19 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             )}
           </div>
         )}
+
+          </div>
+
+        </div>
+        )}
+
+        {done && (
+          <div style={{ background: "#141626", border: "1px solid #6effa044", borderRadius: 14, padding: 32, marginBottom: 20, textAlign: "center" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 48, color: "#6effa0", letterSpacing: 4 }}>✓ All 18 holes complete</div>
+            <div style={{ color: "#9aa2c7", marginTop: 8 }}>{group.name} has finished all holes</div>
+          </div>
+        )}
+
 
         {/* Hole Log Table */}
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, overflow: "hidden" }}>
