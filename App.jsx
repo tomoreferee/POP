@@ -2252,7 +2252,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             <button onClick={onBack} style={{ position: "absolute", top: 14, right: 14, background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>{closeLabel || "✕"}</button>
           )}
 
-          <div style={{ display: "flex", alignItems: compact ? "flex-start" : "center", justifyContent: compact ? "space-between" : "flex-start", gap: compact ? 10 : 16, marginBottom: compact ? 10 : 14, paddingTop: compact ? 40 : 0 }}>
+          <div style={{ display: "flex", alignItems: compact ? "flex-start" : "center", justifyContent: "flex-start", gap: compact ? 28 : 16, marginBottom: compact ? 10 : 14, paddingTop: compact ? 6 : 0 }}>
             {compact ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2265,7 +2265,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2 }}>CURRENT HOLE</div>
             )}
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: compact ? "flex-end" : "flex-start" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
             {compact && (
               <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2, marginBottom: 6 }}>CURRENT HOLE</div>
             )}
@@ -2286,8 +2286,8 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >›</button>
             </div>
-            <div style={{ color: "#888", fontSize: 13, textAlign: compact ? "right" : "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
-            <div style={{ color: "#8890b8", fontSize: 11, textAlign: compact ? "right" : "left" }}>Slot {currentSlot + 1}/18</div>
+            <div style={{ color: "#888", fontSize: 13, textAlign: "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
+            <div style={{ color: "#8890b8", fontSize: 11, textAlign: "left" }}>Slot {currentSlot + 1}/18</div>
             </div>
           </div>
 
