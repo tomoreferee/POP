@@ -1719,7 +1719,7 @@ function TimeInput({ value, onChange, label, color = "#4e9af1" }) {
 
 // ─── Group Monitor ────────────────────────────────────────────────────────────
 function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, currentUser,
-  isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel }) {
+  isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel, compact }) {
   const initHoleData = () =>
     group.holeData ?? Array(18).fill(null).map(() => ({ startTime: null, endTime: null }));
 
@@ -2138,10 +2138,23 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
   const diffColor = (d) => d >= 3 ? "#ff7070" : d >= 1 ? "#ffd966" : "#6effa0";
 
   return (
-    <div style={{ background: bgColor, minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee", transition: "background 1s" }}>
+    <div style={compact
+      ? { fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }
+      : { background: bgColor, minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee", transition: "background 1s" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", background: "#141626cc", borderBottom: "1px solid #2a2d4a", backdropFilter: "blur(8px)" }}>
+      <div style={compact
+        ? { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }
+        : { display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", background: "#141626cc", borderBottom: "1px solid #2a2d4a", backdropFilter: "blur(8px)" }}>
+        {compact ? (
+          <>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, flexShrink: 0 }}>{group.name}</div>
+            <StatusBadge status={status} />
+            <button onClick={onBack} style={{ marginLeft: "auto", background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 16, fontWeight: 700, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "✕"}</button>
+          </>
+        ) : (
+        <>
         <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: closeLabel ? 15 : 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "←"}</button>
 
         {onSwitchGroup && (
@@ -2194,6 +2207,8 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             <StatusBadge status={status} />
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* Global Suspension Banner */}
@@ -2209,7 +2224,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
         </div>
       )}
 
-      <div style={{ maxWidth: 700, margin: "0 auto", padding: "20px 16px" }}>
+      <div style={compact ? { padding: 0 } : { maxWidth: 700, margin: "0 auto", padding: "20px 16px" }}>
 
         {/* Suspension History */}
         {suspensions && suspensions.length > 0 && (
@@ -3857,36 +3872,38 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
         if (!qGroup) return null;
         const gd = groupData[quickRecord.groupId] || {};
         return (
-          <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#0d0f1a", overflowY: "auto" }}>
-            <GroupMonitor
-              key={quickRecord.groupId}
-              group={{
-                ...qGroup,
-                records: gd.records,
-                holeData: gd.holeData,
-                currentHole: quickRecord.targetSlot !== null && quickRecord.targetSlot !== undefined ? quickRecord.targetSlot : gd.currentHole,
-                actionLogs: gd.actionLogs,
-                mnActive: gd.mnActive,
-                mnName: gd.mnName,
-                tmActive: gd.tmActive,
-                tmName: gd.tmName,
-                tmTarget: gd.tmTarget,
-                delayMin: gd.delayMin,
-              }}
-              pars={pars}
-              parTimes={parTimes}
-              schedule={schedules[quickRecord.groupId]}
-              onUpdate={(update) => onUpdateGroupData(quickRecord.groupId, update)}
-              onBack={() => setQuickRecord(null)}
-              currentUser={currentUser}
-              isSuspended={isSuspended}
-              suspensions={suspensions}
-              totalOffsetMin={totalOffsetMin}
-              pendingStopTime={pendingStopTime}
-              hideLog={true}
-              onRecorded={() => setQuickRecord(null)}
-              closeLabel="✕"
-            />
+          <div onClick={() => setQuickRecord(null)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#000000cc", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 16, padding: 20, width: "100%", maxWidth: 440, maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 70px #000a" }}>
+              <GroupMonitor
+                key={quickRecord.groupId}
+                group={{
+                  ...qGroup,
+                  records: gd.records,
+                  holeData: gd.holeData,
+                  currentHole: quickRecord.targetSlot !== null && quickRecord.targetSlot !== undefined ? quickRecord.targetSlot : gd.currentHole,
+                  actionLogs: gd.actionLogs,
+                  mnActive: gd.mnActive,
+                  mnName: gd.mnName,
+                  tmActive: gd.tmActive,
+                  tmName: gd.tmName,
+                  tmTarget: gd.tmTarget,
+                  delayMin: gd.delayMin,
+                }}
+                pars={pars}
+                parTimes={parTimes}
+                schedule={schedules[quickRecord.groupId]}
+                onUpdate={(update) => onUpdateGroupData(quickRecord.groupId, update)}
+                onBack={() => setQuickRecord(null)}
+                currentUser={currentUser}
+                isSuspended={isSuspended}
+                suspensions={suspensions}
+                totalOffsetMin={totalOffsetMin}
+                pendingStopTime={pendingStopTime}
+                hideLog={true}
+                onRecorded={() => setQuickRecord(null)}
+                compact={true}
+              />
+            </div>
           </div>
         );
       })()}
