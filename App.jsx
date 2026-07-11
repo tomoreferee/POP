@@ -4388,12 +4388,12 @@ async function fetchAllGroupData() {
   data.forEach(row => { gd[row.group_id] = row.data; });
   return gd;
 }
-async function saveGroupData(groupId, data) {
+async function saveGroupData(groupId, data, updatedAt) {
   try {
     await supabase.from("group_data").upsert({
       group_id: String(groupId),
       data,
-      updated_at: new Date().toISOString(),
+      updated_at: updatedAt || new Date().toISOString(),
     });
   } catch {}
 }
@@ -4415,6 +4415,10 @@ async function removeUsers(usernames) {
 }
 
 export default function App() {
+  // Tracks the timestamp of this device's own last write per group, so a delayed
+  // realtime echo of an OLDER write can't stomp a NEWER local write (race condition
+  // that was silently dropping WN/MN/TM/Bad Time log entries recorded in quick succession).
+  const lastLocalWriteAt = useRef({});
   const [screen, setScreen] = useState("login");
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -4510,6 +4514,10 @@ export default function App() {
           return;
         }
         const row = payload.new;
+        const lastWrite = lastLocalWriteAt.current[row.group_id];
+        if (lastWrite && row.updated_at && row.updated_at < lastWrite) {
+          return; // stale echo of an older write — we already have newer local data
+        }
         setGroupData(prev => ({ ...prev, [row.group_id]: row.data }));
       })
       .subscribe();
@@ -4625,7 +4633,8 @@ export default function App() {
     }
 
     saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime });
-    grps.forEach(g => saveGroupData(g.id, data[g.id]));
+    const seedWrittenAt = new Date().toISOString();
+    grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(g.id, data[g.id], seedWrittenAt); });
   };
 
   const handleSelectGroup = (g, targetSlot) => {
@@ -4634,9 +4643,11 @@ export default function App() {
   };
 
   const handleUpdateGroup = (id, update) => {
+    const writtenAt = new Date().toISOString();
+    lastLocalWriteAt.current[id] = writtenAt;
     setGroupData(prev => {
       const next = { ...prev, [id]: { ...prev[id], ...update } };
-      saveGroupData(id, next[id]);
+      saveGroupData(id, next[id], writtenAt);
       return next;
     });
   };
