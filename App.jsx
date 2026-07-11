@@ -2143,18 +2143,8 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
       : { background: bgColor, minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee", transition: "background 1s" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
-      <div style={compact
-        ? { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }
-        : { display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", background: "#141626cc", borderBottom: "1px solid #2a2d4a", backdropFilter: "blur(8px)" }}>
-        {compact ? (
-          <>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, flexShrink: 0 }}>{group.name}</div>
-            <StatusBadge status={status} />
-            <button onClick={onBack} style={{ marginLeft: "auto", background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 16, fontWeight: 700, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "✕"}</button>
-          </>
-        ) : (
-        <>
+      {!compact && (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", background: "#141626cc", borderBottom: "1px solid #2a2d4a", backdropFilter: "blur(8px)" }}>
         <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: closeLabel ? 15 : 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "←"}</button>
 
         {onSwitchGroup && (
@@ -2207,9 +2197,8 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             <StatusBadge status={status} />
           </div>
         </div>
-        </>
-        )}
       </div>
+      )}
 
       {/* Global Suspension Banner */}
       {isSuspended && (
@@ -2258,17 +2247,25 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
           marginBottom: 20,
           boxShadow: `0 0 40px ${group.color}11`,
         }}>
+          {compact && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, flexShrink: 0 }}>{group.name}</div>
+              <StatusBadge status={status} />
+              <button onClick={onBack} style={{ marginLeft: "auto", background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "✕"}</button>
+            </div>
+          )}
           <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2, marginBottom: 12 }}>CURRENT HOLE</div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16, marginBottom: 14 }}>
             <button
               onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
               disabled={currentSlot === 0}
               title="หลุมก่อนหน้า"
-              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#333" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: 22, fontWeight: 700, borderRadius: 10, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#333" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 18 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 34 : 40, height: compact ? 34 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >‹</button>
             <div>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 72, lineHeight: 1, color: group.color }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 40 : 72, lineHeight: 1, color: group.color }}>
                 {currentHole + 1}
               </div>
               <div style={{ color: "#888", fontSize: 14 }}>Par {pars[currentHole]}</div>
