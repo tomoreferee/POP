@@ -1719,7 +1719,7 @@ function TimeInput({ value, onChange, label, color = "#4e9af1" }) {
 
 // ─── Group Monitor ────────────────────────────────────────────────────────────
 function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, currentUser,
-  isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup }) {
+  isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel }) {
   const initHoleData = () =>
     group.holeData ?? Array(18).fill(null).map(() => ({ startTime: null, endTime: null }));
 
@@ -2041,6 +2041,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
       setCurrentSlot(18);
       onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: 18, actionLogs: nxtLogs, mnActive, mnName, tmActive, tmName, tmTarget });
     }
+    onRecorded?.();
   };
 
   const startEditHole = (i, field) => {
@@ -2141,7 +2142,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", background: "#141626cc", borderBottom: "1px solid #2a2d4a", backdropFilter: "blur(8px)" }}>
-        <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
+        <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: closeLabel ? 15 : 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "←"}</button>
 
         {onSwitchGroup && (
           <button
@@ -2541,7 +2542,8 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
         )}
 
 
-        {/* Hole Log Table */}
+        {!hideLog && (
+        /* Hole Log Table */
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "14px 16px", borderBottom: "1px solid #2a2d4a", fontSize: 12, color: "#4e9af1", letterSpacing: 2, fontWeight: 700 }}>
             📊 HOLE LOG — <span style={{ color: "#8890b8", fontWeight: 400 }}>press ✏ to edit</span>
@@ -2719,6 +2721,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             </table>
           </div>
         </div>
+        )}
       </div>
 
       {/* WN/MN/TM Modal */}
@@ -3180,6 +3183,9 @@ function SummaryScreen({ groups, groupData, pars, parTimes, suspensions, isSuspe
 function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
+  // Quick-record popup: clicking a hole cell opens the recording UI as a modal
+  // instead of navigating to a new screen. Closes itself once a time is recorded.
+  const [quickRecord, setQuickRecord] = useState(null); // { groupId, targetSlot } or null
   // Delete a WN/MN/TM log entry from the dashboard (in case of a mistaken tap) — confirmed via popup before removal
   const [deleteLogConfirm, setDeleteLogConfirm] = useState(null); // { groupId, idx } or null
   const deleteLogAt = (groupId, idx) => {
@@ -3668,7 +3674,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                               const startTime = hd?.startTime;
                               const endTime = hd?.endTime;
                               const holeLogs = (data?.actionLogs ?? []).filter(l => l.holeIdx === hi);
-                              const handleHoleClick = () => onSelectGroup(g, slot);
+                              const handleHoleClick = () => setQuickRecord({ groupId: g.id, targetSlot: slot });
                               const deadline = (sch?.[hi] ?? 0) + (parTimes?.[hi] ?? 14);
                               if (!endTime || !startTime) {
                                 const showMnPreview = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
@@ -3842,6 +3848,45 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                 </button>
               </div>
             </div>
+          </div>
+        );
+      })()}
+
+      {quickRecord && (() => {
+        const qGroup = groups.find(x => x.id === quickRecord.groupId);
+        if (!qGroup) return null;
+        const gd = groupData[quickRecord.groupId] || {};
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#0d0f1a", overflowY: "auto" }}>
+            <GroupMonitor
+              key={quickRecord.groupId}
+              group={{
+                ...qGroup,
+                records: gd.records,
+                holeData: gd.holeData,
+                currentHole: quickRecord.targetSlot !== null && quickRecord.targetSlot !== undefined ? quickRecord.targetSlot : gd.currentHole,
+                actionLogs: gd.actionLogs,
+                mnActive: gd.mnActive,
+                mnName: gd.mnName,
+                tmActive: gd.tmActive,
+                tmName: gd.tmName,
+                tmTarget: gd.tmTarget,
+                delayMin: gd.delayMin,
+              }}
+              pars={pars}
+              parTimes={parTimes}
+              schedule={schedules[quickRecord.groupId]}
+              onUpdate={(update) => onUpdateGroupData(quickRecord.groupId, update)}
+              onBack={() => setQuickRecord(null)}
+              currentUser={currentUser}
+              isSuspended={isSuspended}
+              suspensions={suspensions}
+              totalOffsetMin={totalOffsetMin}
+              pendingStopTime={pendingStopTime}
+              hideLog={true}
+              onRecorded={() => setQuickRecord(null)}
+              closeLabel="✕"
+            />
           </div>
         );
       })()}
