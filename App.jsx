@@ -2285,10 +2285,20 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               title="หลุมถัดไป"
               style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >›</button>
+            {compact && (
+              <div style={{ marginLeft: 6 }}>
+                <div style={{ color: "#888", fontSize: 13 }}>Par {pars[currentHole]}</div>
+                <div style={{ color: "#8890b8", fontSize: 11 }}>Slot {currentSlot + 1}/18</div>
+              </div>
+            )}
             </div>
-            <div style={{ color: "#888", fontSize: 13, textAlign: "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
-            <div style={{ color: "#8890b8", fontSize: 11, textAlign: "left" }}>Slot {currentSlot + 1}/18</div>
-            </div>
+            {!compact && (
+              <>
+                <div style={{ color: "#888", fontSize: 13, textAlign: "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
+                <div style={{ color: "#8890b8", fontSize: 11, textAlign: "left" }}>Slot {currentSlot + 1}/18</div>
+              </>
+            )}
+          </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16, marginBottom: compact ? 12 : 20 }}>
