@@ -2244,15 +2244,15 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
           background: "#141626",
           border: `1px solid ${group.color}44`,
           borderRadius: 14,
-          padding: 24,
-          marginBottom: 20,
+          padding: compact ? 16 : 24,
+          marginBottom: compact ? 0 : 20,
           boxShadow: `0 0 40px ${group.color}11`,
         }}>
           {compact && (
             <button onClick={onBack} style={{ position: "absolute", top: 14, right: 14, background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>{closeLabel || "✕"}</button>
           )}
 
-          <div style={{ display: "flex", alignItems: compact ? "flex-start" : "center", justifyContent: compact ? "space-between" : "flex-start", gap: compact ? 10 : 16, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: compact ? "flex-start" : "center", justifyContent: compact ? "space-between" : "flex-start", gap: compact ? 10 : 16, marginBottom: compact ? 10 : 14 }}>
             {compact ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingRight: 40 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2266,6 +2266,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2 }}>CURRENT HOLE</div>
             )}
 
+            <div style={{ display: "flex", flexDirection: "column", alignItems: compact ? "flex-end" : "flex-start" }}>
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 16 }}>
             <button
               onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
@@ -2273,56 +2274,55 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               title="หลุมก่อนหน้า"
               style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#333" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 18 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 34 : 40, height: compact ? 34 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >‹</button>
-            <div>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 40 : 72, lineHeight: 1, color: group.color, textAlign: compact ? "right" : "left" }}>
-                {currentHole + 1}
-              </div>
-              <div style={{ color: "#888", fontSize: 14, textAlign: compact ? "right" : "left" }}>Par {pars[currentHole]}</div>
-              <div style={{ color: "#8890b8", fontSize: 11, textAlign: compact ? "right" : "left" }}>Slot {currentSlot + 1}/18</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 40 : 72, lineHeight: 1, color: group.color }}>
+              {currentHole + 1}
             </div>
             <button
               onClick={() => setCurrentSlot(Math.min(17, currentSlot + 1))}
               disabled={currentSlot === 17}
               title="หลุมถัดไป"
-              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: 22, fontWeight: 700, borderRadius: 10, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 18 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 34 : 40, height: compact ? 34 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >›</button>
+            </div>
+            <div style={{ color: "#888", fontSize: 13, textAlign: compact ? "right" : "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
+            <div style={{ color: "#8890b8", fontSize: 11, textAlign: compact ? "right" : "left" }}>Slot {currentSlot + 1}/18</div>
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-            <div style={{ flex: 1, background: "#0d0f1a", borderRadius: 12, padding: "12px 14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16, marginBottom: compact ? 12 : 20 }}>
+            <div style={{ flex: 1, background: "#0d0f1a", borderRadius: 12, padding: compact ? "8px 10px" : "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>🏌️ Start</div>
-                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, color: "#4e9af1", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
+                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#4e9af1", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
                 </div>
-                <div style={{ flex: 1, textAlign: "center", color: "#666f99", fontSize: 18 }}>+{parTimeNow}m→</div>
+                <div style={{ flex: 1, textAlign: "center", color: "#666f99", fontSize: compact ? 14 : 18 }}>+{parTimeNow}m→</div>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>🏁 Should finish</div>
-                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, color: "#8899cc", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
+                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#8899cc", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
                 </div>
               </div>
             </div>
-            <div style={{ textAlign: "center", background: "#0d0f1a", borderRadius: 12, padding: "10px 12px", minWidth: 80 }}>
+            <div style={{ textAlign: "center", background: "#0d0f1a", borderRadius: 12, padding: compact ? "6px 8px" : "10px 12px", minWidth: compact ? 64 : 80 }}>
               <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>Now</div>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, lineHeight: 1, color: "#eee" }}>{minToTime(now)}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, color: diffColor(diffLive) }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, lineHeight: 1, color: "#eee" }}>{minToTime(now)}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4, color: diffColor(diffLive) }}>
                 {diffLive > 0 ? `+${diffLive}` : diffLive} min
               </div>
             </div>
           </div>
 
           {/* Delay input */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#0d0f1a", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#0d0f1a", borderRadius: 10, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
             <span style={{ fontSize: 12, color: "#ff7070" }}>⏱ Delay Time</span>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 40, height: 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
+              <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
               <input
                 type="number" min="0" value={delayMin}
                 onChange={e => updateDelay(e.target.value)}
                 style={{ width: 52, background: "#1e2135", border: `1px solid ${delayMin > 0 ? "#ffd96666" : "#2a2d4a"}`, color: "#ffd966", fontFamily: "'Bebas Neue'", fontSize: 22, textAlign: "center", borderRadius: 6, padding: "2px 0", outline: "none" }}
               />
-              <button onClick={() => updateDelay(delayMin + 1)} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 40, height: 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>+</button>
+              <button onClick={() => updateDelay(delayMin + 1)} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>+</button>
             </div>
             <span style={{ fontSize: 12, color: "#8890b8" }}>min</span>
             {delayMin > 0 && (
@@ -2332,22 +2332,22 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14 }}>
             <span style={{ fontSize: 12, color: "#8890b8", fontWeight: 700 }}>Flag:</span>
             <button onClick={() => openActionModal("WN", currentHole)}
-              style={{ flex: 1, background: "#2a1a00", border: "1px solid #ffd96688", color: "#ffd966", borderRadius: 8, padding: "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
+              style={{ flex: 1, background: "#2a1a00", border: "1px solid #ffd96688", color: "#ffd966", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
             <button onClick={() => openActionModal("MN", currentHole)}
-              style={{ flex: 1, background: "#001a2a", border: "1px solid #4e9af188", color: "#4e9af1", borderRadius: 8, padding: "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
+              style={{ flex: 1, background: "#001a2a", border: "1px solid #4e9af188", color: "#4e9af1", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
             <button onClick={() => openActionModal("TM", currentHole)}
-              style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+              style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
           </div>
 
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: compact ? 10 : 14 }}>
             {[["stamp", "🏁 Timestamp now"], ["manual", "✏️ Enter difference manually"]].map(([mode, label]) => (
               <button key={mode} onClick={() => { setInputMode(mode); setRecordedEnd(null); }}
                 style={{
-                  flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
-                  fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                  flex: 1, padding: compact ? "7px 0" : "8px 0", borderRadius: 8, cursor: "pointer",
+                  fontFamily: "inherit", fontSize: compact ? 12 : 13, fontWeight: 700,
                   background: inputMode === mode ? "#1e2a3a" : "#0d0f1a",
                   border: `1px solid ${inputMode === mode ? "#4e9af1" : "#2a2d4a"}`,
                   color: inputMode === mode ? "#4e9af1" : "#555",
@@ -2363,10 +2363,10 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               <button
                 onClick={() => setRecordedEnd(nowInMin() - 1)}
                 style={{
-                  width: "100%", padding: "22px 0", marginBottom: 12,
+                  width: "100%", padding: compact ? "16px 0" : "22px 0", marginBottom: 12,
                   background: "linear-gradient(135deg, #1a2a1a, #1f3f1f)",
                   border: "2px solid #6effa066", borderRadius: 14, cursor: "pointer",
-                  fontFamily: "'Bebas Neue'", fontSize: 28, letterSpacing: 4, color: "#6effa0",
+                  fontFamily: "'Bebas Neue'", fontSize: compact ? 22 : 28, letterSpacing: 4, color: "#6effa0",
                   transition: "all 0.15s",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, #1f3f1f, #2a5a2a)"; e.currentTarget.style.borderColor = "#6effa0aa"; }}
