@@ -2260,13 +2260,15 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                   <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, flexShrink: 0 }}>{group.name}</div>
                 </div>
                 <StatusBadge status={status} />
-                <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2 }}>CURRENT HOLE</div>
               </div>
             ) : (
               <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2 }}>CURRENT HOLE</div>
             )}
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: compact ? "flex-end" : "flex-start" }}>
+            {compact && (
+              <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2, marginBottom: 6 }}>CURRENT HOLE</div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 16 }}>
             <button
               onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
