@@ -1989,7 +1989,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
     nxtRec[holeIdx] = newHoleData.endTime;
     setRecords(nxtRec);
 
-    onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: holeIdx });
+    onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: holeIdx, actionLogs, mnActive, mnName, tmActive, tmName, tmTarget });
     return { nxtHD, nxtRec };
   };
 
@@ -3750,8 +3750,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                               const color = diffColor(relativeDiff);
                               const cellBg = `${color}26`;
                               const cellBgHover = `${color}3d`;
-                              const showMnPreviewDone = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
-                              const showTmPreviewDone = tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
                               return (
                                 <td key={hi} onClick={handleHoleClick}
                                   style={{ ...tdStyle, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg }}
@@ -3764,16 +3762,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                       {l.badTime ? `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                     </div>
                                   ))}
-                                  {showMnPreviewDone && (
-                                    <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a55", border: "1px dashed #4e9af155", borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
-                                      👁 MN{data?.mnName ? ` - ${data.mnName}` : ""}
-                                    </div>
-                                  )}
-                                  {showTmPreviewDone && (
-                                    <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002055", border: "1px dashed #ff6ec755", borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
-                                      ⏱ TM {data?.tmName ? `- ${data.tmName}` : ""}
-                                    </div>
-                                  )}
                                 </td>
                               );
                             })}
