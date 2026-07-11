@@ -2265,9 +2265,9 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2 }}>CURRENT HOLE</div>
             )}
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
             {compact && (
-              <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2, marginBottom: 6 }}>CURRENT HOLE</div>
+              <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2, marginBottom: 6, width: "100%" }}>CURRENT HOLE</div>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 16 }}>
             <button
@@ -2308,9 +2308,12 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                   <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>🏌️ Start</div>
                   <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#4e9af1", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
                 </div>
-                <div style={{ flex: 1, textAlign: "center", color: "#666f99", fontSize: compact ? 14 : 18 }}>+{parTimeNow}m→</div>
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: "#8890b8", marginBottom: 2 }}>Par Time</div>
+                  <div style={{ color: "#666f99", fontSize: compact ? 14 : 18 }}>+{parTimeNow}m→</div>
+                </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>🏁 Should finish</div>
+                  <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>🏁 Finish</div>
                   <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#8899cc", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
                 </div>
               </div>
@@ -2416,8 +2419,12 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                     style={{ width: 44, height: 52, borderRadius: 10, background: "#1e1515", border: "1px solid #ff707033", color: "#ff9090", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−</button>
                 </div>
                 <div style={{ flex: 1, textAlign: "center" }}>
-                  <input type="number" value={diffManual}
-                    onChange={e => setDiffManual(Number(e.target.value))}
+                  <input type="text" inputMode="numeric" pattern="-?[0-9]*"
+                    value={diffManual > 0 ? `+${diffManual}` : diffManual}
+                    onChange={e => {
+                      const v = e.target.value.replace(/[^0-9-]/g, "");
+                      setDiffManual(v === "" || v === "-" ? 0 : Number(v));
+                    }}
                     style={{
                       width: 90, background: "#141626",
                       border: `2px solid ${diffManual >= 3 ? "#ff707066" : diffManual >= 1 ? "#ffd96666" : "#6effa066"}`,
