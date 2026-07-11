@@ -2252,9 +2252,9 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             <button onClick={onBack} style={{ position: "absolute", top: 14, right: 14, background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>{closeLabel || "✕"}</button>
           )}
 
-          <div style={{ display: "flex", alignItems: compact ? "flex-start" : "center", justifyContent: compact ? "space-between" : "flex-start", gap: compact ? 10 : 16, marginBottom: compact ? 10 : 14 }}>
+          <div style={{ display: "flex", alignItems: compact ? "flex-start" : "center", justifyContent: compact ? "space-between" : "flex-start", gap: compact ? 10 : 16, marginBottom: compact ? 10 : 14, paddingTop: compact ? 40 : 0 }}>
             {compact ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingRight: 40 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
                   <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, flexShrink: 0 }}>{group.name}</div>
@@ -2267,21 +2267,21 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             )}
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: compact ? "flex-end" : "flex-start" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 16 }}>
             <button
               onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
               disabled={currentSlot === 0}
               title="หลุมก่อนหน้า"
-              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#333" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 18 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 34 : 40, height: compact ? 34 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#333" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >‹</button>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 40 : 72, lineHeight: 1, color: group.color }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 30 : 72, lineHeight: 1, color: group.color }}>
               {currentHole + 1}
             </div>
             <button
               onClick={() => setCurrentSlot(Math.min(17, currentSlot + 1))}
               disabled={currentSlot === 17}
               title="หลุมถัดไป"
-              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 18 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 34 : 40, height: compact ? 34 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >›</button>
             </div>
             <div style={{ color: "#888", fontSize: 13, textAlign: compact ? "right" : "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
@@ -3879,8 +3879,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
         if (!qGroup) return null;
         const gd = groupData[quickRecord.groupId] || {};
         return (
-          <div onClick={() => setQuickRecord(null)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#000000cc", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 16, padding: 20, width: "100%", maxWidth: 440, maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 70px #000a" }}>
+          <div onClick={() => setQuickRecord(null)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#000000cc", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 16, padding: 16, width: "100%", maxWidth: 440, boxShadow: "0 24px 70px #000a" }}>
               <GroupMonitor
                 key={quickRecord.groupId}
                 group={{
