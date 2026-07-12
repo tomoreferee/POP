@@ -3499,8 +3499,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                   const logs = (gd?.actionLogs ?? []).map((l, idx) => ({ ...l, idx }));
                   if (logs.length === 0 && !mnActive && !tmActive) return null;
                   const items = summarizeStatusLogs(logs, mnActive, tmActive);
-                  const hasMN = mnActive || logs.some(l => l.type === "MN");
-                  const hasTM = tmActive || logs.some(l => l.type === "TM");
                   return (
                     <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
                       {items.map(it => (
@@ -3512,31 +3510,21 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                           color: logColor(it.type), lineHeight: 1.5, alignSelf: "flex-start",
                         }}>
                           {it.label}
-                          {it.idx !== undefined && (
+                          {it.idx !== undefined ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); setDeleteLogConfirm({ groupId: g.id, idx: it.idx }); }}
                               title={it.deleteTitle || "Delete this log"}
                               style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
                             >🗑</button>
+                          ) : (it.type === "MN" || it.type === "TM") && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: it.type }); }}
+                              title={`ล้างสถานะ ${it.type} ทั้งหมด`}
+                              style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
+                            >🗑</button>
                           )}
                         </span>
                       ))}
-                      {(hasMN || hasTM) && (
-                        <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
-                          {hasMN && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: "MN" }); }}
-                              style={{ fontSize: 10, fontWeight: 700, color: "#9aa2c7", background: "none", border: "1px solid #4e9af155", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
-                            >🧹 ล้างสถานะ MN ทั้งหมด</button>
-                          )}
-                          {hasTM && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: "TM" }); }}
-                              style={{ fontSize: 10, fontWeight: 700, color: "#9aa2c7", background: "none", border: "1px solid #ff6ec755", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
-                            >🧹 ล้างสถานะ TM ทั้งหมด</button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })()}
