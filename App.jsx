@@ -402,7 +402,7 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
       const label = r.offHole
         ? `${type} @H${r.startHole} → off H${r.offHole}${targetSuffix}${bySuffix}`
         : (isLast && isActiveNow)
-          ? `${type} @H${r.startHole} → ongoing${targetSuffix}${bySuffix}`
+          ? `${type} @H${r.startHole} → In progress${targetSuffix}${bySuffix}`
           : `${type} @H${r.startHole} → H${r.lastHole} (off)${targetSuffix}${bySuffix}`;
       return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label };
     });
