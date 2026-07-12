@@ -2287,12 +2287,25 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14 }}>
             <span style={{ fontSize: 12, color: "#8890b8", fontWeight: 700 }}>Flag:</span>
-            <button onClick={() => openActionModal("WN", currentHole)}
-              style={{ flex: 1, background: "#2a1a00", border: "1px solid #ffd96688", color: "#ffd966", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
-            <button onClick={() => openActionModal("MN", currentHole)}
-              style={{ flex: 1, background: "#001a2a", border: "1px solid #4e9af188", color: "#4e9af1", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
-            <button onClick={() => openActionModal("TM", currentHole)}
-              style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+            {(() => {
+              const wnDisabled = actionLogs.some(l => l.type === "WN" && l.holeIdx === currentHole);
+              const mnDisabledHere = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === currentHole);
+              const mnDisabled = mnActive || mnDisabledHere;
+              return (
+                <>
+                  <button onClick={() => !wnDisabled && openActionModal("WN", currentHole)}
+                    disabled={wnDisabled}
+                    title={wnDisabled ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
+                    style={{ flex: 1, background: wnDisabled ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabled ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabled ? "#666" : "#ffd966", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: wnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
+                  <button onClick={() => !mnDisabled && openActionModal("MN", currentHole)}
+                    disabled={mnDisabled}
+                    title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อนถึงจะเริ่มใหม่ได้" : mnDisabledHere ? "หลุมนี้ถูก MN ไปแล้ว" : undefined}
+                    style={{ flex: 1, background: mnDisabled ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabled ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabled ? "#666" : "#4e9af1", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: mnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
+                  <button onClick={() => openActionModal("TM", currentHole)}
+                    style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+                </>
+              );
+            })()}
           </div>
 
           <div style={{ display: "flex", gap: 8, marginBottom: compact ? 10 : 14 }}>
@@ -2640,13 +2653,20 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                           const logs = actionLogs.map((l, idx) => ({ ...l, idx })).filter(l => l.holeIdx === i);
                           const isFutureMN = mnActive && slot === lastMNSlot + 1;
                           const isFutureTM = tmActive && slot === lastTMSlot + 1;
+                          const wnDisabledRow = actionLogs.some(l => l.type === "WN" && l.holeIdx === i);
+                          const mnDisabledHereRow = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === i);
+                          const mnDisabledRow = mnActive || mnDisabledHereRow;
                           return (
                             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                               <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>
-                                <button onClick={() => openActionModal("WN", i)}
-                                  style={{ background: "#2a1a00", border: "1px solid #ffd96688", color: "#ffd966", borderRadius: 5, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
-                                <button onClick={() => openActionModal("MN", i)}
-                                  style={{ background: "#001a2a", border: "1px solid #4e9af188", color: "#4e9af1", borderRadius: 5, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
+                                <button onClick={() => !wnDisabledRow && openActionModal("WN", i)}
+                                  disabled={wnDisabledRow}
+                                  title={wnDisabledRow ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
+                                  style={{ background: wnDisabledRow ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabledRow ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabledRow ? "#666" : "#ffd966", borderRadius: 5, padding: "3px 7px", cursor: wnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
+                                <button onClick={() => !mnDisabledRow && openActionModal("MN", i)}
+                                  disabled={mnDisabledRow}
+                                  title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อน" : mnDisabledHereRow ? "หลุมนี้ถูก MN ไปแล้ว" : undefined}
+                                  style={{ background: mnDisabledRow ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabledRow ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabledRow ? "#666" : "#4e9af1", borderRadius: 5, padding: "3px 7px", cursor: mnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                                 <button onClick={() => openActionModal("TM", i)}
                                   style={{ background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 5, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
                               </div>
@@ -3173,6 +3193,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
     onUpdateGroupData(groupId, { actionLogs: nextLogs });
     setDeleteLogConfirm(null);
   };
+  // Full reset of a status (MN or TM) for a group — removes every log entry of that
+  // type (including the off-marker) and turns the active flag off, for when the
+  // history has gotten tangled (e.g. accidental duplicate on/off taps) and a single
+  // entry delete isn't enough.
+  const [clearStatusConfirm, setClearStatusConfirm] = useState(null); // { groupId, type } or null
+  const clearStatusFor = (groupId, type) => {
+    const gd = groupData[groupId] || {};
+    const nextLogs = (gd.actionLogs ?? []).filter(l => l.type !== type);
+    const reset = type === "MN"
+      ? { actionLogs: nextLogs, mnActive: false, mnName: "" }
+      : { actionLogs: nextLogs, tmActive: false, tmName: "", tmTarget: "" };
+    onUpdateGroupData(groupId, reset);
+    setClearStatusConfirm(null);
+  };
   const [suspendModal, setSuspendModal] = useState(false); // "stop" | "resume" | false
   const [suspendStopInput, setSuspendStopInput] = useState(minToTime(nowInMin()));
   const [suspendResumeInput, setSuspendResumeInput] = useState(minToTime(nowInMin()));
@@ -3465,6 +3499,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                   const logs = (gd?.actionLogs ?? []).map((l, idx) => ({ ...l, idx }));
                   if (logs.length === 0 && !mnActive && !tmActive) return null;
                   const items = summarizeStatusLogs(logs, mnActive, tmActive);
+                  const hasMN = mnActive || logs.some(l => l.type === "MN");
+                  const hasTM = tmActive || logs.some(l => l.type === "TM");
                   return (
                     <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
                       {items.map(it => (
@@ -3485,6 +3521,22 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                           )}
                         </span>
                       ))}
+                      {(hasMN || hasTM) && (
+                        <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+                          {hasMN && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: "MN" }); }}
+                              style={{ fontSize: 10, fontWeight: 700, color: "#9aa2c7", background: "none", border: "1px solid #4e9af155", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
+                            >🧹 ล้างสถานะ MN ทั้งหมด</button>
+                          )}
+                          {hasTM && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: "TM" }); }}
+                              style={{ fontSize: 10, fontWeight: 700, color: "#9aa2c7", background: "none", border: "1px solid #ff6ec755", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
+                            >🧹 ล้างสถานะ TM ทั้งหมด</button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -3810,6 +3862,34 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                   ✓ ลบเลย
                 </button>
                 <button onClick={() => setDeleteLogConfirm(null)}
+                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {clearStatusConfirm && (() => {
+        const gName = groups.find(g => g.id === clearStatusConfirm.groupId)?.name ?? "";
+        const gd = groupData[clearStatusConfirm.groupId] || {};
+        const count = (gd.actionLogs ?? []).filter(l => l.type === clearStatusConfirm.type).length;
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
+            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #000" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>🧹 ล้างสถานะ {clearStatusConfirm.type}?</div>
+              <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
+                {gName && <>{gName} · </>}จะลบรายการ {clearStatusConfirm.type} ทั้งหมด ({count} รายการ) ทุกหลุม และปิดสถานะ {clearStatusConfirm.type} ของกลุ่มนี้
+                <br />ใช้ตอนที่สถานะ {clearStatusConfirm.type} ยุ่งเหยิงเกินจะแก้ทีละรายการ
+                <br />การลบนี้ไม่สามารถย้อนกลับได้
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => clearStatusFor(clearStatusConfirm.groupId, clearStatusConfirm.type)}
+                  style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                  ✓ ล้างเลย
+                </button>
+                <button onClick={() => setClearStatusConfirm(null)}
                   style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                   ยกเลิก
                 </button>
