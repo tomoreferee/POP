@@ -2288,7 +2288,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14 }}>
             <span style={{ fontSize: 12, color: "#8890b8", fontWeight: 700 }}>Flag:</span>
             {(() => {
-              const wnDisabled = actionLogs.some(l => l.type === "WN" && l.holeIdx === currentHole);
+              const wnDisabled = (actionLogs.some(l => l.type === "WN" && l.holeIdx === currentHole)) || mnActive || tmActive;
               const mnDisabledHere = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === currentHole);
               const mnAlreadyUsed = actionLogs.some(l => l.type === "MN" && l.off);
               const mnDisabled = mnActive || mnDisabledHere || mnAlreadyUsed;
@@ -2296,7 +2296,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                 <>
                   <button onClick={() => !wnDisabled && openActionModal("WN", currentHole)}
                     disabled={wnDisabled}
-                    title={wnDisabled ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
+                    title={mnActive || tmActive ? "กำลัง MN/TM อยู่ กด WN ไม่ได้ในระหว่างนี้" : wnDisabled ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
                     style={{ flex: 1, background: wnDisabled ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabled ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabled ? "#666" : "#ffd966", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: wnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                   <button onClick={() => !mnDisabled && openActionModal("MN", currentHole)}
                     disabled={mnDisabled}
@@ -2654,7 +2654,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                           const logs = actionLogs.map((l, idx) => ({ ...l, idx })).filter(l => l.holeIdx === i);
                           const isFutureMN = mnActive && slot === lastMNSlot + 1;
                           const isFutureTM = tmActive && slot === lastTMSlot + 1;
-                          const wnDisabledRow = actionLogs.some(l => l.type === "WN" && l.holeIdx === i);
+                          const wnDisabledRow = (actionLogs.some(l => l.type === "WN" && l.holeIdx === i)) || mnActive || tmActive;
                           const mnDisabledHereRow = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === i);
                           const mnAlreadyUsedRow = actionLogs.some(l => l.type === "MN" && l.off);
                           const mnDisabledRow = mnActive || mnDisabledHereRow || mnAlreadyUsedRow;
@@ -2663,7 +2663,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                               <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>
                                 <button onClick={() => !wnDisabledRow && openActionModal("WN", i)}
                                   disabled={wnDisabledRow}
-                                  title={wnDisabledRow ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
+                                  title={mnActive || tmActive ? "กำลัง MN/TM อยู่ กด WN ไม่ได้ในระหว่างนี้" : wnDisabledRow ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
                                   style={{ background: wnDisabledRow ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabledRow ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabledRow ? "#666" : "#ffd966", borderRadius: 5, padding: "3px 7px", cursor: wnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                                 <button onClick={() => !mnDisabledRow && openActionModal("MN", i)}
                                   disabled={mnDisabledRow}
