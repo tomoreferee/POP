@@ -388,10 +388,10 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
     let cur = null;
     entries.forEach(l => {
       if (l.off) {
-        if (cur) { cur.offHole = l.holeIdx + 1; runs.push(cur); cur = null; }
+        if (cur) { cur.offHole = l.holeIdx + 1; cur.offIdx = l.idx; runs.push(cur); cur = null; }
         return;
       }
-      if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, idx: l.idx, target: l.target || "", name: l.name || "" };
+      if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, offIdx: null, idx: l.idx, target: l.target || "", name: l.name || "" };
       else { cur.lastHole = l.holeIdx + 1; if (l.target) cur.target = l.target; }
     });
     if (cur) runs.push(cur);
@@ -404,7 +404,9 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
         : (isLast && isActiveNow)
           ? `${type} @H${r.startHole} → In progress${targetSuffix}${bySuffix}`
           : `${type} @H${r.startHole} → H${r.lastHole} (off)${targetSuffix}${bySuffix}`;
-      return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label };
+      // Only offer a delete action when there's a specific "off" event to undo —
+      // deleting it re-opens the run (fixes an accidental off-at-wrong-hole tap).
+      return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label, idx: r.offIdx ?? undefined, deleteTitle: r.offHole ? "ลบการปิดสถานะนี้ (กดปิดผิดหลุม)" : undefined };
     });
   };
 
@@ -3477,7 +3479,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                           {it.idx !== undefined && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setDeleteLogConfirm({ groupId: g.id, idx: it.idx }); }}
-                              title="Delete this log"
+                              title={it.deleteTitle || "Delete this log"}
                               style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
                             >🗑</button>
                           )}
@@ -3799,7 +3801,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
               <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>🗑 ลบรายการนี้?</div>
               <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
                 {gName && <>{gName} · </>}
-                <span style={{ fontWeight: 700, color: logColor(l.type) }}>{l.type}</span> — {l.target ? `${l.target} - ` : ""}{l.name} · Hole {l.holeIdx + 1} · {l.time}
+                <span style={{ fontWeight: 700, color: logColor(l.type) }}>{l.off ? `Off ${l.type}` : l.type}</span> — {l.target ? `${l.target} - ` : ""}{l.name} · Hole {l.holeIdx + 1} · {l.time}
                 <br />การลบนี้ไม่สามารถย้อนกลับได้
               </div>
               <div style={{ display: "flex", gap: 10 }}>
