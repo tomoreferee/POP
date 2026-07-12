@@ -2290,7 +2290,8 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             {(() => {
               const wnDisabled = actionLogs.some(l => l.type === "WN" && l.holeIdx === currentHole);
               const mnDisabledHere = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === currentHole);
-              const mnDisabled = mnActive || mnDisabledHere;
+              const mnAlreadyUsed = actionLogs.some(l => l.type === "MN" && l.off);
+              const mnDisabled = mnActive || mnDisabledHere || mnAlreadyUsed;
               return (
                 <>
                   <button onClick={() => !wnDisabled && openActionModal("WN", currentHole)}
@@ -2299,7 +2300,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                     style={{ flex: 1, background: wnDisabled ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabled ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabled ? "#666" : "#ffd966", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: wnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                   <button onClick={() => !mnDisabled && openActionModal("MN", currentHole)}
                     disabled={mnDisabled}
-                    title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อนถึงจะเริ่มใหม่ได้" : mnDisabledHere ? "หลุมนี้ถูก MN ไปแล้ว" : undefined}
+                    title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อนถึงจะเริ่มใหม่ได้" : mnDisabledHere ? "หลุมนี้ถูก MN ไปแล้ว" : mnAlreadyUsed ? "กลุ่มนี้เคยถูก MN และ off ไปแล้ว MN ได้แค่ครั้งเดียวต่อกลุ่ม" : undefined}
                     style={{ flex: 1, background: mnDisabled ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabled ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabled ? "#666" : "#4e9af1", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: mnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                   <button onClick={() => openActionModal("TM", currentHole)}
                     style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
@@ -2655,7 +2656,8 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                           const isFutureTM = tmActive && slot === lastTMSlot + 1;
                           const wnDisabledRow = actionLogs.some(l => l.type === "WN" && l.holeIdx === i);
                           const mnDisabledHereRow = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === i);
-                          const mnDisabledRow = mnActive || mnDisabledHereRow;
+                          const mnAlreadyUsedRow = actionLogs.some(l => l.type === "MN" && l.off);
+                          const mnDisabledRow = mnActive || mnDisabledHereRow || mnAlreadyUsedRow;
                           return (
                             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                               <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>
@@ -2665,7 +2667,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
                                   style={{ background: wnDisabledRow ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabledRow ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabledRow ? "#666" : "#ffd966", borderRadius: 5, padding: "3px 7px", cursor: wnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                                 <button onClick={() => !mnDisabledRow && openActionModal("MN", i)}
                                   disabled={mnDisabledRow}
-                                  title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อน" : mnDisabledHereRow ? "หลุมนี้ถูก MN ไปแล้ว" : undefined}
+                                  title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อน" : mnDisabledHereRow ? "หลุมนี้ถูก MN ไปแล้ว" : mnAlreadyUsedRow ? "กลุ่มนี้เคยถูก MN และ off ไปแล้ว MN ได้แค่ครั้งเดียวต่อกลุ่ม" : undefined}
                                   style={{ background: mnDisabledRow ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabledRow ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabledRow ? "#666" : "#4e9af1", borderRadius: 5, padding: "3px 7px", cursor: mnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                                 <button onClick={() => openActionModal("TM", i)}
                                   style={{ background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 5, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
