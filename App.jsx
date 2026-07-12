@@ -485,6 +485,7 @@ function StatusBadge({ status }) {
       fontWeight: 700,
       letterSpacing: "0.05em",
       border: `1px solid ${c.text}33`,
+      whiteSpace: "nowrap",
     }}>{c.label}</span>
   );
 }
@@ -3501,8 +3502,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
-                  <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.name}</div>
-                  <div style={{ marginLeft: "auto" }}><StatusBadge status={status} /></div>
+                  <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{g.name}</div>
+                  <div style={{ flexShrink: 0 }}><StatusBadge status={status} /></div>
                 </div>
                 <div style={{ background: "#0d0f1a", borderRadius: 99, height: 4, marginBottom: 6, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${(hole / 18) * 100}%`, background: g.color, borderRadius: 99, transition: "width 0.5s" }} />
@@ -3728,7 +3729,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                     <div style={{ fontSize: 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
                                     {holeLogs.map((l, li) => (
                                       <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px" }}>
-                                        {l.badTime ? `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
+                                        {l.badTime ? `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                       </div>
                                     ))}
                                     {showMnPreview && (
@@ -3759,7 +3760,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                                   <div style={{ fontSize: 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
                                   {holeLogs.map((l, li) => (
                                     <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
-                                      {l.badTime ? `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `✕ Off ${l.type}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
+                                      {l.badTime ? `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                     </div>
                                   ))}
                                 </td>
