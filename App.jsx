@@ -371,12 +371,12 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
   const items = [];
 
   logs.filter(l => l.type === "WN").forEach(l => {
-    items.push({ key: `wn-${l.idx}`, type: "WN", sortHole: l.holeIdx, label: `WN H${l.holeIdx + 1}`, idx: l.idx });
+    items.push({ key: `wn-${l.idx}`, type: "WN", sortHole: l.holeIdx, label: `WN @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx });
   });
   logs.filter(l => l.type === "TM" && l.badTime).forEach(l => {
     items.push({
       key: `bt-${l.idx}`, type: "TM", sortHole: l.holeIdx,
-      label: `⚡ Bad Time ${l.target || ""}${l.name ? ` - ${l.name}` : ""} H${l.holeIdx + 1}`, idx: l.idx,
+      label: `⚡ Bad Time ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
     });
   });
 
@@ -391,18 +391,19 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
         if (cur) { cur.offHole = l.holeIdx + 1; runs.push(cur); cur = null; }
         return;
       }
-      if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, idx: l.idx, target: l.target || "" };
+      if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, idx: l.idx, target: l.target || "", name: l.name || "" };
       else { cur.lastHole = l.holeIdx + 1; if (l.target) cur.target = l.target; }
     });
     if (cur) runs.push(cur);
     return runs.map((r, i) => {
       const isLast = i === runs.length - 1;
       const targetSuffix = r.target ? ` (${r.target})` : "";
+      const bySuffix = r.name ? ` by ${r.name}` : "";
       const label = r.offHole
-        ? `${type} H${r.startHole} → off H${r.offHole}${targetSuffix}`
+        ? `${type} @H${r.startHole} → off H${r.offHole}${targetSuffix}${bySuffix}`
         : (isLast && isActiveNow)
-          ? `${type} H${r.startHole} → ongoing${targetSuffix}`
-          : `${type} H${r.startHole} → H${r.lastHole} (off)${targetSuffix}`;
+          ? `${type} @H${r.startHole} → ongoing${targetSuffix}${bySuffix}`
+          : `${type} @H${r.startHole} → H${r.lastHole} (off)${targetSuffix}${bySuffix}`;
       return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label };
     });
   };
