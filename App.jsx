@@ -2794,20 +2794,19 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
         const l = actionLogs[deleteLogConfirm];
         return (
           <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
-            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>🗑 ลบรายการนี้?</div>
+            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #000" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
               <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
-                <span style={{ fontWeight: 700, color: logColor(l.type) }}>{l.type}</span> — {l.target ? `${l.target} - ` : ""}{l.name}{l.badTime && badTimeOccurrence.has(l) ? ` (ครั้งที่ ${badTimeOccurrence.get(l)})` : ""} · Hole {l.holeIdx + 1} · {l.time}
-                <br />การลบนี้ไม่สามารถย้อนกลับได้
+                Are you sure?
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => deleteLogAt(deleteLogConfirm)}
                   style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
-                  ✓ ลบเลย
+                  ✓ Yes, delete
                 </button>
                 <button onClick={() => setDeleteLogConfirm(null)}
                   style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
-                  ยกเลิก
+                  Cancel
                 </button>
               </div>
             </div>
@@ -3839,21 +3838,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
         const gName = groups.find(g => g.id === deleteLogConfirm.groupId)?.name ?? "";
         return (
           <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
-            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>🗑 ลบรายการนี้?</div>
+            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #000" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
               <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
-                {gName && <>{gName} · </>}
-                <span style={{ fontWeight: 700, color: logColor(l.type) }}>{l.off ? `Off ${l.type}` : l.type}</span> — {l.target ? `${l.target} - ` : ""}{l.name} · Hole {l.holeIdx + 1} · {l.time}
-                <br />การลบนี้ไม่สามารถย้อนกลับได้
+                {gName && <>{gName} — </>}Are you sure?
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => deleteLogAt(deleteLogConfirm.groupId, deleteLogConfirm.idx)}
                   style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
-                  ✓ ลบเลย
+                  ✓ Yes, delete
                 </button>
                 <button onClick={() => setDeleteLogConfirm(null)}
                   style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
-                  ยกเลิก
+                  Cancel
                 </button>
               </div>
             </div>
