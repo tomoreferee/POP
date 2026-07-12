@@ -3861,25 +3861,21 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
 
       {clearStatusConfirm && (() => {
         const gName = groups.find(g => g.id === clearStatusConfirm.groupId)?.name ?? "";
-        const gd = groupData[clearStatusConfirm.groupId] || {};
-        const count = (gd.actionLogs ?? []).filter(l => l.type === clearStatusConfirm.type).length;
         return (
           <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
             <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>🧹 ล้างสถานะ {clearStatusConfirm.type}?</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>Clear {clearStatusConfirm.type} status?</div>
               <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
-                {gName && <>{gName} · </>}จะลบรายการ {clearStatusConfirm.type} ทั้งหมด ({count} รายการ) ทุกหลุม และปิดสถานะ {clearStatusConfirm.type} ของกลุ่มนี้
-                <br />ใช้ตอนที่สถานะ {clearStatusConfirm.type} ยุ่งเหยิงเกินจะแก้ทีละรายการ
-                <br />การลบนี้ไม่สามารถย้อนกลับได้
+                {gName && <>{gName} — </>}Are you sure?
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => clearStatusFor(clearStatusConfirm.groupId, clearStatusConfirm.type)}
                   style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
-                  ✓ ล้างเลย
+                  ✓ Yes, clear
                 </button>
                 <button onClick={() => setClearStatusConfirm(null)}
                   style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
-                  ยกเลิก
+                  Cancel
                 </button>
               </div>
             </div>
