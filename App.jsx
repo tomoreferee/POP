@@ -2073,6 +2073,10 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // who's already in the TM target list looks like nothing happened (the button stayed the
   // same pink "already selected" color).
   const badTimePlayers = new Set(actionLogs.filter(l => l.type === "TM" && l.badTime).map(l => l.target));
+  const badTimeCounts = actionLogs.filter(l => l.type === "TM" && l.badTime).reduce((m, l) => {
+    m[l.target] = (m[l.target] || 0) + 1;
+    return m;
+  }, {});
 
   // "ครั้งที่ N" — which Bad Time occurrence this is for a given player, e.g. their 1st, 2nd,
   // 3rd time. Recomputed fresh from the current actionLogs on every render (in chronological/
@@ -2484,19 +2488,22 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   const label = `P${n}`;
                   const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label));
                   const isBadTimed = badTimePlayers.has(label);
+                  const count = badTimeCounts[label] || 0;
+                  const usedUpInMN = count >= 1; // MN's Bad Time is one-shot per player — further presses go through TM
                   return (
                     <button
                       key={n}
-                      onClick={() => triggerBadTimeFor(n)}
-                      title={isBadTimed ? `${label} already flagged Bad Time — tap to log it again` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
+                      onClick={() => !usedUpInMN && triggerBadTimeFor(n)}
+                      disabled={usedUpInMN}
+                      title={usedUpInMN ? `${label} ถูก Bad Time จาก MN ไปแล้ว กด Bad Time ต่อได้ที่ TM แทน` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
                       style={{
-                        background: isBadTimed ? "#ff3d3d" : isFlagged ? "#ff6ec7" : "#2a0020",
-                        border: `1px solid ${isBadTimed ? "#ff3d3d" : isFlagged ? "#ff6ec7" : "#ff6ec788"}`,
-                        color: (isBadTimed || isFlagged) ? "#1a0014" : "#ff6ec7",
-                        borderRadius: 6, padding: "4px 10px", cursor: "pointer",
+                        background: usedUpInMN ? "#1a1a1a" : isFlagged ? "#ff6ec7" : "#2a0020",
+                        border: `1px solid ${usedUpInMN ? "#3a3a3a" : isFlagged ? "#ff6ec7" : "#ff6ec788"}`,
+                        color: usedUpInMN ? "#666" : isFlagged ? "#1a0014" : "#ff6ec7",
+                        borderRadius: 6, padding: "4px 10px", cursor: usedUpInMN ? "not-allowed" : "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
-                    >{isBadTimed ? "⚡ " : ""}{label}</button>
+                    >{isBadTimed ? "⚡ " : ""}{label}{count >= 2 ? ` x${count}` : ""}</button>
                   );
                 })}
               </div>
@@ -2532,6 +2539,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   const label = `P${n}`;
                   const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label);
                   const isBadTimed = badTimePlayers.has(label);
+                  const count = badTimeCounts[label] || 0;
                   return (
                     <button
                       key={n}
@@ -2544,7 +2552,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                         borderRadius: 6, padding: "4px 10px", cursor: "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
-                    >{isBadTimed ? "⚡ " : ""}{label}</button>
+                    >{isBadTimed ? "⚡ " : ""}{label}{count >= 2 ? ` x${count}` : ""}</button>
                   );
                 })}
               </div>
