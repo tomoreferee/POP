@@ -400,10 +400,10 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
       const targetSuffix = r.target ? ` (${r.target})` : "";
       const bySuffix = r.name ? ` by ${r.name}` : "";
       const label = r.offHole
-        ? `${type} @H${r.startHole} → off H${r.offHole}${targetSuffix}${bySuffix}`
+        ? `${type} @H${r.startHole} → Off @H${r.offHole}${targetSuffix}${bySuffix}`
         : (isLast && isActiveNow)
           ? `${type} @H${r.startHole} → In progress${targetSuffix}${bySuffix}`
-          : `${type} @H${r.startHole} → H${r.lastHole} (off)${targetSuffix}${bySuffix}`;
+          : `${type} @H${r.startHole} → Off @H${r.lastHole + 1}${targetSuffix}${bySuffix}`;
       // Only offer a delete action when there's a specific "off" event to undo —
       // deleting it re-opens the run (fixes an accidental off-at-wrong-hole tap).
       return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label, idx: r.offIdx ?? undefined, deleteTitle: r.offHole ? "ลบการปิดสถานะนี้ (กดปิดผิดหลุม)" : undefined };
@@ -1093,6 +1093,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
   const [pars, setPars] = useState(() => loadSetup()?.pars ?? [...DEFAULT_PARS]);
   const [parTimes, setParTimes] = useState(() => loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
+  const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
   const [genMode, setGenMode] = useState("h1only"); // "h1only" | "h10only" | "both" | "shotgun"
@@ -1110,8 +1111,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
   // ─── Save to memoryStorage every time the data changes ───────────────────────
   useEffect(() => {
-    saveSetup({ groups1, groups10, groupsShotgun, pars, parTimes });
-  }, [groups1, groups10, groupsShotgun, pars, parTimes]);
+    saveSetup({ groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup });
+  }, [groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup]);
 
   const addGroup1 = () => {
     const n = nextNum.current++;
@@ -1343,6 +1344,29 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
         </div>
 
+        {/* ─── Players per group ─────────────────────────────────────────────── */}
+        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 2, fontWeight: 700, marginBottom: 2 }}>👥 PLAYERS PER GROUP</div>
+            <div style={{ fontSize: 11, color: "#8890b8" }}>กำหนดจำนวนผู้เล่นต่อกลุ่ม ใช้กำหนดปุ่ม P1–P{playersPerGroup} ในหน้า TM / Bad Time</div>
+          </div>
+          {isAdmin ? (
+            <div style={{ display: "flex", gap: 6 }}>
+              {[2, 3, 4].map(n => (
+                <button key={n} onClick={() => setPlayersPerGroup(n)}
+                  style={{
+                    width: 40, height: 40, borderRadius: 8, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 18,
+                    background: playersPerGroup === n ? "#1a4a8a" : "#0d0f1a",
+                    border: `1px solid ${playersPerGroup === n ? "#4e9af1" : "#2a2d4a"}`,
+                    color: playersPerGroup === n ? "#fff" : "#8890b8",
+                  }}>{n}</button>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1, flexShrink: 0 }}>🔒 {playersPerGroup} players</span>
+          )}
+        </div>
+
         {/* ─── Auto-fill Time Panel ──────────────────────────────────────────── */}
         {isAdmin && (
           <QuickGeneratePanel
@@ -1565,7 +1589,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
           onClick={() => {
             if (!isAdmin && allGroups.length === 0) return;
             if (hasLiveSession && !window.confirm("มี session ทำงานอยู่แล้ว\n\nการกด Start จะอัปเดตรายการกลุ่ม แต่ข้อมูลเวลาที่บันทึกไว้ของกลุ่มเดิมจะไม่ถูกลบ\n\nต้องการดำเนินการต่อหรือไม่?")) return;
-            onStart(allGroups, pars, parTimes);
+            onStart(allGroups, pars, parTimes, playersPerGroup);
           }}
           disabled={!isAdmin && allGroups.length === 0}
           style={{
@@ -1656,10 +1680,12 @@ function TimeInput({ value, onChange, label, color = "#4e9af1" }) {
 }
 
 // ─── Group Monitor ────────────────────────────────────────────────────────────
-function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, currentUser,
+function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpdate, onBack, currentUser,
   isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel, compact }) {
   const initHoleData = () =>
     group.holeData ?? Array(18).fill(null).map(() => ({ startTime: null, endTime: null }));
+  const numPlayers = playersPerGroup || 3; // how many P1..Pn quick-select buttons to offer for TM / Bad Time
+  const playerNums = Array.from({ length: numPlayers }, (_, i) => i + 1);
 
   const holeOrder = getHoleOrder(group.startHole || 1);
   const [currentSlot, setCurrentSlot] = useState(group.currentHole ?? 0);
@@ -1797,8 +1823,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
       diff: diffAtLog,
       ...(target ? { target } : {}),
     };
-    const next = [...actionLogs, log];
-    setActionLogs(next);
+    let next = [...actionLogs, log];
     let newMnActive = mnActive;
     let newMnName = mnName;
     let newTmActive = tmActive;
@@ -1817,14 +1842,19 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
       setTmActive(true);
       setTmName(log.name);
       setTmTarget(target);
-      // Switching from MN to TM → immediately turns off MN status (TM replaces MN)
-      if (mnActive) {
+      // TM on "All" replaces MN (turns it off, with a proper off-marker so the
+      // summary shows "MN @Hx → Off @Hy"). TM on a specific player runs alongside
+      // MN instead — the group can be both under general monitoring and have one
+      // player specifically timed at the same time.
+      if (mnActive && target === "All") {
         newMnActive = false;
         newMnName = "";
         setMnActive(false);
         setMnName("");
+        next = [...next, { holeIdx, type: "MN", name: log.name, time: log.time, off: true }];
       }
     }
+    setActionLogs(next);
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: next,
       mnActive: newMnActive, mnName: newMnName,
@@ -2450,7 +2480,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             {currentSlot < 18 && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: "#8899cc", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
-                {[1, 2, 3, 4].map(n => {
+                {playerNums.map(n => {
                   const label = `P${n}`;
                   const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label));
                   const isBadTimed = badTimePlayers.has(label);
@@ -2498,7 +2528,7 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
             {currentSlot < 18 && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: "#8899cc", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
-                {[1, 2, 3, 4].map(n => {
+                {playerNums.map(n => {
                   const label = `P${n}`;
                   const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label);
                   const isBadTimed = badTimePlayers.has(label);
@@ -2740,7 +2770,16 @@ function GroupMonitor({ group, pars, parTimes, schedule, onUpdate, onBack, curre
               <div style={{ marginBottom: 18 }}>
                 <div style={{ fontSize: 13, color: "#aaa", marginBottom: 8 }}>Players being timed (TM)</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {[1, 2, 3, 4].map(n => (
+                  <button
+                    onClick={() => toggleTarget("ALL")}
+                    style={{
+                      background: actionTargets.includes("ALL") ? "#ff6ec7" : "#0d0f1a",
+                      color: actionTargets.includes("ALL") ? "#1a0014" : "#ff6ec7",
+                      border: "1px solid #ff6ec788", borderRadius: 8, padding: "6px 12px",
+                      cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    }}
+                  >All</button>
+                  {playerNums.map(n => (
                     <button
                       key={n}
                       onClick={() => toggleTarget(n)}
@@ -2826,7 +2865,7 @@ function btnStyle(bg, color) {
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
-function SummaryScreen({ groups, groupData, pars, parTimes, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout }) {
+function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout }) {
   const sides = getGroupSides(groups);
   const totalAllowed = (parTimes || []).reduce((a, b) => a + b, 0);
   const [expandedTMGroups, setExpandedTMGroups] = useState(() => new Set());
@@ -2906,7 +2945,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, suspensions, isSuspe
     const allSet = new Set();
     logs.forEach(l => {
       if (l.target === "All") {
-        [1, 2, 3, 4].forEach(n => allSet.add(`P${n}`));
+        Array.from({ length: playersPerGroup || 3 }, (_, i) => i + 1).forEach(n => allSet.add(`P${n}`));
       } else {
         (l.target || "").split(",").map(s => s.trim()).filter(Boolean).forEach(p => allSet.add(p));
       }
@@ -2926,7 +2965,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, suspensions, isSuspe
     if (logs.length === 0) return null;
     const playerMap = {};
     logs.forEach(l => {
-      const labels = l.target === "All" ? [1, 2, 3, 4].map(n => `P${n}`) : (l.target || "").split(",").map(s => s.trim()).filter(Boolean);
+      const labels = l.target === "All" ? Array.from({ length: playersPerGroup || 3 }, (_, i) => i + 1).map(n => `P${n}`) : (l.target || "").split(",").map(s => s.trim()).filter(Boolean);
       labels.forEach(label => {
         if (!playerMap[label]) playerMap[label] = { holes: [], badTimeCount: 0, names: new Set(), badTimeHoles: [] };
         playerMap[label].holes.push(l.holeIdx);
@@ -3180,7 +3219,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, suspensions, isSuspe
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -3906,6 +3945,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, onSelectGroup
                 }}
                 pars={pars}
                 parTimes={parTimes}
+                playersPerGroup={playersPerGroup}
                 schedule={schedules[quickRecord.groupId]}
                 onUpdate={(update) => onUpdateGroupData(quickRecord.groupId, update)}
                 onBack={() => setQuickRecord(null)}
@@ -4427,6 +4467,7 @@ export default function App() {
   const [groups, setGroups] = useState([]);
   const [pars, setPars] = useState([]);
   const [parTimes, setParTimes] = useState([]);
+  const [playersPerGroup, setPlayersPerGroup] = useState(3);
   const [baseSchedules, setBaseSchedules] = useState({}); // original schedules
   const [schedules, setSchedules] = useState({});         // adjusted schedules
   const [groupData, setGroupData] = useState({});
@@ -4591,7 +4632,7 @@ export default function App() {
     } catch {}
   };
 
-  const handleStart = (grps, ps, pt) => {
+  const handleStart = (grps, ps, pt, pxg) => {
     // Was a session already running before this "Start tracking" press?
     // If so, this is just the admin/user coming back through the Pace
     // Monitor (setup) page, not a brand-new round — so we must NOT wipe
@@ -4617,6 +4658,7 @@ export default function App() {
     setGroups(grps);
     setPars(ps);
     setParTimes(pt);
+    setPlayersPerGroup(pxg ?? 3);
     setBaseSchedules(sch);
     setSchedules(sch);
     setGroupData(data);
@@ -4707,6 +4749,7 @@ export default function App() {
       pars={pars}
       parTimes={parTimes}
       schedules={schedules}
+      playersPerGroup={playersPerGroup}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
       currentUser={currentUser}
@@ -4728,6 +4771,7 @@ export default function App() {
       groupData={groupData}
       pars={pars}
       parTimes={parTimes}
+      playersPerGroup={playersPerGroup}
       suspensions={suspensions}
       isSuspended={isSuspended}
       pendingStopTime={pendingStopTime}
@@ -4759,6 +4803,7 @@ export default function App() {
         }}
         pars={pars}
         parTimes={parTimes}
+        playersPerGroup={playersPerGroup}
         schedule={schedules[activeGroup.id]}
         onUpdate={(update) => handleUpdateGroup(activeGroup.id, update)}
         onBack={() => setScreen("dashboard")}
