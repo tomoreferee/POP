@@ -3732,7 +3732,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const hd = data?.holeData?.[hi];
                               const startTime = hd?.startTime;
                               const endTime = hd?.endTime;
-                              const holeLogs = (data?.actionLogs ?? []).filter(l => l.holeIdx === hi);
+                              const holeLogsRaw = (data?.actionLogs ?? []).filter(l => l.holeIdx === hi);
+                              const holeLogs = holeLogsRaw.filter(l => !l.off || !holeLogsRaw.some(o => o !== l && o.type === l.type && !o.off));
                               const handleHoleClick = () => setQuickRecord({ groupId: g.id, targetSlot: slot });
                               const deadline = (sch?.[hi] ?? 0) + (parTimes?.[hi] ?? 14);
                               if (!endTime || !startTime) {
