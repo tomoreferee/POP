@@ -1842,16 +1842,16 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       setTmActive(true);
       setTmName(log.name);
       setTmTarget(target);
-      // TM on "All" replaces MN (turns it off, with a proper off-marker so the
-      // summary shows "MN @Hx → Off @Hy"). TM on a specific player runs alongside
-      // MN instead — the group can be both under general monitoring and have one
-      // player specifically timed at the same time.
+      // TM on "All" replaces MN (turns it off at the previous hole, since TM(All)
+      // starting at hole X means the group was still under plain MN through hole X-1).
+      // TM on a specific player runs alongside MN instead — the group can be both
+      // under general monitoring and have one player specifically timed at once.
       if (mnActive && target === "All") {
         newMnActive = false;
         newMnName = "";
         setMnActive(false);
         setMnName("");
-        next = [...next, { holeIdx, type: "MN", name: log.name, time: log.time, off: true }];
+        next = [...next, { holeIdx: Math.max(0, holeIdx - 1), type: "MN", name: log.name, time: log.time, off: true }];
       }
     }
     setActionLogs(next);
