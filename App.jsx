@@ -388,11 +388,11 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
     let cur = null;
     entries.forEach(l => {
       if (l.off) {
-        if (cur) { cur.offHole = l.holeIdx + 1; cur.offIdx = l.idx; runs.push(cur); cur = null; }
+        if (cur) { cur.offHole = l.holeIdx + 1; cur.offIdx = l.idx; if (l.name) cur.name = l.name; runs.push(cur); cur = null; }
         return;
       }
       if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, offIdx: null, idx: l.idx, target: l.target || "", name: l.name || "" };
-      else { cur.lastHole = l.holeIdx + 1; if (l.target) cur.target = l.target; }
+      else { cur.lastHole = l.holeIdx + 1; if (l.target) cur.target = l.target; if (l.name) cur.name = l.name; }
     });
     if (cur) runs.push(cur);
     return runs.map((r, i) => {
@@ -1972,7 +1972,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       if (!alreadyMN) {
         const autoDeadline = (adjustedSchedule[holeIdx] ?? 0) + (parTimes?.[holeIdx] ?? 14);
         const autoDiff = nowInMin() - autoDeadline + 1;
-        nxt = [...nxt, { holeIdx, type: "MN", name: mnName, time: minToTime(nowInMin()), diff: autoDiff, auto: true }];
+        nxt = [...nxt, { holeIdx, type: "MN", name: currentUser || mnName, time: minToTime(nowInMin()), diff: autoDiff, auto: true }];
       }
     }
     if (tmActive) {
@@ -1980,7 +1980,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       if (!alreadyTM) {
         const autoDeadline = (adjustedSchedule[holeIdx] ?? 0) + (parTimes?.[holeIdx] ?? 14);
         const autoDiff = nowInMin() - autoDeadline + 1;
-        nxt = [...nxt, { holeIdx, type: "TM", name: tmName, time: minToTime(nowInMin()), diff: autoDiff, target: tmTarget, auto: true }];
+        nxt = [...nxt, { holeIdx, type: "TM", name: currentUser || tmName, time: minToTime(nowInMin()), diff: autoDiff, target: tmTarget, auto: true }];
       }
     }
     return nxt;
