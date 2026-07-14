@@ -1237,6 +1237,28 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
       </div>
 
       <div style={{ padding: "24px 24px" }}>
+        {/* ─── Players per group ─────────────────────────────────────────────── */}
+        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 2, fontWeight: 700 }}>👥 PLAYERS PER GROUP</div>
+          </div>
+          {isAdmin ? (
+            <div style={{ display: "flex", gap: 6 }}>
+              {[2, 3, 4].map(n => (
+                <button key={n} onClick={() => setPlayersPerGroup(n)}
+                  style={{
+                    width: 40, height: 40, borderRadius: 8, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 18,
+                    background: playersPerGroup === n ? "#1a4a8a" : "#0d0f1a",
+                    border: `1px solid ${playersPerGroup === n ? "#4e9af1" : "#2a2d4a"}`,
+                    color: playersPerGroup === n ? "#fff" : "#8890b8",
+                  }}>{n}</button>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1, flexShrink: 0 }}>🔒 {playersPerGroup} players</span>
+          )}
+        </div>
+
         {/* Par Setup */}
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -1342,29 +1364,6 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
             </div>
           </div>
 
-        </div>
-
-        {/* ─── Players per group ─────────────────────────────────────────────── */}
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 2, fontWeight: 700, marginBottom: 2 }}>👥 PLAYERS PER GROUP</div>
-            <div style={{ fontSize: 11, color: "#8890b8" }}>กำหนดจำนวนผู้เล่นต่อกลุ่ม ใช้กำหนดปุ่ม P1–P{playersPerGroup} ในหน้า TM / Bad Time</div>
-          </div>
-          {isAdmin ? (
-            <div style={{ display: "flex", gap: 6 }}>
-              {[2, 3, 4].map(n => (
-                <button key={n} onClick={() => setPlayersPerGroup(n)}
-                  style={{
-                    width: 40, height: 40, borderRadius: 8, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 18,
-                    background: playersPerGroup === n ? "#1a4a8a" : "#0d0f1a",
-                    border: `1px solid ${playersPerGroup === n ? "#4e9af1" : "#2a2d4a"}`,
-                    color: playersPerGroup === n ? "#fff" : "#8890b8",
-                  }}>{n}</button>
-              ))}
-            </div>
-          ) : (
-            <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1, flexShrink: 0 }}>🔒 {playersPerGroup} players</span>
-          )}
         </div>
 
         {/* ─── Auto-fill Time Panel ──────────────────────────────────────────── */}
