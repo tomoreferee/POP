@@ -3682,7 +3682,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         const lastTMSlot = allLogs.reduce((mx, l) => (l.type === "TM" ? Math.max(mx, slotOfHole[l.holeIdx] ?? -1) : mx), -1);
                         return (
                           <tr key={g.id}>
-                            <td onClick={() => onSelectGroup(g)}
+                            <td onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })}
                               style={{ ...tdStyle, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: "sticky", left: 0, zIndex: 1, background: "#141626", minWidth: 80 }}
                               onMouseEnter={e => e.currentTarget.style.background = `${g.color}22`}
                               onMouseLeave={e => e.currentTarget.style.background = "#141626"}
