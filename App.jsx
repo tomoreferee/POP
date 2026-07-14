@@ -1087,13 +1087,203 @@ function saveSetup(data) {
   try { memoryStorage.setItem(STORAGE_KEY_SETUP, JSON.stringify(data)); } catch {}
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard }) {
+// ─── Tournament / Round picker ──────────────────────────────────────────────
+// Gate before Setup: pick or create a Tournament, then pick or create a Round
+// (Q, 1, 2, 3, 4) within it. Only one round is ever "live" at a time — picking
+// a different round than the one currently live archives the current round's
+// data first, then starts the new one fresh.
+const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
+
+function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups }) {
+  const [tournaments, setTournaments] = useState([]);
+  const [selectedTournamentId, setSelectedTournamentId] = useState(liveTournamentId || null);
+  const [rounds, setRounds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newVenue, setNewVenue] = useState("");
+  const [newFormat, setNewFormat] = useState("stroke");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const t = await fetchTournaments();
+      setTournaments(t);
+      if (!selectedTournamentId && t.length) setSelectedTournamentId(t[0].id);
+      if (!t.length) setShowCreate(true);
+      setLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedTournamentId) { setRounds([]); return; }
+    (async () => setRounds(await fetchRounds(selectedTournamentId)))();
+  }, [selectedTournamentId]);
+
+  const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
+
+  const handleCreateTournament = async () => {
+    if (!newName.trim() || busy) return;
+    setBusy(true);
+    const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat });
+    setBusy(false);
+    if (t) {
+      setTournaments(prev => [t, ...prev]);
+      setSelectedTournamentId(t.id);
+      setShowCreate(false);
+      setNewName(""); setNewVenue("");
+    }
+  };
+
+  const handlePickRound = async (label) => {
+    if (busy) return;
+    const existing = rounds.find(r => r.label === label);
+
+    // Already the live round — just continue straight in, no data changes.
+    if (existing && existing.id === liveRoundId) {
+      onRoundSelected(selectedTournament, existing, false);
+      return;
+    }
+    if (existing && existing.status === "finished") {
+      window.alert(`รอบ ${label} ปิดจบไปแล้ว ข้อมูลถูกเก็บสำรองไว้ในระบบแล้ว (ดูย้อนหลังในแอปยังไม่รองรับตอนนี้)`);
+      return;
+    }
+    if (liveRoundId && hasLiveGroups) {
+      const ok = window.confirm(`รอบปัจจุบันยังมีข้อมูลอยู่\n\nการเริ่มรอบ "${label}" จะเก็บสำรองข้อมูลรอบปัจจุบันแล้วเคลียร์หน้าจอเพื่อเริ่มรอบใหม่\n\nดำเนินการต่อหรือไม่?`);
+      if (!ok) return;
+    }
+    setBusy(true);
+    let round = existing;
+    if (!round) {
+      round = await createRound({ tournamentId: selectedTournament.id, label, isQualifying: label === "Q" });
+    }
+    setBusy(false);
+    if (round) onRoundSelected(selectedTournament, round, true);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ background: "#0d0f1a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#8890b8", fontFamily: "'IBM Plex Mono', monospace" }}>
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: "#0d0f1a", minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
+      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #2a2d4a" }}>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1" }}>🏆 TOURNAMENT</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {currentUser && <span style={{ fontSize: 12, color: "#8899cc" }}>👤 {currentUser}</span>}
+          <LogoutButton onLogout={onLogout} />
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px" }}>
+        {/* Tournament picker */}
+        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 14 }}>Select tournament</div>
+
+          {tournaments.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: showCreate ? 16 : 0 }}>
+              {tournaments.map(t => (
+                <button key={t.id} onClick={() => { setSelectedTournamentId(t.id); setShowCreate(false); }}
+                  style={{
+                    textAlign: "left", padding: "12px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+                    background: selectedTournamentId === t.id && !showCreate ? "#1a4a8a" : "#0d0f1a",
+                    border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#4e9af1" : "#2a2d4a"}`,
+                  }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</div>
+                  {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {isAdmin && (
+            showCreate ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: tournaments.length ? 16 : 0, borderTop: tournaments.length ? "1px solid #2a2d4a" : "none" }}>
+                <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Tournament name"
+                  style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
+                <input value={newVenue} onChange={e => setNewVenue(e.target.value)} placeholder="Host venue"
+                  style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setNewFormat("stroke")}
+                    style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                      background: newFormat === "stroke" ? "#1a4a8a" : "#0d0f1a", border: `1px solid ${newFormat === "stroke" ? "#4e9af1" : "#2a2d4a"}`, color: newFormat === "stroke" ? "#fff" : "#8890b8" }}>
+                    Stroke Play
+                  </button>
+                  <button disabled title="Match Play — coming soon"
+                    style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#444" }}>
+                    Match Play 🔒
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={handleCreateTournament} disabled={!newName.trim() || busy}
+                    style={{ flex: 1, padding: "10px 0", borderRadius: 8, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a2a", border: "1px solid #6effa066", color: "#6effa0" }}>
+                    ✓ Create tournament
+                  </button>
+                  {tournaments.length > 0 && (
+                    <button onClick={() => setShowCreate(false)}
+                      style={{ padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7" }}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setShowCreate(true)}
+                style={{ marginTop: tournaments.length ? 12 : 0, width: "100%", padding: "10px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1" }}>
+                + New tournament
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Round picker */}
+        {selectedTournament && !showCreate && (
+          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 4 }}>Select round</div>
+            <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>{selectedTournament.name}{selectedTournament.host_venue ? ` · ${selectedTournament.host_venue}` : ""}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {ROUND_LABELS.map(label => {
+                const r = rounds.find(rr => rr.label === label);
+                const isLive = r && r.id === liveRoundId;
+                const isFinished = r?.status === "finished";
+                return (
+                  <button key={label} onClick={() => handlePickRound(label)} disabled={busy}
+                    style={{
+                      padding: "18px 0", borderRadius: 10, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
+                      background: isLive ? "#1a4a2a" : isFinished ? "#1a1a1a" : "#0d0f1a",
+                      border: `1px solid ${isLive ? "#6effa0" : isFinished ? "#3a3a3a" : "#2a2d4a"}`,
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                    }}>
+                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 28, letterSpacing: 2, color: isLive ? "#6effa0" : isFinished ? "#666" : "#eee" }}>
+                      {label === "Q" ? "Q" : `R${label}`}
+                    </div>
+                    <div style={{ fontSize: 10, letterSpacing: 1, color: isLive ? "#6effa0" : isFinished ? "#666" : "#8890b8" }}>
+                      {isLive ? "● LIVE" : isFinished ? "FINISHED" : r ? "SET UP" : "NOT STARTED"}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, onSwitchRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
   const [pars, setPars] = useState(() => loadSetup()?.pars ?? [...DEFAULT_PARS]);
   const [parTimes, setParTimes] = useState(() => loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
+
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
   const [genMode, setGenMode] = useState("h1only"); // "h1only" | "h10only" | "both" | "shotgun"
@@ -1237,6 +1427,29 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
       </div>
 
       <div style={{ padding: "24px 24px" }}>
+        {/* ─── Tournament / Round context (chosen on the picker screen before Setup) ── */}
+        {(tournamentName || roundLabel) && (
+          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: "14px 20px", marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
+              {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              {roundLabel && (
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#6effa0", background: "#1a4a2a66", border: "1px solid #6effa044", borderRadius: 6, padding: "5px 12px" }}>
+                  {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}
+                </span>
+              )}
+              {isAdmin && onSwitchRound && (
+                <button onClick={onSwitchRound}
+                  style={{ fontSize: 12, color: "#8890b8", background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+                  Switch
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ─── Players per group ─────────────────────────────────────────────── */}
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
           <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>👥 PLAYERS PER GROUP</div>
@@ -4414,9 +4627,16 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 // ─── Supabase-backed persistence (shared realtime state for all judges) ────────
-// `app_state`  → 1 row ("main") holding groups/pars/schedules/suspensions
-// `group_data` → 1 row per group, holding that group's live scoring data
-// `app_users`  → login accounts, shared across every judge/device
+// `app_state`         → 1 row ("main") holding groups/pars/schedules/suspensions
+//                        for the CURRENT live round (tournament_id/round_id point
+//                        at which tournament + round it belongs to)
+// `group_data`        → 1 row per group, holding that group's live scoring data
+//                        for the CURRENT live round
+// `tournaments`       → tournament metadata (name/venue/format)
+// `tournament_rounds` → one row per round (Q,1,2,3,4) — when a round is finished/
+//                        replaced, a snapshot of app_state + group_data is archived
+//                        onto its row before the live tables are cleared for the next round
+// `app_users`         → login accounts, shared across every judge/device
 async function fetchAppState() {
   const { data, error } = await supabase.from("app_state").select("*").eq("id", "main").maybeSingle();
   if (error || !data) return null;
@@ -4429,9 +4649,11 @@ async function fetchAppState() {
     suspensions: data.suspensions ?? [],
     isSuspended: data.is_suspended ?? false,
     pendingStopTime: data.pending_stop_time ?? "",
+    tournamentId: data.tournament_id ?? null,
+    roundId: data.round_id ?? null,
   };
 }
-async function saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime }) {
+async function saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, tournamentId, roundId }) {
   try {
     await supabase.from("app_state").upsert({
       id: "main",
@@ -4442,6 +4664,8 @@ async function saveAppState({ groups, pars, parTimes, baseSchedules, schedules, 
       suspensions,
       is_suspended: isSuspended,
       pending_stop_time: pendingStopTime,
+      tournament_id: tournamentId ?? null,
+      round_id: roundId ?? null,
       updated_at: new Date().toISOString(),
     });
   } catch {}
@@ -4467,6 +4691,69 @@ async function saveGroupData(groupId, data, updatedAt) {
       updated_at: updatedAt || new Date().toISOString(),
     });
   } catch {}
+}
+
+// ─── Tournament / Round helpers ─────────────────────────────────────────────
+async function fetchTournaments() {
+  const { data, error } = await supabase.from("tournaments").select("*").order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return data;
+}
+async function fetchTournamentById(id) {
+  if (!id) return null;
+  const { data, error } = await supabase.from("tournaments").select("*").eq("id", id).maybeSingle();
+  if (error) return null;
+  return data;
+}
+async function fetchRoundById(id) {
+  if (!id) return null;
+  const { data, error } = await supabase.from("tournament_rounds").select("*").eq("id", id).maybeSingle();
+  if (error) return null;
+  return data;
+}
+async function createTournament({ name, hostVenue, format }) {
+  try {
+    const { data, error } = await supabase.from("tournaments")
+      .insert({ name, host_venue: hostVenue, format: format || "stroke" })
+      .select().maybeSingle();
+    if (error) return null;
+    return data;
+  } catch { return null; }
+}
+async function updateTournament(id, { name, hostVenue, format }) {
+  try {
+    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke" }).eq("id", id);
+  } catch {}
+}
+async function fetchRounds(tournamentId) {
+  const { data, error } = await supabase.from("tournament_rounds").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return data;
+}
+async function createRound({ tournamentId, label, isQualifying }) {
+  try {
+    const { data, error } = await supabase.from("tournament_rounds")
+      .insert({ tournament_id: tournamentId, label, is_qualifying: !!isQualifying, status: "live" })
+      .select().maybeSingle();
+    if (error) return null;
+    return data;
+  } catch { return null; }
+}
+// Snapshot the current live app_state + group_data onto the given round's row (so the
+// record isn't lost), mark it finished, then wipe the live tables so the next round
+// starts clean. This app only ever works with ONE live round at a time by design.
+async function archiveAndFinishRound(roundId, appStateSnapshot, groupDataSnapshot) {
+  try {
+    await supabase.from("tournament_rounds").update({
+      status: "finished",
+      archived_app_state: appStateSnapshot,
+      archived_group_data: groupDataSnapshot,
+      finished_at: new Date().toISOString(),
+    }).eq("id", roundId);
+  } catch {}
+}
+async function markRoundStatus(roundId, status) {
+  try { await supabase.from("tournament_rounds").update({ status }).eq("id", roundId); } catch {}
 }
 async function fetchUsers() {
   const { data, error } = await supabase.from("app_users").select("*").order("username");
@@ -4498,6 +4785,8 @@ export default function App() {
   const [pars, setPars] = useState([]);
   const [parTimes, setParTimes] = useState([]);
   const [playersPerGroup, setPlayersPerGroup] = useState(3);
+  const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
+  const [currentRound, setCurrentRound] = useState(null);           // { id, tournament_id, label, status, is_qualifying }
   const [baseSchedules, setBaseSchedules] = useState({}); // original schedules
   const [schedules, setSchedules] = useState({});         // adjusted schedules
   const [groupData, setGroupData] = useState({});
@@ -4541,6 +4830,13 @@ export default function App() {
         pushUsers(DEFAULT_USERS);
       }
 
+      // Restore which tournament/round the live app_state belongs to, if any
+      let tournament = null, round = null;
+      if (state?.tournamentId) tournament = await fetchTournamentById(state.tournamentId);
+      if (state?.roundId) round = await fetchRoundById(state.roundId);
+      setCurrentTournament(tournament);
+      setCurrentRound(round);
+
       // ─── Restore login session (survives refresh / pull-to-refresh) ─────────
       try {
         const savedUser = localStorage.getItem("pop_app_user");
@@ -4548,7 +4844,11 @@ export default function App() {
         if (savedUser) {
           setCurrentUser(savedUser);
           setIsAdmin(savedIsAdmin);
-          setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
+          if (tournament && round) {
+            setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
+          } else {
+            setScreen("tournament");
+          }
         }
       } catch {}
 
@@ -4625,7 +4925,7 @@ export default function App() {
   const handleSuspendStop = (stopTimeStr) => {
     setPendingStopTime(stopTimeStr);
     setIsSuspended(true);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr, tournamentId: currentTournament?.id, roundId: currentRound?.id });
   };
 
   const handleSuspendResume = (resumeTimeStr) => {
@@ -4636,14 +4936,19 @@ export default function App() {
     setSuspensions(nextSuspensions);
     setIsSuspended(false);
     setPendingStopTime("");
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "" });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", tournamentId: currentTournament?.id, roundId: currentRound?.id });
   };
 
   const handleLogin = (username, admin) => {
     setCurrentUser(username);
     setIsAdmin(admin === true);
-    // If a session is currently running (already loaded from Supabase) → go straight to the dashboard
-    setScreen(groups.length ? "dashboard" : "setup");
+    // If a session is currently running (already loaded from Supabase) → go straight to the dashboard.
+    // Otherwise, if no tournament/round has been picked yet, start there first.
+    if (currentTournament && currentRound) {
+      setScreen(groups.length ? "dashboard" : "setup");
+    } else {
+      setScreen("tournament");
+    }
     try {
       localStorage.setItem("pop_app_user", username);
       localStorage.setItem("pop_app_is_admin", admin === true ? "true" : "false");
@@ -4705,7 +5010,7 @@ export default function App() {
       setPendingStopTime("");
     }
 
-    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime });
+    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, tournamentId: currentTournament?.id, roundId: currentRound?.id });
     const seedWrittenAt = new Date().toISOString();
     grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(g.id, data[g.id], seedWrittenAt); });
   };
@@ -4749,6 +5054,46 @@ export default function App() {
 
   if (screen === "login") return <LoginScreen onLogin={handleLogin} users={users} hasSession={groups.length > 0} />;
 
+  if (screen === "tournament") return (
+    <TournamentRoundScreen
+      currentUser={currentUser}
+      isAdmin={isAdmin}
+      onLogout={handleLogout}
+      liveTournamentId={currentTournament?.id || null}
+      liveRoundId={currentRound?.id || null}
+      hasLiveGroups={groups.length > 0}
+      onRoundSelected={async (tournament, round, isFresh) => {
+        if (isFresh) {
+          // Archive the previous round's data (if any) before wiping the live tables
+          if (currentRound && groups.length > 0) {
+            await archiveAndFinishRound(
+              currentRound.id,
+              { groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
+              groupData
+            );
+            await clearAppState(groups.map(g => g.id));
+          } else if (currentRound && currentRound.status !== "finished") {
+            // No data was ever recorded for it — just mark it finished, nothing to archive
+            await markRoundStatus(currentRound.id, "finished");
+          }
+          setGroups([]);
+          setPars([]);
+          setParTimes([]);
+          setBaseSchedules({});
+          setSchedules({});
+          setGroupData({});
+          setSuspensions([]);
+          setIsSuspended(false);
+          setPendingStopTime("");
+          saveAppState({ groups: [], pars: [], parTimes: [], baseSchedules: {}, schedules: {}, suspensions: [], isSuspended: false, pendingStopTime: "", tournamentId: tournament.id, roundId: round.id });
+        }
+        setCurrentTournament(tournament);
+        setCurrentRound(round);
+        setScreen("setup");
+      }}
+    />
+  );
+
   if (screen === "users" && isAdmin) return (
     <UserManagementScreen
       users={users}
@@ -4769,6 +5114,10 @@ export default function App() {
       onClearSession={handleClearSession}
       hasLiveSession={groups.length > 0}
       onGoToDashboard={() => setScreen("dashboard")}
+      tournamentName={currentTournament?.name || ""}
+      hostVenue={currentTournament?.host_venue || ""}
+      roundLabel={currentRound?.label || ""}
+      onSwitchRound={() => setScreen("tournament")}
     />
   );
 
