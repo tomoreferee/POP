@@ -3563,7 +3563,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
           {(tournamentName || roundLabel) && (
             <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-              {tournamentName && <div>🏆 {tournamentName}</div>}
+              {tournamentName && <div style={{ fontWeight: 700, color: "#c8ceee" }}>🏆 {tournamentName}</div>}
               {hostVenue && <div>{hostVenue}</div>}
               {roundLabel && <div style={{ color: "#6effa0", fontWeight: 700 }}>{roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</div>}
             </div>
