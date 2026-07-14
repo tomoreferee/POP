@@ -2489,17 +2489,17 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label));
                   const isBadTimed = badTimePlayers.has(label);
                   const count = badTimeCounts[label] || 0;
-                  const usedUpInMN = count >= 1; // MN's Bad Time is one-shot per player — further presses go through TM
+                  const usedUpInMN = isFlagged; // once P becomes a TM target, further Bad Time presses go through the TM row instead
                   return (
                     <button
                       key={n}
                       onClick={() => !usedUpInMN && triggerBadTimeFor(n)}
                       disabled={usedUpInMN}
-                      title={usedUpInMN ? `${label} ถูก Bad Time จาก MN ไปแล้ว กด Bad Time ต่อได้ที่ TM แทน` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
+                      title={usedUpInMN ? `${label} เป็นเป้าหมาย TM แล้ว กด Bad Time ต่อได้ที่แถบ TIMING ด้านล่างแทน` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
                       style={{
-                        background: usedUpInMN ? "#1a1a1a" : isFlagged ? "#ff6ec7" : "#2a0020",
-                        border: `1px solid ${usedUpInMN ? "#3a3a3a" : isFlagged ? "#ff6ec7" : "#ff6ec788"}`,
-                        color: usedUpInMN ? "#666" : isFlagged ? "#1a0014" : "#ff6ec7",
+                        background: usedUpInMN ? "#1a1a1a" : "#2a0020",
+                        border: `1px solid ${usedUpInMN ? "#3a3a3a" : "#ff6ec788"}`,
+                        color: usedUpInMN ? "#666" : "#ff6ec7",
                         borderRadius: 6, padding: "4px 10px", cursor: usedUpInMN ? "not-allowed" : "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
@@ -2540,16 +2540,18 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label);
                   const isBadTimed = badTimePlayers.has(label);
                   const count = badTimeCounts[label] || 0;
+                  const notYetTarget = !isFlagged; // not a TM target yet — must be added via the MN row's Bad Time button first
                   return (
                     <button
                       key={n}
-                      onClick={() => triggerBadTimeFor(n)}
-                      title={isBadTimed ? `${label} already flagged Bad Time — tap to log it again` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
+                      onClick={() => !notYetTarget && triggerBadTimeFor(n)}
+                      disabled={notYetTarget}
+                      title={notYetTarget ? `${label} ยังไม่ใช่เป้าหมาย TM — กด Bad Time ที่แถบ MONITORING ด้านบนก่อน` : isBadTimed ? `${label} already flagged Bad Time — tap to log it again` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
                       style={{
-                        background: isBadTimed ? "#ff3d3d" : isFlagged ? "#ff6ec7" : "#1a0014",
-                        border: `1px solid ${isBadTimed ? "#ff3d3d" : isFlagged ? "#ff6ec7" : "#ff6ec788"}`,
-                        color: (isBadTimed || isFlagged) ? "#1a0014" : "#ff6ec7",
-                        borderRadius: 6, padding: "4px 10px", cursor: "pointer",
+                        background: notYetTarget ? "#1a1a1a" : isBadTimed ? "#ff3d3d" : "#ff6ec7",
+                        border: `1px solid ${notYetTarget ? "#3a3a3a" : isBadTimed ? "#ff3d3d" : "#ff6ec7"}`,
+                        color: notYetTarget ? "#666" : "#1a0014",
+                        borderRadius: 6, padding: "4px 10px", cursor: notYetTarget ? "not-allowed" : "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
                     >{isBadTimed ? "⚡ " : ""}{label}{count >= 2 ? ` x${count}` : ""}</button>
