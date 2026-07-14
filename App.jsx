@@ -3461,7 +3461,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, tournamentName, hostVenue, roundLabel, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -3559,7 +3559,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 24px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1", flexShrink: 0 }}>⛳ DASHBOARD</div>
+        <div>
+          <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
+          {(tournamentName || roundLabel) && (
+            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>
+              {tournamentName && <>🏆 {tournamentName}</>}
+              {hostVenue && <> · {hostVenue}</>}
+              {roundLabel && <> · <span style={{ color: "#6effa0", fontWeight: 700 }}>{roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span></>}
+            </div>
+          )}
+        </div>
         {/* Right side: user + clock + logout */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           {currentUser && (
@@ -5129,6 +5138,9 @@ export default function App() {
       parTimes={parTimes}
       schedules={schedules}
       playersPerGroup={playersPerGroup}
+      tournamentName={currentTournament?.name || ""}
+      hostVenue={currentTournament?.host_venue || ""}
+      roundLabel={currentRound?.label || ""}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
       currentUser={currentUser}
