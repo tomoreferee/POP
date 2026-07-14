@@ -1999,15 +1999,23 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     let nxtLogs = autoLogMonitoring(currentHole, actionLogs);
     if (nxtLogs !== actionLogs) setActionLogs(nxtLogs);
 
+    // Keep mnName/tmName synced to whoever is actually recording right now — otherwise
+    // the "upcoming hole" preview badge (shown before that hole is recorded) keeps
+    // showing the name of whoever first started MN/TM, even after someone else takes over.
+    const nextMnName = mnActive ? (currentUser || mnName) : mnName;
+    const nextTmName = tmActive ? (currentUser || tmName) : tmName;
+    if (nextMnName !== mnName) setMnName(nextMnName);
+    if (nextTmName !== tmName) setTmName(nextTmName);
+
     if (currentSlot < 17) {
       const next = currentSlot + 1;
       setCurrentSlot(next);
       setRecordedEnd(null);
       setDiffManual(0);
-      onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: next, actionLogs: nxtLogs, mnActive, mnName, tmActive, tmName, tmTarget });
+      onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: next, actionLogs: nxtLogs, mnActive, mnName: nextMnName, tmActive, tmName: nextTmName, tmTarget });
     } else {
       setCurrentSlot(18);
-      onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: 18, actionLogs: nxtLogs, mnActive, mnName, tmActive, tmName, tmTarget });
+      onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: 18, actionLogs: nxtLogs, mnActive, mnName: nextMnName, tmActive, tmName: nextTmName, tmTarget });
     }
     onRecorded?.();
   };
