@@ -1238,16 +1238,14 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
       <div style={{ padding: "24px 24px" }}>
         {/* ─── Players per group ─────────────────────────────────────────────── */}
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 2, fontWeight: 700 }}>👥 PLAYERS PER GROUP</div>
-          </div>
+        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
+          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>👥 PLAYERS PER GROUP</div>
           {isAdmin ? (
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
               {[2, 3, 4].map(n => (
                 <button key={n} onClick={() => setPlayersPerGroup(n)}
                   style={{
-                    width: 40, height: 40, borderRadius: 8, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 18,
+                    width: 36, height: 36, borderRadius: 8, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, flexShrink: 0,
                     background: playersPerGroup === n ? "#1a4a8a" : "#0d0f1a",
                     border: `1px solid ${playersPerGroup === n ? "#4e9af1" : "#2a2d4a"}`,
                     color: playersPerGroup === n ? "#fff" : "#8890b8",
@@ -1255,7 +1253,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
               ))}
             </div>
           ) : (
-            <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1, flexShrink: 0 }}>🔒 {playersPerGroup} players</span>
+            <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>🔒 {playersPerGroup} players</span>
           )}
         </div>
 
