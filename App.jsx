@@ -1876,12 +1876,16 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     const deadline = (adjustedSchedule[currentHole] ?? 0) + (parTimes?.[currentHole] ?? 14);
     const diffAtLog = nowInMin() - deadline + 1;
 
+    const alreadyAll = tmActive && tmTarget === "All";
     const existingTargets = tmActive && tmTarget && tmTarget !== "All"
       ? tmTarget.split(",").map(s => s.trim()).filter(Boolean)
       : [];
-    const newTarget = (tmActive && tmTarget === "All")
-      ? "All"
-      : Array.from(new Set([...existingTargets, playerLabel])).join(", ");
+    const mergedTargets = alreadyAll ? [] : Array.from(new Set([...existingTargets, playerLabel]));
+    // If Bad Time has now been pressed for every player in the group one by one,
+    // treat it the same as TM(All) — collapse the target to "All" and let it take
+    // over from MN, same as picking "All" directly in the TM picker would.
+    const coversAll = alreadyAll || mergedTargets.length >= numPlayers;
+    const newTarget = coversAll ? "All" : mergedTargets.join(", ");
 
     const log = {
       holeIdx: currentHole, // Bad Time shows on the current hole itself
@@ -1892,15 +1896,25 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       target: playerLabel, // this log records just the player flagged by this Bad Time press
       badTime: true,
     };
-    const next = [...actionLogs, log];
+    let next = [...actionLogs, log];
+    let nextMnActive = mnActive;
+    let nextMnName = mnName;
+    if (mnActive && coversAll && !alreadyAll) {
+      // Every player is now covered by TM — MN is redundant from here on. Off it,
+      // recorded at the previous hole (same convention as picking TM "All" directly).
+      nextMnActive = false;
+      nextMnName = "";
+      next = [...next, { holeIdx: Math.max(0, currentHole - 1), type: "MN", name: currentUser || mnName, time: log.time, off: true }];
+      setMnActive(false);
+      setMnName("");
+    }
     setActionLogs(next);
     setTmActive(true);
     setTmName(currentUser || tmName);
     setTmTarget(newTarget);
-    // MN is intentionally left untouched — it keeps running alongside TM.
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: next,
-      mnActive, mnName,
+      mnActive: nextMnActive, mnName: nextMnName,
       tmActive: true, tmName: currentUser || tmName, tmTarget: newTarget,
     });
   };
