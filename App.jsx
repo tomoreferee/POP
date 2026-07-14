@@ -1104,6 +1104,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   const [newVenue, setNewVenue] = useState("");
   const [newFormat, setNewFormat] = useState("stroke");
   const [busy, setBusy] = useState(false);
+  const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
 
   useEffect(() => {
     (async () => {
@@ -1141,11 +1142,14 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
 
     // Already the live round — just continue straight in, no data changes.
     if (existing && existing.id === liveRoundId) {
-      onRoundSelected(selectedTournament, existing, false);
+      onRoundSelected(selectedTournament, existing, "resume");
       return;
     }
     if (existing && existing.status === "finished") {
-      window.alert(`รอบ ${label} ปิดจบไปแล้ว ข้อมูลถูกเก็บสำรองไว้ในระบบแล้ว (ดูย้อนหลังในแอปยังไม่รองรับตอนนี้)`);
+      setBusy(true);
+      const full = await fetchRoundArchive(existing.id);
+      setBusy(false);
+      setViewingRound(full || existing);
       return;
     }
     if (liveRoundId && hasLiveGroups) {
@@ -1158,7 +1162,29 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
       round = await createRound({ tournamentId: selectedTournament.id, label, isQualifying: label === "Q" });
     }
     setBusy(false);
-    if (round) onRoundSelected(selectedTournament, round, true);
+    if (round) onRoundSelected(selectedTournament, round, "fresh");
+  };
+
+  const handleReopenRound = async () => {
+    if (!viewingRound || busy) return;
+    if (liveRoundId && hasLiveGroups && liveRoundId !== viewingRound.id) {
+      const ok = window.confirm(`รอบปัจจุบันยังมีข้อมูลอยู่\n\nการเปิดรอบ "${viewingRound.label}" กลับมาแก้ไข จะเก็บสำรองข้อมูลรอบปัจจุบันก่อนแล้วค่อยดึงข้อมูลรอบ "${viewingRound.label}" กลับมาให้แก้ไข\n\nดำเนินการต่อหรือไม่?`);
+      if (!ok) return;
+    }
+    setBusy(true);
+    await onRoundSelected(selectedTournament, viewingRound, "reopen");
+    setBusy(false);
+  };
+
+  const handleDeleteRound = async () => {
+    if (!viewingRound || busy) return;
+    const ok = window.confirm(`ลบรอบ "${viewingRound.label}" ทิ้งถาวร?\n\nข้อมูลที่เก็บสำรองไว้ทั้งหมดของรอบนี้จะหายไป กู้คืนไม่ได้\n\nดำเนินการต่อหรือไม่?`);
+    if (!ok) return;
+    setBusy(true);
+    await deleteRound(viewingRound.id);
+    setRounds(prev => prev.filter(r => r.id !== viewingRound.id));
+    setViewingRound(null);
+    setBusy(false);
   };
 
   if (loading) {
@@ -1272,6 +1298,71 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
           </div>
         )}
       </div>
+
+      {viewingRound && (() => {
+        const snapshot = viewingRound.archived_app_state;
+        const gdSnapshot = viewingRound.archived_group_data || {};
+        const groupRows = (snapshot?.groups || []).map(g => {
+          const gd = gdSnapshot[g.id] || {};
+          const holesPlayed = (gd.holeData || []).filter(h => h?.endTime).length;
+          return { ...g, holesPlayed };
+        });
+        return (
+          <div onClick={() => !busy && setViewingRound(null)} style={{ position: "fixed", inset: 0, background: "#000000cc", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", zIndex: 1200 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, padding: 24, width: "100%", maxWidth: 480, boxShadow: "0 20px 60px #000" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 2, color: "#eee" }}>
+                  {viewingRound.label === "Q" ? "Round Q" : `Round ${viewingRound.label}`} <span style={{ fontSize: 13, color: "#666", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED</span>
+                </div>
+                <button onClick={() => setViewingRound(null)} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32 }}>✕</button>
+              </div>
+              {viewingRound.finished_at && (
+                <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>ปิดจบเมื่อ {new Date(viewingRound.finished_at).toLocaleString("th-TH")}</div>
+              )}
+
+              <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, overflow: "hidden", marginBottom: 16, maxHeight: 320, overflowY: "auto" }}>
+                {groupRows.length === 0 ? (
+                  <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>ไม่มีข้อมูลกลุ่มบันทึกไว้</div>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: "#141626" }}>
+                        <th style={{ padding: "8px 12px", textAlign: "left", color: "#8890b8", fontWeight: 700 }}>Group</th>
+                        <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Start</th>
+                        <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Holes played</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupRows.map(g => (
+                        <tr key={g.id} style={{ borderTop: "1px solid #1a1d2e" }}>
+                          <td style={{ padding: "8px 12px", color: g.color || "#eee", fontWeight: 700 }}>{g.name}</td>
+                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8" }}>{g.startTime}</td>
+                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#eee" }}>{g.holesPlayed}/18</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {isAdmin ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button onClick={handleReopenRound} disabled={busy}
+                    style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff" }}>
+                    ✏️ Reopen this round for editing
+                  </button>
+                  <button onClick={handleDeleteRound} disabled={busy}
+                    style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070" }}>
+                    🗑 Delete this round permanently
+                  </button>
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: "#666", textAlign: "center" }}>ต้องเป็น admin ถึงจะเปิดแก้ไขหรือลบรอบที่จบไปแล้วได้</div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -3559,16 +3650,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 24px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-        <div>
-          <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
-          {(tournamentName || roundLabel) && (
-            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-              {tournamentName && <div style={{ fontWeight: 700, color: "#c8ceee" }}>🏆 {tournamentName}</div>}
-              {hostVenue && <div>{hostVenue}</div>}
-              {roundLabel && <div style={{ color: "#6effa0", fontWeight: 700 }}>{roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</div>}
-            </div>
-          )}
-        </div>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
         {/* Right side: user + clock + logout */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           {currentUser && (
@@ -3581,6 +3663,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <LogoutButton onLogout={onLogout} />
         </div>
       </div>
+
+      {/* Tournament / Round context bar */}
+      {(tournamentName || roundLabel) && (
+        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 10, margin: "12px 24px 0", padding: "10px 16px", display: "flex", flexDirection: "column", gap: 2 }}>
+          {tournamentName && <div style={{ fontSize: 13, fontWeight: 700, color: "#c8ceee" }}>🏆 {tournamentName}</div>}
+          {hostVenue && <div style={{ fontSize: 12, color: "#8890b8" }}>{hostVenue}</div>}
+          {roundLabel && <div style={{ fontSize: 12, color: "#6effa0", fontWeight: 700 }}>{roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</div>}
+        </div>
+      )}
 
       {/* Action row — Summary / Export Data / Stopping Play, equal-size buttons */}
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "10px 24px", display: "flex", gap: 10 }}>
@@ -4764,6 +4855,14 @@ async function archiveAndFinishRound(roundId, appStateSnapshot, groupDataSnapsho
 async function markRoundStatus(roundId, status) {
   try { await supabase.from("tournament_rounds").update({ status }).eq("id", roundId); } catch {}
 }
+async function fetchRoundArchive(roundId) {
+  const { data, error } = await supabase.from("tournament_rounds").select("*").eq("id", roundId).maybeSingle();
+  if (error || !data) return null;
+  return data;
+}
+async function deleteRound(roundId) {
+  try { await supabase.from("tournament_rounds").delete().eq("id", roundId); } catch {}
+}
 async function fetchUsers() {
   const { data, error } = await supabase.from("app_users").select("*").order("username");
   if (error || !data || !data.length) return null;
@@ -5071,8 +5170,8 @@ export default function App() {
       liveTournamentId={currentTournament?.id || null}
       liveRoundId={currentRound?.id || null}
       hasLiveGroups={groups.length > 0}
-      onRoundSelected={async (tournament, round, isFresh) => {
-        if (isFresh) {
+      onRoundSelected={async (tournament, round, action) => {
+        if (action === "fresh") {
           // Archive the previous round's data (if any) before wiping the live tables
           if (currentRound && groups.length > 0) {
             await archiveAndFinishRound(
@@ -5095,7 +5194,46 @@ export default function App() {
           setIsSuspended(false);
           setPendingStopTime("");
           saveAppState({ groups: [], pars: [], parTimes: [], baseSchedules: {}, schedules: {}, suspensions: [], isSuspended: false, pendingStopTime: "", tournamentId: tournament.id, roundId: round.id });
+        } else if (action === "reopen") {
+          // Archive whatever's currently live (if it belongs to a different round) before restoring
+          if (currentRound && currentRound.id !== round.id && groups.length > 0) {
+            await archiveAndFinishRound(
+              currentRound.id,
+              { groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
+              groupData
+            );
+            await clearAppState(groups.map(g => g.id));
+          }
+          const restored = round.archived_app_state || {};
+          const restoredGroups = restored.groups || [];
+          setGroups(restoredGroups);
+          setPars(restored.pars || []);
+          setParTimes(restored.parTimes || []);
+          setBaseSchedules(restored.baseSchedules || {});
+          setSchedules(restored.schedules || {});
+          setGroupData(round.archived_group_data || {});
+          setSuspensions(restored.suspensions || []);
+          setIsSuspended(restored.isSuspended || false);
+          setPendingStopTime(restored.pendingStopTime || "");
+          await markRoundStatus(round.id, "live");
+          const reopenedRound = { ...round, status: "live" };
+          saveAppState({
+            groups: restoredGroups, pars: restored.pars || [], parTimes: restored.parTimes || [],
+            baseSchedules: restored.baseSchedules || {}, schedules: restored.schedules || {},
+            suspensions: restored.suspensions || [], isSuspended: restored.isSuspended || false, pendingStopTime: restored.pendingStopTime || "",
+            tournamentId: tournament.id, roundId: round.id,
+          });
+          // restore each group's live data individually too, so realtime/group_data stays in sync
+          for (const g of restoredGroups) {
+            const gd = (round.archived_group_data || {})[g.id];
+            if (gd) await saveGroupData(g.id, gd, new Date().toISOString());
+          }
+          setCurrentTournament(tournament);
+          setCurrentRound(reopenedRound);
+          setScreen(restoredGroups.length ? "dashboard" : "setup");
+          return;
         }
+        // "resume" (already the live round) falls through to here too
         setCurrentTournament(tournament);
         setCurrentRound(round);
         setScreen("setup");
