@@ -1105,6 +1105,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   const [newFormat, setNewFormat] = useState("stroke");
   const [busy, setBusy] = useState(false);
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
+  const [editingArchivedGroup, setEditingArchivedGroup] = useState(null); // { groupId, holeData, actionLogs } — working copy while editing
 
   useEffect(() => {
     (async () => {
@@ -1307,59 +1308,170 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
           const holesPlayed = (gd.holeData || []).filter(h => h?.endTime).length;
           return { ...g, holesPlayed };
         });
+        const editingGroupMeta = editingArchivedGroup ? groupRows.find(g => g.id === editingArchivedGroup.groupId) : null;
+
+        const openGroupEditor = (group) => {
+          const gd = gdSnapshot[group.id] || {};
+          setEditingArchivedGroup({
+            groupId: group.id,
+            holeData: (gd.holeData || Array(18).fill(null)).map(h => h ? { ...h } : { startTime: null, endTime: null }),
+            actionLogs: (gd.actionLogs || []).map((l, idx) => ({ ...l, idx })),
+          });
+        };
+        const saveGroupEditor = async () => {
+          if (!editingArchivedGroup) return;
+          setBusy(true);
+          const gd = gdSnapshot[editingArchivedGroup.groupId] || {};
+          const cleanLogs = editingArchivedGroup.actionLogs.map(({ idx, ...rest }) => rest);
+          const ok = await updateArchivedGroupData(viewingRound.id, editingArchivedGroup.groupId, {
+            ...gd,
+            holeData: editingArchivedGroup.holeData,
+            actionLogs: cleanLogs,
+          });
+          setBusy(false);
+          if (ok) {
+            setViewingRound(prev => ({
+              ...prev,
+              archived_group_data: { ...prev.archived_group_data, [editingArchivedGroup.groupId]: { ...gd, holeData: editingArchivedGroup.holeData, actionLogs: cleanLogs } },
+            }));
+            setEditingArchivedGroup(null);
+          } else {
+            window.alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
+          }
+        };
+
         return (
-          <div onClick={() => !busy && setViewingRound(null)} style={{ position: "fixed", inset: 0, background: "#000000cc", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", zIndex: 1200 }}>
+          <div onClick={() => { if (!busy) { setViewingRound(null); setEditingArchivedGroup(null); } }} style={{ position: "fixed", inset: 0, background: "#000000cc", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", zIndex: 1200 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, padding: 24, width: "100%", maxWidth: 480, boxShadow: "0 20px 60px #000" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                 <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 2, color: "#eee" }}>
                   {viewingRound.label === "Q" ? "Round Q" : `Round ${viewingRound.label}`} <span style={{ fontSize: 13, color: "#666", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED</span>
                 </div>
-                <button onClick={() => setViewingRound(null)} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32 }}>✕</button>
+                <button onClick={() => { setViewingRound(null); setEditingArchivedGroup(null); }} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32 }}>✕</button>
               </div>
               {viewingRound.finished_at && (
                 <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>ปิดจบเมื่อ {new Date(viewingRound.finished_at).toLocaleString("th-TH")}</div>
               )}
 
-              <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, overflow: "hidden", marginBottom: 16, maxHeight: 320, overflowY: "auto" }}>
-                {groupRows.length === 0 ? (
-                  <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>ไม่มีข้อมูลกลุ่มบันทึกไว้</div>
-                ) : (
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "#141626" }}>
-                        <th style={{ padding: "8px 12px", textAlign: "left", color: "#8890b8", fontWeight: 700 }}>Group</th>
-                        <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Start</th>
-                        <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Holes played</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {groupRows.map(g => (
-                        <tr key={g.id} style={{ borderTop: "1px solid #1a1d2e" }}>
-                          <td style={{ padding: "8px 12px", color: g.color || "#eee", fontWeight: 700 }}>{g.name}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8" }}>{g.startTime}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#eee" }}>{g.holesPlayed}/18</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+              {!editingArchivedGroup ? (
+                <>
+                  <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, overflow: "hidden", marginBottom: 16, maxHeight: 320, overflowY: "auto" }}>
+                    {groupRows.length === 0 ? (
+                      <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>ไม่มีข้อมูลกลุ่มบันทึกไว้</div>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ background: "#141626" }}>
+                            <th style={{ padding: "8px 12px", textAlign: "left", color: "#8890b8", fontWeight: 700 }}>Group</th>
+                            <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Start</th>
+                            <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Holes played</th>
+                            {isAdmin && <th style={{ padding: "8px 12px" }}></th>}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupRows.map(g => (
+                            <tr key={g.id} style={{ borderTop: "1px solid #1a1d2e" }}>
+                              <td style={{ padding: "8px 12px", color: g.color || "#eee", fontWeight: 700 }}>{g.name}</td>
+                              <td style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8" }}>{g.startTime}</td>
+                              <td style={{ padding: "8px 12px", textAlign: "center", color: "#eee" }}>{g.holesPlayed}/18</td>
+                              {isAdmin && (
+                                <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                                  <button onClick={() => openGroupEditor(g)}
+                                    style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                                    ✏️ Edit
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
 
-              {isAdmin ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <button onClick={handleReopenRound} disabled={busy}
-                    style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff" }}>
-                    ✏️ Reopen this round for editing
-                  </button>
-                  <button onClick={handleDeleteRound} disabled={busy}
-                    style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070" }}>
-                    🗑 Delete this round permanently
+                  {isAdmin ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <button onClick={handleReopenRound} disabled={busy}
+                        style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff" }}>
+                        ↩️ Reopen this round (makes it live for everyone)
+                      </button>
+                      <button onClick={handleDeleteRound} disabled={busy}
+                        style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070" }}>
+                        🗑 Delete this round permanently
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: "#666", textAlign: "center" }}>ต้องเป็น admin ถึงจะเปิดแก้ไขหรือลบรอบที่จบไปแล้วได้</div>
+                  )}
+                </>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: editingGroupMeta?.color || "#eee" }}>{editingGroupMeta?.name}</div>
+                    <button onClick={() => setEditingArchivedGroup(null)} disabled={busy}
+                      style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                      ← Back
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#666", marginBottom: 10 }}>แก้ไขเฉพาะข้อมูลของรอบที่ปิดจบไปแล้วนี้ ไม่กระทบรอบที่กำลัง live อยู่</div>
+
+                  <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, maxHeight: 220, overflowY: "auto", marginBottom: 14 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: "#141626", position: "sticky", top: 0 }}>
+                          <th style={{ padding: "6px 10px", textAlign: "left", color: "#8890b8" }}>Hole</th>
+                          <th style={{ padding: "6px 10px", textAlign: "center", color: "#8890b8" }}>End time</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {editingArchivedGroup.holeData.map((h, i) => (
+                          <tr key={i} style={{ borderTop: "1px solid #1a1d2e" }}>
+                            <td style={{ padding: "5px 10px", color: "#8890b8" }}>H{i + 1}</td>
+                            <td style={{ padding: "5px 10px", textAlign: "center" }}>
+                              <input
+                                value={h.endTime || ""}
+                                placeholder="--:--"
+                                onChange={e => {
+                                  const v = e.target.value;
+                                  setEditingArchivedGroup(prev => {
+                                    const nextHD = [...prev.holeData];
+                                    nextHD[i] = { ...nextHD[i], endTime: v || null };
+                                    return { ...prev, holeData: nextHD };
+                                  });
+                                }}
+                                style={{ width: 70, background: "#141626", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 5, padding: "3px 6px", textAlign: "center", fontFamily: "inherit", fontSize: 12, outline: "none" }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div style={{ fontSize: 12, color: "#8890b8", fontWeight: 700, marginBottom: 6 }}>WN / MN / TM logs</div>
+                  <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, maxHeight: 160, overflowY: "auto", padding: 8, marginBottom: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+                    {editingArchivedGroup.actionLogs.length === 0 ? (
+                      <div style={{ padding: 10, textAlign: "center", color: "#555", fontSize: 12 }}>ไม่มี log</div>
+                    ) : editingArchivedGroup.actionLogs.map(l => (
+                      <div key={l.idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: `${logBg(l.type)}55`, border: `1px solid ${logColor(l.type)}44`, borderRadius: 5, padding: "4px 8px" }}>
+                        <span style={{ fontSize: 12, color: logColor(l.type), fontWeight: 700 }}>
+                          {l.badTime ? `⚡ Bad Time ${l.target || ""}` : l.off ? `Off ${l.type}` : l.type} H{l.holeIdx + 1}{l.name ? ` · ${l.name}` : ""}
+                        </span>
+                        <button onClick={() => setEditingArchivedGroup(prev => ({ ...prev, actionLogs: prev.actionLogs.filter(x => x.idx !== l.idx) }))}
+                          style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 11 }}>
+                          🗑
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button onClick={saveGroupEditor} disabled={busy}
+                    style={{ width: "100%", padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0" }}>
+                    ✓ Save changes
                   </button>
                 </div>
-              ) : (
-                <div style={{ fontSize: 12, color: "#666", textAlign: "center" }}>ต้องเป็น admin ถึงจะเปิดแก้ไขหรือลบรอบที่จบไปแล้วได้</div>
               )}
-            </div>
+          </div>
           </div>
         );
       })()}
@@ -2685,7 +2797,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           {inputMode === "stamp" && (
             !recordedEnd ? (
               <button
-                onClick={() => setRecordedEnd(nowInMin() - 1)}
+                onClick={() => setRecordedEnd(nowInMin())}
                 style={{
                   width: "100%", padding: compact ? "16px 0" : "22px 0", marginBottom: 12,
                   background: "linear-gradient(135deg, #1a2a1a, #1f3f1f)",
@@ -3558,6 +3670,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
   const [quickRecord, setQuickRecord] = useState(null); // { groupId, targetSlot } or null
+  const [collapsedTables, setCollapsedTables] = useState({}); // { [tableKey]: true } — folded schedule tables
   // Delete a WN/MN/TM log entry from the dashboard (in case of a mistaken tap) — confirmed via popup before removal
   const [deleteLogConfirm, setDeleteLogConfirm] = useState(null); // { groupId, idx } or null
   const deleteLogAt = (groupId, idx) => {
@@ -3981,11 +4094,18 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const meta = getStartHoleMeta(startHole);
             const colColor = meta.color;
             const holeLabel = meta.label;
+            const tableKey = `${sectionKey}-${startHole}`;
+            const isCollapsed = !!collapsedTables[tableKey];
             return (
-              <div key={`${sectionKey}-${startHole}`} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid #2a2d4a", fontSize: 12, color: colColor, letterSpacing: 2, fontWeight: 700 }}>
-                  📋 {holeLabel}
+              <div key={tableKey} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
+                <div
+                  onClick={() => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
+                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #2a2d4a", fontSize: 12, color: colColor, letterSpacing: 2, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+                >
+                  <span>📋 {holeLabel}</span>
+                  <span style={{ fontSize: 11, color: "#8890b8", transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                 </div>
+                {!isCollapsed && (
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
@@ -4132,6 +4252,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     </tbody>
                   </table>
                 </div>
+                )}
               </div>
             );
           };
@@ -4737,8 +4858,9 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 //                        replaced, a snapshot of app_state + group_data is archived
 //                        onto its row before the live tables are cleared for the next round
 // `app_users`         → login accounts, shared across every judge/device
-async function fetchAppState() {
-  const { data, error } = await supabase.from("app_state").select("*").eq("id", "main").maybeSingle();
+async function fetchAppState(roundId) {
+  if (!roundId) return null;
+  const { data, error } = await supabase.from("app_state").select("*").eq("round_id", roundId).maybeSingle();
   if (error || !data) return null;
   return {
     groups: data.groups ?? [],
@@ -4754,9 +4876,11 @@ async function fetchAppState() {
   };
 }
 async function saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, tournamentId, roundId }) {
+  if (!roundId) return;
   try {
     await supabase.from("app_state").upsert({
-      id: "main",
+      round_id: roundId,
+      tournament_id: tournamentId ?? null,
       groups, pars,
       par_times: parTimes,
       base_schedules: baseSchedules,
@@ -4764,32 +4888,34 @@ async function saveAppState({ groups, pars, parTimes, baseSchedules, schedules, 
       suspensions,
       is_suspended: isSuspended,
       pending_stop_time: pendingStopTime,
-      tournament_id: tournamentId ?? null,
-      round_id: roundId ?? null,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: "round_id" });
   } catch {}
 }
-async function clearAppState(groupIds) {
+async function clearAppStateForRound(roundId, groupIds) {
+  if (!roundId) return;
   try {
-    await supabase.from("app_state").delete().eq("id", "main");
-    if (groupIds?.length) await supabase.from("group_data").delete().in("group_id", groupIds.map(String));
+    await supabase.from("app_state").delete().eq("round_id", roundId);
+    if (groupIds?.length) await supabase.from("group_data").delete().eq("round_id", roundId).in("group_id", groupIds.map(String));
   } catch {}
 }
-async function fetchAllGroupData() {
-  const { data, error } = await supabase.from("group_data").select("*");
+async function fetchAllGroupData(roundId) {
+  if (!roundId) return {};
+  const { data, error } = await supabase.from("group_data").select("*").eq("round_id", roundId);
   if (error || !data) return {};
   const gd = {};
   data.forEach(row => { gd[row.group_id] = row.data; });
   return gd;
 }
-async function saveGroupData(groupId, data, updatedAt) {
+async function saveGroupData(groupId, data, updatedAt, roundId) {
+  if (!roundId) return;
   try {
     await supabase.from("group_data").upsert({
+      round_id: roundId,
       group_id: String(groupId),
       data,
       updated_at: updatedAt || new Date().toISOString(),
-    });
+    }, { onConflict: "round_id,group_id" });
   } catch {}
 }
 
@@ -4852,6 +4978,17 @@ async function archiveAndFinishRound(roundId, appStateSnapshot, groupDataSnapsho
     }).eq("id", roundId);
   } catch {}
 }
+// Save an updated snapshot onto a round WITHOUT touching status/finished_at — used when
+// an admin edits a non-live round's archived data independently (doesn't affect the
+// live round other judges are working on, and doesn't un-finish the round).
+async function saveRoundSnapshot(roundId, appStateSnapshot, groupDataSnapshot) {
+  try {
+    await supabase.from("tournament_rounds").update({
+      archived_app_state: appStateSnapshot,
+      archived_group_data: groupDataSnapshot,
+    }).eq("id", roundId);
+  } catch {}
+}
 async function markRoundStatus(roundId, status) {
   try { await supabase.from("tournament_rounds").update({ status }).eq("id", roundId); } catch {}
 }
@@ -4862,6 +4999,18 @@ async function fetchRoundArchive(roundId) {
 }
 async function deleteRound(roundId) {
   try { await supabase.from("tournament_rounds").delete().eq("id", roundId); } catch {}
+}
+// Edits ONE group's data inside a round's archived_group_data JSON blob, without ever
+// touching the live app_state/group_data tables — so admin can fix a past round while
+// other users keep working on whatever round is currently live.
+async function updateArchivedGroupData(roundId, groupId, updatedGroupData) {
+  try {
+    const { data, error } = await supabase.from("tournament_rounds").select("archived_group_data").eq("id", roundId).maybeSingle();
+    if (error || !data) return false;
+    const nextGroupData = { ...(data.archived_group_data || {}), [groupId]: updatedGroupData };
+    await supabase.from("tournament_rounds").update({ archived_group_data: nextGroupData }).eq("id", roundId);
+    return true;
+  } catch { return false; }
 }
 async function fetchUsers() {
   const { data, error } = await supabase.from("app_users").select("*").order("username");
@@ -4895,6 +5044,21 @@ export default function App() {
   const [playersPerGroup, setPlayersPerGroup] = useState(3);
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
   const [currentRound, setCurrentRound] = useState(null);           // { id, tournament_id, label, status, is_qualifying }
+  // Admin-only "independent view": lets an admin inspect/edit a DIFFERENT round's data
+  // (finished, or not yet started) without disturbing the shared live round other judges
+  // are actively using. Entirely separate state from the live groups/groupData above —
+  // edits here are saved straight back onto that round's own archive row.
+  const [adminViewRound, setAdminViewRound] = useState(null);
+  const [adminViewTournament, setAdminViewTournament] = useState(null);
+  const [adminGroups, setAdminGroups] = useState([]);
+  const [adminPars, setAdminPars] = useState([]);
+  const [adminParTimes, setAdminParTimes] = useState([]);
+  const [adminBaseSchedules, setAdminBaseSchedules] = useState({});
+  const [adminSchedules, setAdminSchedules] = useState({});
+  const [adminGroupData, setAdminGroupData] = useState({});
+  const [adminSuspensions, setAdminSuspensions] = useState([]);
+  const [adminIsSuspended, setAdminIsSuspended] = useState(false);
+  const [adminPendingStopTime, setAdminPendingStopTime] = useState("");
   const [baseSchedules, setBaseSchedules] = useState({}); // original schedules
   const [schedules, setSchedules] = useState({});         // adjusted schedules
   const [groupData, setGroupData] = useState({});
@@ -4919,7 +5083,28 @@ export default function App() {
   // ─── Load shared state (app_state + group_data + users) from Supabase on mount ──
   useEffect(() => {
     (async () => {
-      const [state, gd, u] = await Promise.all([fetchAppState(), fetchAllGroupData(), fetchUsers()]);
+      const u = await fetchUsers();
+      if (u && u.length) {
+        setUsers(u);
+      } else {
+        setUsers(DEFAULT_USERS);
+        pushUsers(DEFAULT_USERS);
+      }
+
+      // Each device/tab remembers its OWN current round — different users can be
+      // looking at (and editing) different rounds of the same tournament at once.
+      let tournament = null, round = null, state = null, gd = {};
+      try {
+        const savedRoundId = localStorage.getItem("pop_current_round_id");
+        if (savedRoundId) {
+          round = await fetchRoundById(savedRoundId);
+          if (round) {
+            tournament = await fetchTournamentById(round.tournament_id);
+            [state, gd] = await Promise.all([fetchAppState(round.id), fetchAllGroupData(round.id)]);
+          }
+        }
+      } catch {}
+
       if (state) {
         setGroups(state.groups);
         setPars(state.pars);
@@ -4931,17 +5116,6 @@ export default function App() {
         setPendingStopTime(state.pendingStopTime);
       }
       setGroupData(gd || {});
-      if (u && u.length) {
-        setUsers(u);
-      } else {
-        setUsers(DEFAULT_USERS);
-        pushUsers(DEFAULT_USERS);
-      }
-
-      // Restore which tournament/round the live app_state belongs to, if any
-      let tournament = null, round = null;
-      if (state?.tournamentId) tournament = await fetchTournamentById(state.tournamentId);
-      if (state?.roundId) round = await fetchRoundById(state.roundId);
       setCurrentTournament(tournament);
       setCurrentRound(round);
 
@@ -4964,11 +5138,16 @@ export default function App() {
     })();
   }, []);
 
-  // ─── Realtime: subscribe to changes from other judges' devices ────────────────
+  // ─── Realtime: subscribe to changes from other judges' devices, scoped to THIS
+  // device's currently-selected round only (different users can be on different
+  // rounds at once, so we must not receive/apply another round's updates) ───────
   useEffect(() => {
+    const roundId = currentRound?.id;
+    if (!roundId) return;
+
     const stateChannel = supabase
-      .channel("app_state_sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "app_state" }, (payload) => {
+      .channel(`app_state_sync_${roundId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "app_state", filter: `round_id=eq.${roundId}` }, (payload) => {
         if (payload.eventType === "DELETE") {
           setGroups([]); setPars([]); setParTimes([]); setBaseSchedules({}); setSchedules({});
           setSuspensions([]); setIsSuspended(false); setPendingStopTime("");
@@ -4986,15 +5165,15 @@ export default function App() {
       .subscribe();
 
     const groupChannel = supabase
-      .channel("group_data_sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_data" }, (payload) => {
+      .channel(`group_data_sync_${roundId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_data", filter: `round_id=eq.${roundId}` }, (payload) => {
         if (payload.eventType === "DELETE") {
           const gid = payload.old?.group_id;
           setGroupData(prev => { const next = { ...prev }; delete next[gid]; return next; });
           return;
         }
         const row = payload.new;
-        const lastWrite = lastLocalWriteAt.current[row.group_id];
+        const lastWrite = lastLocalWriteAt.current[`${roundId}:${row.group_id}`];
         if (lastWrite && row.updated_at && row.updated_at < lastWrite) {
           return; // stale echo of an older write — we already have newer local data
         }
@@ -5002,6 +5181,13 @@ export default function App() {
       })
       .subscribe();
 
+    return () => {
+      supabase.removeChannel(stateChannel);
+      supabase.removeChannel(groupChannel);
+    };
+  }, [currentRound?.id]);
+
+  useEffect(() => {
     const usersChannel = supabase
       .channel("users_sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "app_users" }, async () => {
@@ -5011,8 +5197,6 @@ export default function App() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(stateChannel);
-      supabase.removeChannel(groupChannel);
       supabase.removeChannel(usersChannel);
     };
   }, []);
@@ -5120,7 +5304,8 @@ export default function App() {
 
     saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, tournamentId: currentTournament?.id, roundId: currentRound?.id });
     const seedWrittenAt = new Date().toISOString();
-    grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(g.id, data[g.id], seedWrittenAt); });
+    const roundId = currentRound?.id;
+    grps.forEach(g => { lastLocalWriteAt.current[`${roundId}:${g.id}`] = seedWrittenAt; saveGroupData(g.id, data[g.id], seedWrittenAt, roundId); });
   };
 
   const handleSelectGroup = (g, targetSlot) => {
@@ -5130,10 +5315,11 @@ export default function App() {
 
   const handleUpdateGroup = (id, update) => {
     const writtenAt = new Date().toISOString();
-    lastLocalWriteAt.current[id] = writtenAt;
+    const roundId = currentRound?.id;
+    lastLocalWriteAt.current[`${roundId}:${id}`] = writtenAt;
     setGroupData(prev => {
       const next = { ...prev, [id]: { ...prev[id], ...update } };
-      saveGroupData(id, next[id], writtenAt);
+      saveGroupData(id, next[id], writtenAt, roundId);
       return next;
     });
   };
