@@ -1100,9 +1100,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   const [rounds, setRounds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingTournamentId, setEditingTournamentId] = useState(null); // non-null when the create form is editing an existing tournament
   const [newName, setNewName] = useState("");
   const [newVenue, setNewVenue] = useState("");
   const [newFormat, setNewFormat] = useState("stroke");
+  const [newHasQualifying, setNewHasQualifying] = useState(true);
+  const [newNumRounds, setNewNumRounds] = useState(4);
   const [busy, setBusy] = useState(false);
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
 
@@ -1122,18 +1125,60 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   }, [selectedTournamentId]);
 
   const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
+  const availableRoundLabels = selectedTournament
+    ? [
+        ...(selectedTournament.has_qualifying !== false ? ["Q"] : []),
+        ...ROUND_LABELS.filter(l => l !== "Q").slice(0, selectedTournament.num_rounds ?? 4),
+      ]
+    : ROUND_LABELS;
 
-  const handleCreateTournament = async () => {
+  const resetForm = () => {
+    setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
+    setEditingTournamentId(null);
+  };
+
+  const handleStartEdit = (t) => {
+    setNewName(t.name || "");
+    setNewVenue(t.host_venue || "");
+    setNewFormat(t.format || "stroke");
+    setNewHasQualifying(t.has_qualifying !== false);
+    setNewNumRounds(t.num_rounds ?? 4);
+    setEditingTournamentId(t.id);
+    setShowCreate(true);
+  };
+
+  const handleSaveTournament = async () => {
     if (!newName.trim() || busy) return;
     setBusy(true);
-    const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat });
-    setBusy(false);
-    if (t) {
-      setTournaments(prev => [t, ...prev]);
-      setSelectedTournamentId(t.id);
+    if (editingTournamentId) {
+      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
+      setTournaments(prev => prev.map(t => t.id === editingTournamentId
+        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds }
+        : t));
+      setBusy(false);
       setShowCreate(false);
-      setNewName(""); setNewVenue("");
+      resetForm();
+    } else {
+      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
+      setBusy(false);
+      if (t) {
+        setTournaments(prev => [t, ...prev]);
+        setSelectedTournamentId(t.id);
+        setShowCreate(false);
+        resetForm();
+      }
     }
+  };
+
+  const handleDeleteTournament = async (t) => {
+    if (busy) return;
+    const ok = window.confirm(`ลบ Tournament "${t.name}" ทิ้งถาวร?\n\nRound ทั้งหมดในทัวร์นาเมนต์นี้ (รวมข้อมูลที่เก็บสำรองไว้) จะถูกลบไปด้วย กู้คืนไม่ได้\n\nดำเนินการต่อหรือไม่?`);
+    if (!ok) return;
+    setBusy(true);
+    await deleteTournament(t.id);
+    setBusy(false);
+    setTournaments(prev => prev.filter(x => x.id !== t.id));
+    if (selectedTournamentId === t.id) setSelectedTournamentId(null);
   };
 
   const handlePickRound = async (label) => {
@@ -1214,15 +1259,30 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
           {tournaments.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: showCreate ? 16 : 0 }}>
               {tournaments.map(t => (
-                <button key={t.id} onClick={() => { setSelectedTournamentId(t.id); setShowCreate(false); }}
-                  style={{
-                    textAlign: "left", padding: "12px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-                    background: selectedTournamentId === t.id && !showCreate ? "#1a4a8a" : "#0d0f1a",
-                    border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#4e9af1" : "#2a2d4a"}`,
-                  }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</div>
-                  {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
-                </button>
+                <div key={t.id} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "12px 14px", borderRadius: 8, fontFamily: "inherit",
+                  background: selectedTournamentId === t.id && !showCreate ? "#1a4a8a" : "#0d0f1a",
+                  border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#4e9af1" : "#2a2d4a"}`,
+                }}>
+                  <button onClick={() => { setSelectedTournamentId(t.id); setShowCreate(false); }}
+                    style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</div>
+                    {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
+                  </button>
+                  {isAdmin && (
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => handleStartEdit(t)}
+                        style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                        ✏️
+                      </button>
+                      <button onClick={() => handleDeleteTournament(t)}
+                        style={{ background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                        🗑
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -1245,13 +1305,38 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
                     Match Play 🔒
                   </button>
                 </div>
+
+                <div>
+                  <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Rounds in this tournament</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                    <button onClick={() => setNewHasQualifying(q => !q)}
+                      style={{
+                        padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                        background: newHasQualifying ? "#7a5a00" : "#0d0f1a",
+                        border: `1px solid ${newHasQualifying ? "#ffd966" : "#2a2d4a"}`,
+                        color: newHasQualifying ? "#ffd966" : "#8890b8",
+                      }}>Q{newHasQualifying ? " ✓" : ""}</button>
+                    <span style={{ fontSize: 12, color: "#666" }}>+</span>
+                    {[1, 2, 3, 4].map(n => (
+                      <button key={n} onClick={() => setNewNumRounds(n)}
+                        style={{
+                          width: 34, height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15,
+                          background: newNumRounds === n ? "#1a4a8a" : "#0d0f1a",
+                          border: `1px solid ${newNumRounds === n ? "#4e9af1" : "#2a2d4a"}`,
+                          color: newNumRounds === n ? "#fff" : "#8890b8",
+                        }}>{n}</button>
+                    ))}
+                    <span style={{ fontSize: 11, color: "#8890b8" }}>rounds</span>
+                  </div>
+                </div>
+
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={handleCreateTournament} disabled={!newName.trim() || busy}
+                  <button onClick={handleSaveTournament} disabled={!newName.trim() || busy}
                     style={{ flex: 1, padding: "10px 0", borderRadius: 8, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a2a", border: "1px solid #6effa066", color: "#6effa0" }}>
-                    ✓ Create tournament
+                    {editingTournamentId ? "✓ Save changes" : "✓ Create tournament"}
                   </button>
-                  {tournaments.length > 0 && (
-                    <button onClick={() => setShowCreate(false)}
+                  {(tournaments.length > 0 || editingTournamentId) && (
+                    <button onClick={() => { setShowCreate(false); resetForm(); }}
                       style={{ padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7" }}>
                       Cancel
                     </button>
@@ -1259,7 +1344,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
                 </div>
               </div>
             ) : (
-              <button onClick={() => setShowCreate(true)}
+              <button onClick={() => { resetForm(); setShowCreate(true); }}
                 style={{ marginTop: tournaments.length ? 12 : 0, width: "100%", padding: "10px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1" }}>
                 + New tournament
               </button>
@@ -1273,7 +1358,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
             <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 4 }}>Select round</div>
             <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>{selectedTournament.name}{selectedTournament.host_venue ? ` · ${selectedTournament.host_venue}` : ""}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-              {ROUND_LABELS.map(label => {
+              {availableRoundLabels.map(label => {
                 const r = rounds.find(rr => rr.label === label);
                 const isLive = r && r.id === liveRoundId;
                 const isFinished = r?.status === "finished";
@@ -1300,66 +1385,40 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
       </div>
 
       {viewingRound && (() => {
-        const snapshot = viewingRound.archived_app_state;
-        const gdSnapshot = viewingRound.archived_group_data || {};
-        const groupRows = (snapshot?.groups || []).map(g => {
-          const gd = gdSnapshot[g.id] || {};
-          const holesPlayed = (gd.holeData || []).filter(h => h?.endTime).length;
-          return { ...g, holesPlayed };
-        });
+        const snapshot = viewingRound.archived_app_state || {};
         return (
-          <div onClick={() => !busy && setViewingRound(null)} style={{ position: "fixed", inset: 0, background: "#000000cc", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", zIndex: 1200 }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, padding: 24, width: "100%", maxWidth: 480, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 2, color: "#eee" }}>
-                  {viewingRound.label === "Q" ? "Round Q" : `Round ${viewingRound.label}`} <span style={{ fontSize: 13, color: "#666", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED</span>
-                </div>
-                <button onClick={() => setViewingRound(null)} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32 }}>✕</button>
-              </div>
-              {viewingRound.finished_at && (
-                <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>ปิดจบเมื่อ {new Date(viewingRound.finished_at).toLocaleString("th-TH")}</div>
-              )}
-
-              <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, overflow: "hidden", marginBottom: 16, maxHeight: 320, overflowY: "auto" }}>
-                {groupRows.length === 0 ? (
-                  <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>ไม่มีข้อมูลกลุ่มบันทึกไว้</div>
-                ) : (
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "#141626" }}>
-                        <th style={{ padding: "8px 12px", textAlign: "left", color: "#8890b8", fontWeight: 700 }}>Group</th>
-                        <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Start</th>
-                        <th style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8", fontWeight: 700 }}>Holes played</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {groupRows.map(g => (
-                        <tr key={g.id} style={{ borderTop: "1px solid #1a1d2e" }}>
-                          <td style={{ padding: "8px 12px", color: g.color || "#eee", fontWeight: 700 }}>{g.name}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#8890b8" }}>{g.startTime}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#eee" }}>{g.holesPlayed}/18</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-
-              {isAdmin ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#0d0f1a", overflowY: "auto" }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#141626ee", backdropFilter: "blur(6px)", borderBottom: "1px solid #2a2d4a", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 2, color: "#eee" }}>
+                {viewingRound.label === "Q" ? "Round Q" : `Round ${viewingRound.label}`} <span style={{ fontSize: 12, color: "#666", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED{viewingRound.finished_at ? ` ${new Date(viewingRound.finished_at).toLocaleDateString("th-TH")}` : ""}</span>
+              </span>
+              {isAdmin && (
+                <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
                   <button onClick={handleReopenRound} disabled={busy}
-                    style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff" }}>
-                    ✏️ Reopen this round for editing
+                    style={{ padding: "6px 12px", borderRadius: 7, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff" }}>
+                    ↩️ Reopen
                   </button>
                   <button onClick={handleDeleteRound} disabled={busy}
-                    style={{ padding: "11px 0", borderRadius: 8, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070" }}>
-                    🗑 Delete this round permanently
+                    style={{ padding: "6px 12px", borderRadius: 7, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070" }}>
+                    🗑 Delete
                   </button>
                 </div>
-              ) : (
-                <div style={{ fontSize: 12, color: "#666", textAlign: "center" }}>ต้องเป็น admin ถึงจะเปิดแก้ไขหรือลบรอบที่จบไปแล้วได้</div>
               )}
             </div>
+            <SummaryScreen
+              groups={snapshot.groups || []}
+              groupData={viewingRound.archived_group_data || {}}
+              pars={snapshot.pars || []}
+              parTimes={snapshot.parTimes || []}
+              playersPerGroup={3}
+              suspensions={snapshot.suspensions || []}
+              isSuspended={false}
+              pendingStopTime=""
+              totalOffsetMin={0}
+              onBack={() => setViewingRound(null)}
+              currentUser={currentUser}
+              onLogout={onLogout}
+            />
           </div>
         );
       })()}
@@ -2249,7 +2308,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   };
 
   useEffect(() => {
-    const iv = setInterval(() => setNow(nowInMin()), 5000);
+    const iv = setInterval(() => setNow(nowInMin()), 1000);
     return () => clearInterval(iv);
   }, []);
 
@@ -3558,6 +3617,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
   const [quickRecord, setQuickRecord] = useState(null); // { groupId, targetSlot } or null
+  const [collapsedTables, setCollapsedTables] = useState({}); // { [tableKey]: true } — folded schedule tables
   // Delete a WN/MN/TM log entry from the dashboard (in case of a mistaken tap) — confirmed via popup before removal
   const [deleteLogConfirm, setDeleteLogConfirm] = useState(null); // { groupId, idx } or null
   const deleteLogAt = (groupId, idx) => {
@@ -3571,6 +3631,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // history has gotten tangled (e.g. accidental duplicate on/off taps) and a single
   // entry delete isn't enough.
   const [clearStatusConfirm, setClearStatusConfirm] = useState(null); // { groupId, type } or null
+  const [editLogPopup, setEditLogPopup] = useState(null); // { groupId, idx } or null — editing a single WN/MN/TM log entry
   const clearStatusFor = (groupId, type) => {
     const gd = groupData[groupId] || {};
     const nextLogs = (gd.actionLogs ?? []).filter(l => l.type !== type);
@@ -3595,7 +3656,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   };
 
   useEffect(() => {
-    const iv = setInterval(() => setNow(nowInMin()), 5000);
+    const iv = setInterval(() => setNow(nowInMin()), 1000);
     return () => clearInterval(iv);
   }, []);
 
@@ -3884,12 +3945,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   return (
                     <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
                       {items.map(it => (
-                        <span key={it.key} style={{
+                        <span key={it.key} onClick={(e) => { if (it.idx !== undefined) { e.stopPropagation(); setEditLogPopup({ groupId: g.id, idx: it.idx }); } }} style={{
                           display: "inline-flex", alignItems: "center", gap: 3,
                           background: `${logBg(it.type)}66`,
                           border: `1px solid ${logColor(it.type)}44`,
                           borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 700,
                           color: logColor(it.type), lineHeight: 1.5, alignSelf: "flex-start",
+                          cursor: it.idx !== undefined ? "pointer" : "default",
                         }}>
                           {it.label}
                           {it.idx !== undefined ? (
@@ -3981,11 +4043,18 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const meta = getStartHoleMeta(startHole);
             const colColor = meta.color;
             const holeLabel = meta.label;
+            const tableKey = `${sectionKey}-${startHole}`;
+            const isCollapsed = !!collapsedTables[tableKey];
             return (
-              <div key={`${sectionKey}-${startHole}`} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid #2a2d4a", fontSize: 12, color: colColor, letterSpacing: 2, fontWeight: 700 }}>
-                  📋 {holeLabel}
+              <div key={tableKey} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
+                <div
+                  onClick={() => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
+                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #2a2d4a", fontSize: 12, color: colColor, letterSpacing: 2, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+                >
+                  <span>📋 {holeLabel}</span>
+                  <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                 </div>
+                {!isCollapsed && (
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
@@ -4132,6 +4201,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     </tbody>
                   </table>
                 </div>
+                )}
               </div>
             );
           };
@@ -4231,6 +4301,66 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   ✓ Yes, delete
                 </button>
                 <button onClick={() => setDeleteLogConfirm(null)}
+                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {editLogPopup && (() => {
+        const gLogs = groupData[editLogPopup.groupId]?.actionLogs ?? [];
+        const l = gLogs[editLogPopup.idx];
+        if (!l) return null;
+        const gName = groups.find(g => g.id === editLogPopup.groupId)?.name ?? "";
+        const saveEdit = (updated) => {
+          const nextLogs = gLogs.map((x, i2) => i2 === editLogPopup.idx ? { ...x, ...updated } : x);
+          onUpdateGroupData(editLogPopup.groupId, { actionLogs: nextLogs });
+          setEditLogPopup(null);
+        };
+        return (
+          <div onClick={() => setEditLogPopup(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: `1px solid ${logColor(l.type)}88`, borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #000" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: logColor(l.type), marginBottom: 4 }}>
+                Edit {l.badTime ? "Bad Time" : l.off ? `Off ${l.type}` : l.type}
+              </div>
+              <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 18 }}>{gName}</div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Hole</label>
+                  <input type="number" min="1" max="18" defaultValue={l.holeIdx + 1}
+                    onChange={e => { l._newHole = Math.min(18, Math.max(1, Number(e.target.value) || 1)); }}
+                    style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
+                </div>
+                {(l.target || l.badTime) && (
+                  <div>
+                    <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Player</label>
+                    <input defaultValue={l.target || ""} placeholder="e.g. P2"
+                      onChange={e => { l._newTarget = e.target.value; }}
+                      style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
+                  </div>
+                )}
+                <div>
+                  <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Recorded by</label>
+                  <input defaultValue={l.name || ""}
+                    onChange={e => { l._newName = e.target.value; }}
+                    style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => saveEdit({
+                  holeIdx: (l._newHole ?? (l.holeIdx + 1)) - 1,
+                  ...(l._newTarget !== undefined ? { target: l._newTarget } : {}),
+                  ...(l._newName !== undefined ? { name: l._newName } : {}),
+                })}
+                  style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                  ✓ Save
+                </button>
+                <button onClick={() => setEditLogPopup(null)}
                   style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                   Cancel
                 </button>
@@ -4811,19 +4941,22 @@ async function fetchRoundById(id) {
   if (error) return null;
   return data;
 }
-async function createTournament({ name, hostVenue, format }) {
+async function createTournament({ name, hostVenue, format, hasQualifying, numRounds }) {
   try {
     const { data, error } = await supabase.from("tournaments")
-      .insert({ name, host_venue: hostVenue, format: format || "stroke" })
+      .insert({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4 })
       .select().maybeSingle();
     if (error) return null;
     return data;
   } catch { return null; }
 }
-async function updateTournament(id, { name, hostVenue, format }) {
+async function updateTournament(id, { name, hostVenue, format, hasQualifying, numRounds }) {
   try {
-    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke" }).eq("id", id);
+    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4 }).eq("id", id);
   } catch {}
+}
+async function deleteTournament(id) {
+  try { await supabase.from("tournaments").delete().eq("id", id); } catch {}
 }
 async function fetchRounds(tournamentId) {
   const { data, error } = await supabase.from("tournament_rounds").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true });
