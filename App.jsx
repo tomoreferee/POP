@@ -262,7 +262,7 @@ function computeHoleDiff(hd, hi, parTimes) {
   const [sh, sm] = hd.startTime.split(":").map(Number);
   const [eh, em] = hd.endTime.split(":").map(Number);
   const actual = (eh * 60 + em) - (sh * 60 + sm);
-  return Math.round(actual - (parTimes?.[hi] ?? 14)) + 1;
+  return Math.round(actual - (parTimes?.[hi] ?? 14));
 }
 
 // A group's progress: diff at the most recently completed hole (in that group's play order)
@@ -2319,7 +2319,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     const [eh, em] = hd.endTime.split(":").map(Number);
     const endMin = eh * 60 + em;
     const deadline = (adjustedSchedule[holeIdx] ?? 0) + (parTimes?.[holeIdx] ?? 14);
-    return endMin - deadline + 1;
+    return endMin - deadline;
   };
 
   const commitRecord = (holeIdx, newHoleData) => {
@@ -2486,7 +2486,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   const deadlineMin = startAbsMin + parTimeNow;
   const diffLive = now - deadlineMin + 1;
   const displayEnd = recordedEnd ?? now;
-  const diffDisplay = displayEnd - deadlineMin + 1;
+  const diffDisplay = displayEnd - deadlineMin;
   const canConfirm = inputMode === "manual" || !!recordedEnd;
 
   const diffColor = (d) => d >= 3 ? "#ff7070" : d >= 1 ? "#ffd966" : "#6effa0";
@@ -2744,7 +2744,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           {inputMode === "stamp" && (
             !recordedEnd ? (
               <button
-                onClick={() => setRecordedEnd(nowInMin() - 1)}
+                onClick={() => setRecordedEnd(nowInMin())}
                 style={{
                   width: "100%", padding: compact ? "16px 0" : "22px 0", marginBottom: 12,
                   background: "linear-gradient(135deg, #1a2a1a, #1f3f1f)",
