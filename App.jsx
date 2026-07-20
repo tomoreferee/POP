@@ -84,7 +84,15 @@ function buildScheduleOrdered(startTimeStr, parTimes, startHole) {
   const [h, m] = startTimeStr.split(":").map(Number);
   let t = h * 60 + m;
   const sch = Array(18);
-  order.forEach(hi => { sch[hi] = t; t += parTimes[hi]; });
+  order.forEach((hi, i) => {
+    // Turn-time buffer: groups starting at Hole 1 or Hole 10 get +1 minute added
+    // once they reach the 10th hole of their round (H10 for a H1 start, H1 for a
+    // H10 start) — this shifts that hole and every hole after it by 1 minute,
+    // giving a small buffer for the walk between the front and back nine.
+    if (i === 9 && (startHole === 1 || startHole === 10)) t += 1;
+    sch[hi] = t;
+    t += parTimes[hi];
+  });
   return sch;
 }
 
