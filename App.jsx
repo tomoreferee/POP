@@ -320,7 +320,7 @@ function getGroupSides(groups) {
 function getGroupSideIndex(groups, group) {
   const timeToMin = t => { const [h, m] = (t || "0:00").split(":").map(Number); return h * 60 + m; };
   const side = groups
-    .filter(g => (g.startHole || 1) === (group.startHole || 1))
+    .filter(g => (g.startHole || 1) === (group.startHole || 1) && (g.section || "morning") === (group.section || "morning"))
     .slice()
     .sort((a, b) => timeToMin(a.startTime) - timeToMin(b.startTime));
   return { side, idx: side.findIndex(g => g.id === group.id) };
