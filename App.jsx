@@ -2343,6 +2343,22 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     return { nxtHD, nxtRec };
   };
 
+  // Clears a mistakenly-recorded finish time for a hole (e.g. typo'd via manual
+  // entry, or timestamped by accident) so it can be re-entered from scratch.
+  const clearHoleRecord = (holeIdx) => {
+    const nxtHD = [...holeData];
+    nxtHD[holeIdx] = { ...nxtHD[holeIdx], endTime: null, manualDiff: undefined };
+    setHoleData(nxtHD);
+
+    const nxtRec = [...records];
+    nxtRec[holeIdx] = null;
+    setRecords(nxtRec);
+
+    setRecordedEnd(null);
+    setDiffManual(0);
+    onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: holeIdx, actionLogs, mnActive, mnName, tmActive, tmName, tmTarget });
+  };
+
   // Shared auto-log logic: while MN/TM is active, whenever a hole becomes "complete"
   // (whether via the normal Confirm-Hole flow or a manual time edit), stamp an
   // automatic MN/TM entry for that hole so the status keeps following forward,
@@ -2662,6 +2678,16 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             )}
           </div>
           </div>
+
+          {holeData[currentHole]?.endTime && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "#2a1a0a", border: "1px solid #ffd96644", borderRadius: 10, padding: "8px 12px", marginBottom: compact ? 10 : 14 }}>
+              <span style={{ fontSize: 12, color: "#ffd966" }}>หลุมนี้บันทึกเวลาจบไว้แล้ว ({holeData[currentHole].endTime})</span>
+              <button
+                onClick={() => { if (window.confirm(`ลบเวลาจบที่บันทึกไว้ของ H${currentHole + 1}?\n\nสามารถบันทึกใหม่ได้หลังจากลบ`)) clearHoleRecord(currentHole); }}
+                style={{ background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0 }}
+              >🗑 Clear</button>
+            </div>
+          )}
 
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16, marginBottom: compact ? 12 : 20 }}>
             <div style={{ flex: 1, background: "#0d0f1a", borderRadius: 12, padding: compact ? "8px 10px" : "12px 14px" }}>
