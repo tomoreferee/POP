@@ -2500,13 +2500,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   }
 
   const parTimeNow = parTimes?.[currentHole] ?? 14;
-  const startAbsMin = (() => {
-    if (currentSlot === 0) return adjustedSchedule[holeOrder[0]];
-    const prevHole = holeOrder[currentSlot - 1];
-    const prev = holeData[prevHole];
-    if (prev?.endTime) { const [h, m] = prev.endTime.split(":").map(Number); return h * 60 + m; }
-    return adjustedSchedule[currentHole];
-  })();
+  // Always anchor Start/Finish to the fixed master schedule for this hole — a group
+  // running late (or early) on a previous hole must NOT shift this hole's target
+  // time. Each hole's deadline stays fixed to the original tee sheet, so recorded
+  // diffs measure cumulative schedule adherence rather than resetting hole-to-hole.
+  const startAbsMin = adjustedSchedule[currentHole];
   const deadlineMin = startAbsMin + parTimeNow;
   const diffLive = now - deadlineMin + 1;
   const displayEnd = recordedEnd ?? now;
