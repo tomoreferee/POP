@@ -4095,8 +4095,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                       <tr style={{ background: "#0d0f1a" }}>
                         <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: 80 }}>Group</th>
                         <th style={{ ...thStyle, color: colColor, position: "sticky", left: 80, zIndex: 2, background: "#0d0f1a", minWidth: 56, borderRight: "1px solid #2a2d4a" }}>Start</th>
-                        {order.map(hi => (
-                          <th key={hi} style={thStyle}>H{hi + 1}</th>
+                        {order.map((hi, i) => (
+                          <th key={hi} style={i === 9 ? { ...thStyle, borderLeft: `2px solid ${colColor}88` } : thStyle}>H{hi + 1}</th>
                         ))}
                       </tr>
                     </thead>
@@ -4185,7 +4185,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 const showMnPreview = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
                                 const showTmPreview = tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
                                 return (
-                                  <td key={hi} onClick={handleHoleClick} style={{ ...tdStyle, color: "#666f99", cursor: "pointer", transition: "background 0.15s" }}
+                                  <td key={hi} onClick={handleHoleClick} style={{ ...tdStyle, color: "#666f99", cursor: "pointer", transition: "background 0.15s", ...(slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
@@ -4216,7 +4216,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const cellBgHover = `${color}3d`;
                               return (
                                 <td key={hi} onClick={handleHoleClick}
-                                  style={{ ...tdStyle, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg }}
+                                  style={{ ...tdStyle, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg, ...(slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                   onMouseEnter={e => e.currentTarget.style.background = cellBgHover}
                                   onMouseLeave={e => e.currentTarget.style.background = cellBg}
                                 >
