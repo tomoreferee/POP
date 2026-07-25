@@ -270,7 +270,7 @@ function computeHoleDiff(hd, hi, parTimes) {
   const [sh, sm] = hd.startTime.split(":").map(Number);
   const [eh, em] = hd.endTime.split(":").map(Number);
   const actual = (eh * 60 + em) - (sh * 60 + sm);
-  return Math.round(actual - (parTimes?.[hi] ?? 14));
+  return Math.round(actual - (parTimes?.[hi] ?? 14)) + 1;
 }
 
 // A group's progress: diff at the most recently completed hole (in that group's play order)
@@ -2327,7 +2327,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     const [eh, em] = hd.endTime.split(":").map(Number);
     const endMin = eh * 60 + em;
     const deadline = (adjustedSchedule[holeIdx] ?? 0) + (parTimes?.[holeIdx] ?? 14);
-    return endMin - deadline;
+    return endMin - deadline + 1;
   };
 
   const commitRecord = (holeIdx, newHoleData) => {
@@ -2508,7 +2508,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   const deadlineMin = startAbsMin + parTimeNow;
   const diffLive = now - deadlineMin + 1;
   const displayEnd = recordedEnd ?? now;
-  const diffDisplay = displayEnd - deadlineMin;
+  const diffDisplay = displayEnd - deadlineMin + 1;
   const canConfirm = inputMode === "manual" || !!recordedEnd;
 
   const diffColor = (d) => d >= 3 ? "#ff7070" : d >= 1 ? "#ffd966" : "#6effa0";
@@ -3891,7 +3891,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         {(() => {
           const alertGroups = groups.filter(g => {
             const gd = groupData[g.id];
-            const hole = gd?.records?.filter(Boolean).length ?? 0;
+            const holeFromRecords = gd?.records?.filter(Boolean).length ?? 0;
+            const holeFromData = (gd?.holeData ?? []).filter(h => h?.endTime).length;
+            const hole = Math.max(holeFromRecords, holeFromData);
             if (hole >= 18) return false;
             const status = getGroupStatus(g);
             const mnActive = gd?.mnActive === true;
