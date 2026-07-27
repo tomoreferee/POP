@@ -79,17 +79,17 @@ function getStartHoleMeta(startHole) {
   return START_HOLE_META[startHole] || { color: "#aaaaaa", label: `H${startHole} → ...`, shortLabel: `Start hole ${startHole}` };
 }
 
-function buildScheduleOrdered(startTimeStr, parTimes, startHole) {
+function buildScheduleOrdered(startTimeStr, parTimes, startHole, turnTime = 1) {
   const order = getHoleOrder(startHole);
   const [h, m] = startTimeStr.split(":").map(Number);
   let t = h * 60 + m;
   const sch = Array(18);
   order.forEach((hi, i) => {
-    // Turn-time buffer: groups starting at Hole 1 or Hole 10 get +1 minute added
-    // once they reach the 10th hole of their round (H10 for a H1 start, H1 for a
-    // H10 start) — this shifts that hole and every hole after it by 1 minute,
-    // giving a small buffer for the walk between the front and back nine.
-    if (i === 9 && (startHole === 1 || startHole === 10)) t += 1;
+    // Turn-time buffer: groups starting at Hole 1 or Hole 10 get the configured
+    // walking time added once they reach the 10th hole of their round (H10 for a
+    // H1 start, H1 for a H10 start) — this shifts that hole and every hole after
+    // it, covering the walk between the front and back nine.
+    if (i === 9 && (startHole === 1 || startHole === 10)) t += (turnTime ?? 0);
     sch[hi] = t;
     t += parTimes[hi];
   });
@@ -1441,6 +1441,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
   const [pars, setPars] = useState(() => loadSetup()?.pars ?? [...DEFAULT_PARS]);
   const [parTimes, setParTimes] = useState(() => loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
+  const [turnTime, setTurnTime] = useState(() => loadSetup()?.turnTime ?? 1);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
@@ -1459,8 +1460,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
   // ─── Save to memoryStorage every time the data changes ───────────────────────
   useEffect(() => {
-    saveSetup({ groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup });
-  }, [groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup]);
+    saveSetup({ groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime });
+  }, [groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime]);
 
   const addGroup1 = () => {
     const n = nextNum.current++;
@@ -1717,8 +1718,26 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
           <div style={{ borderTop: "1px dashed #2a2d4a", marginBottom: 12 }} />
 
+          {/* Turn time — walking time between the 9th and 10th hole of the round */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700 }}>🚶 Turn time</div>
+              <div style={{ fontSize: 10, color: "#8890b8" }}>H9→H10 (ออกหลุม 1) / H18→H1 (ออกหลุม 10)</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+              <button onClick={() => isAdmin && setTurnTime(t => Math.max(0, t - 1))} disabled={!isAdmin}
+                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>−</button>
+              <input type="number" min="0" value={turnTime} disabled={!isAdmin}
+                onChange={e => setTurnTime(Math.max(0, Number(e.target.value) || 0))}
+                style={{ width: 54, background: "#0d0f1a", border: `1px solid ${turnTime > 0 ? "#ffd96666" : "#2a2d4a"}`, color: "#ffd966", fontFamily: "'Bebas Neue'", fontSize: 20, textAlign: "center", borderRadius: 6, padding: "3px 0", outline: "none" }} />
+              <button onClick={() => isAdmin && setTurnTime(t => t + 1)} disabled={!isAdmin}
+                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>+</button>
+              <span style={{ fontSize: 12, color: "#8890b8", marginLeft: 2 }}>min</span>
+            </div>
+          </div>
+
           {/* Summary: Front 9 / Back 9 / Total par time */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
             <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
               <div style={{ fontSize: 11, color: "#9aa2c7", letterSpacing: 1, marginBottom: 2 }}>H1–H9</div>
               <div style={{ fontSize: 15, color: "#8899cc", fontWeight: 700 }}>{minToHM(parTimes.slice(0, 9).reduce((a, b) => a + b, 0))}</div>
@@ -1728,8 +1747,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
               <div style={{ fontSize: 15, color: "#8899cc", fontWeight: 700 }}>{minToHM(parTimes.slice(9).reduce((a, b) => a + b, 0))}</div>
             </div>
             <div style={{ background: "#0a1a0a", border: "1px solid #2a4a2a", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1, marginBottom: 2 }}>TOTAL</div>
-              <div style={{ fontSize: 15, color: "#6effa0", fontWeight: 700 }}>{minToHM(parTimes.reduce((a, b) => a + b, 0))}</div>
+              <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1, marginBottom: 2 }}>TOTAL +TURN</div>
+              <div style={{ fontSize: 15, color: "#6effa0", fontWeight: 700 }}>{minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTime || 0))}</div>
             </div>
           </div>
 
@@ -1957,7 +1976,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
           onClick={() => {
             if (!isAdmin && allGroups.length === 0) return;
             if (hasLiveSession && !window.confirm("มี session ทำงานอยู่แล้ว\n\nการกด Start จะอัปเดตรายการกลุ่ม แต่ข้อมูลเวลาที่บันทึกไว้ของกลุ่มเดิมจะไม่ถูกลบ\n\nต้องการดำเนินการต่อหรือไม่?")) return;
-            onStart(allGroups, pars, parTimes, playersPerGroup);
+            onStart(allGroups, pars, parTimes, playersPerGroup, turnTime);
           }}
           disabled={!isAdmin && allGroups.length === 0}
           style={{
@@ -3940,7 +3959,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const tmName = gd?.tmName ?? "";
             const tmTarget = gd?.tmTarget ?? "";
             return (
-              <div key={g.id} onClick={() => onSelectGroup(g)} style={{
+              <div key={g.id} onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })} style={{
                 background: "#141626", border: `1px solid ${g.color}44`, borderRadius: 12,
                 padding: 12, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s",
                 boxShadow: status === "late" ? `0 0 20px #ff707022` : "none",
@@ -5242,7 +5261,7 @@ export default function App() {
     } catch {}
   };
 
-  const handleStart = (grps, ps, pt, pxg) => {
+  const handleStart = (grps, ps, pt, pxg, tt) => {
     // Was a session already running before this "Start tracking" press?
     // If so, this is just the admin/user coming back through the Pace
     // Monitor (setup) page, not a brand-new round — so we must NOT wipe
@@ -5253,7 +5272,7 @@ export default function App() {
     const sch = {};
     const data = {};
     grps.forEach(g => {
-      sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1);
+      sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1);
       const existingData = groupData[g.id];
       const existedBefore = previousGroups.some(pg => pg.id === g.id);
       // Keep previously recorded times/logs for any group that already
