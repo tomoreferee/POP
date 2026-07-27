@@ -1727,10 +1727,10 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
           <div style={{ borderTop: "1px dashed #2a2d4a", marginBottom: 12 }} />
 
-          {/* Turn time — walking time between the 9th and 10th hole of the round */}
+          {/* Transit time — walking time between the 9th and 10th hole of the round */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 180 }}>
-              <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700 }}>🚶 Turn time</div>
+              <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700 }}>🚶 Transit Time</div>
               <div style={{ fontSize: 10, color: "#8890b8" }}>H9→H10 (ออกหลุม 1) / H18→H1 (ออกหลุม 10)</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
@@ -1745,19 +1745,19 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
             </div>
           </div>
 
-          {/* Summary: Front 9 / Back 9 / Total par time */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "#9aa2c7", letterSpacing: 1, marginBottom: 2 }}>H1–H9</div>
-              <div style={{ fontSize: 15, color: "#8899cc", fontWeight: 700 }}>{minToHM(parTimes.slice(0, 9).reduce((a, b) => a + b, 0))}</div>
+          {/* Summary: Front 9 / Back 9 on the left, grand total pushed right — one row */}
+          <div style={{ display: "flex", alignItems: "stretch", gap: 8, flexWrap: "nowrap" }}>
+            <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, padding: "8px 10px", textAlign: "center", flexShrink: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: "#9aa2c7", letterSpacing: 1, marginBottom: 2, whiteSpace: "nowrap" }}>H1–H9</div>
+              <div style={{ fontSize: 14, color: "#8899cc", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.slice(0, 9).reduce((a, b) => a + b, 0))}</div>
             </div>
-            <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "#9aa2c7", letterSpacing: 1, marginBottom: 2 }}>H10–H18</div>
-              <div style={{ fontSize: 15, color: "#8899cc", fontWeight: 700 }}>{minToHM(parTimes.slice(9).reduce((a, b) => a + b, 0))}</div>
+            <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, padding: "8px 10px", textAlign: "center", flexShrink: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: "#9aa2c7", letterSpacing: 1, marginBottom: 2, whiteSpace: "nowrap" }}>H10–H18</div>
+              <div style={{ fontSize: 14, color: "#8899cc", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.slice(9).reduce((a, b) => a + b, 0))}</div>
             </div>
-            <div style={{ background: "#0a1a0a", border: "1px solid #2a4a2a", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1, marginBottom: 2 }}>TOTAL +TURN</div>
-              <div style={{ fontSize: 15, color: "#6effa0", fontWeight: 700 }}>{minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTime || 0))}</div>
+            <div style={{ background: "#0a1a0a", border: "1px solid #2a4a2a", borderRadius: 8, padding: "8px 12px", textAlign: "center", marginLeft: "auto", flexShrink: 0 }}>
+              <div style={{ fontSize: 10, color: "#6effa0", letterSpacing: 1, marginBottom: 2, whiteSpace: "nowrap" }}>TOTAL +TRANSIT</div>
+              <div style={{ fontSize: 14, color: "#6effa0", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTime || 0))}</div>
             </div>
           </div>
 
