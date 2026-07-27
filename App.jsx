@@ -2893,26 +2893,6 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             </button>
           )}
 
-          {/* Finish round — closes the group out early (withdrawal, weather, etc.)
-              so it stops appearing in the Dashboard alert list. */}
-          <button
-            onClick={() => {
-              const played = holeData.filter(h => h?.endTime).length;
-              const lastHoleOfRound = holeOrder[17] + 1;
-              if (!window.confirm(`จบรอบของ ${group.name}?\n\nบันทึกไปแล้ว ${played}/18 หลุม (หลุมสุดท้ายของรอบนี้คือ H${lastHoleOfRound})\n\nกลุ่มนี้จะถูกทำเครื่องหมายว่าจบรอบแล้ว และจะไม่ขึ้นในรายการแจ้งเตือนอีก`)) return;
-              onUpdate({ holeData, records, currentHole: currentSlot, actionLogs, mnActive, mnName, tmActive, tmName, tmTarget, roundFinished: true });
-              onRecorded?.();
-            }}
-            style={{
-              width: "100%", marginTop: canConfirm ? 10 : 0,
-              background: "#1a1d2e", border: "1px solid #6effa066", color: "#6effa0",
-              borderRadius: 10, padding: "11px", cursor: "pointer",
-              fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            }}
-          >
-            🏁 Finish round (H{holeOrder[17] + 1})
-          </button>
-
           <div style={{ marginTop: canConfirm ? 16 : 0 }}>
           {/* MN Active Banner */}
         {mnActive && (
@@ -3930,7 +3910,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         {(() => {
           const alertGroups = groups.filter(g => {
             const gd = groupData[g.id];
-            if (gd?.roundFinished === true) return false; // manually closed out
             const holeFromRecords = gd?.records?.filter(Boolean).length ?? 0;
             const holeFromData = (gd?.holeData ?? []).filter(h => h?.endTime).length;
             const hole = Math.max(holeFromRecords, holeFromData);
@@ -4169,18 +4148,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 <span style={{ fontSize: 11, color: "#8890b8" }}>›</span>
                               </div>
                               <div style={{ display: "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
-                                {data?.roundFinished === true && (
-                                  <span
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (window.confirm(`ยกเลิกสถานะ "จบรอบ" ของ ${g.name}?\n\nกลุ่มนี้จะกลับมาขึ้นในรายการแจ้งเตือนอีกครั้ง`)) {
-                                        onUpdateGroupData(g.id, { roundFinished: false });
-                                      }
-                                    }}
-                                    title="กดเพื่อยกเลิกสถานะจบรอบ"
-                                    style={{ fontSize: 11, fontWeight: 700, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa044", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
-                                  >🏁 FINISHED</span>
-                                )}
                                 {hasWN && <span style={{ fontSize: 11, fontWeight: 700, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 5px" }}>WN</span>}
                                 {mnActiveNow ? (
                                   <span style={{ fontSize: 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a66", border: "1px solid #4e9af144", borderRadius: 4, padding: "1px 5px" }}>👁 MN</span>
