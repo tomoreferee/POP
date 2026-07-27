@@ -5068,6 +5068,24 @@ async function fetchRounds(tournamentId) {
   if (error || !data) return [];
   return data;
 }
+// Recovers the course setup (pars / par times / transit time) from the most recent
+// earlier round of the same tournament. Used as a fallback so a new round still
+// inherits the setup even if the tournament-level columns aren't available.
+async function fetchCourseSetupFromPreviousRounds(tournamentId, excludeRoundId) {
+  try {
+    const rounds = await fetchRounds(tournamentId);
+    const candidates = rounds
+      .filter(r => r.id !== excludeRoundId && r.archived_app_state)
+      .sort((a, b) => new Date(b.finished_at || b.created_at) - new Date(a.finished_at || a.created_at));
+    for (const r of candidates) {
+      const s = r.archived_app_state;
+      if (s?.pars?.length === 18 && s?.parTimes?.length === 18) {
+        return { pars: s.pars, parTimes: s.parTimes, turnTime: s.turnTime ?? 1 };
+      }
+    }
+  } catch {}
+  return null;
+}
 async function createRound({ tournamentId, label, isQualifying }) {
   try {
     const { data, error } = await supabase.from("tournament_rounds")
@@ -5419,7 +5437,7 @@ export default function App() {
           if (currentRound && groups.length > 0) {
             await archiveAndFinishRound(
               currentRound.id,
-              { groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
+              { groups, pars, parTimes, turnTime, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
               groupData
             );
             await clearAppState(groups.map(g => g.id));
@@ -5442,7 +5460,7 @@ export default function App() {
           if (currentRound && currentRound.id !== round.id && groups.length > 0) {
             await archiveAndFinishRound(
               currentRound.id,
-              { groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
+              { groups, pars, parTimes, turnTime, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
               groupData
             );
             await clearAppState(groups.map(g => g.id));
@@ -5476,8 +5494,19 @@ export default function App() {
           setScreen(restoredGroups.length ? "dashboard" : "setup");
           return;
         }
-        // "resume" (already the live round) falls through to here too
-        setCurrentTournament(tournament);
+        // "resume" (already the live round) falls through to here too.
+        // Make sure the Setup screen starts with the course setup already used in
+        // this tournament: prefer the tournament record, otherwise recover it from
+        // the most recent earlier round so nothing has to be re-typed each round.
+        let tournamentForSetup = tournament;
+        const hasCourseSetup = tournament?.pars?.length === 18 && tournament?.par_times?.length === 18;
+        if (!hasCourseSetup) {
+          const recovered = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
+          if (recovered) {
+            tournamentForSetup = { ...tournament, pars: recovered.pars, par_times: recovered.parTimes, turn_time: recovered.turnTime };
+          }
+        }
+        setCurrentTournament(tournamentForSetup);
         setCurrentRound(round);
         setScreen("setup");
       }}
