@@ -1434,14 +1434,23 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, onSwitchRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, onSwitchRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
-  const [pars, setPars] = useState(() => loadSetup()?.pars ?? [...DEFAULT_PARS]);
-  const [parTimes, setParTimes] = useState(() => loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
+  const [pars, setPars] = useState(() => savedPars ?? loadSetup()?.pars ?? [...DEFAULT_PARS]);
+  const [parTimes, setParTimes] = useState(() => savedParTimes ?? loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
-  const [turnTime, setTurnTime] = useState(() => loadSetup()?.turnTime ?? 1);
+  const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? loadSetup()?.turnTime ?? 1);
+
+  // The tournament record may arrive after this screen first mounts (async fetch), and
+  // it changes when switching tournaments — pull its saved course setup in whenever
+  // it appears so every round of a tournament shares the same pars / par times / turn time.
+  useEffect(() => {
+    if (savedPars && savedPars.length === 18) setPars(savedPars);
+    if (savedParTimes && savedParTimes.length === 18) setParTimes(savedParTimes);
+    if (savedTurnTime !== null && savedTurnTime !== undefined) setTurnTime(savedTurnTime);
+  }, [savedPars, savedParTimes, savedTurnTime]);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
@@ -5044,6 +5053,16 @@ async function updateTournament(id, { name, hostVenue, format, hasQualifying, nu
 async function deleteTournament(id) {
   try { await supabase.from("tournaments").delete().eq("id", id); } catch {}
 }
+// Course setup (pars, par times, turn time) belongs to the TOURNAMENT, not a single
+// round — set it once on Round Q / Round 1 and every later round inherits it.
+async function saveTournamentCourseSetup(id, { pars, parTimes, turnTime }) {
+  if (!id) return;
+  try {
+    await supabase.from("tournaments").update({
+      pars, par_times: parTimes, turn_time: turnTime ?? 1,
+    }).eq("id", id);
+  } catch {}
+}
 async function fetchRounds(tournamentId) {
   const { data, error } = await supabase.from("tournament_rounds").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true });
   if (error || !data) return [];
@@ -5112,6 +5131,7 @@ export default function App() {
   const [pars, setPars] = useState([]);
   const [parTimes, setParTimes] = useState([]);
   const [playersPerGroup, setPlayersPerGroup] = useState(3);
+  const [turnTime, setTurnTime] = useState(1);
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
   const [currentRound, setCurrentRound] = useState(null);           // { id, tournament_id, label, status, is_qualifying }
   const [baseSchedules, setBaseSchedules] = useState({}); // original schedules
@@ -5321,6 +5341,10 @@ export default function App() {
     setPars(ps);
     setParTimes(pt);
     setPlayersPerGroup(pxg ?? 3);
+    setTurnTime(tt ?? 1);
+    // Remember this course setup on the tournament so the next round starts with it
+    saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1 });
+    setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1 } : prev);
     setBaseSchedules(sch);
     setSchedules(sch);
     setGroupData(data);
@@ -5483,6 +5507,9 @@ export default function App() {
       tournamentName={currentTournament?.name || ""}
       hostVenue={currentTournament?.host_venue || ""}
       roundLabel={currentRound?.label || ""}
+      savedPars={currentTournament?.pars || null}
+      savedParTimes={currentTournament?.par_times || null}
+      savedTurnTime={currentTournament?.turn_time ?? null}
       onSwitchRound={() => setScreen("tournament")}
     />
   );
