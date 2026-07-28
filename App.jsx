@@ -1656,13 +1656,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
         {/* Par Setup */}
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 24, marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap" }}>📋 HOLE SETUP — PAR & TIME</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12, color: "#4e9af1", letterSpacing: 1, fontWeight: 700 }}>📋 HOLE SETUP — PAR & TIME</div>
             {isAdmin && (
               <button
                 onClick={() => setParTimes(pars.map(p => parTimeTable(playersPerGroup)[p]))}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#888", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}
-              >↺ reset time ({playersPerGroup}-ball)</button>
+                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#888", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}
+              >↺ reset ({playersPerGroup}-ball)</button>
             )}
             {!isAdmin && (
               <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1 }}>🔒 View only</span>
@@ -1686,7 +1686,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
                   setPars(nxt);
                   setParTimes(pt => { const n = [...pt]; const tbl = parTimeTable(playersPerGroup); if (n[i] === tbl[p]) n[i] = tbl[Number(e.target.value)]; return n; });
                 }}
-                style={{ width: "100%", background: isAdmin ? "#1e2135" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a2d4a" : "#1a1d2e"}`, color: isAdmin ? "#eee" : "#666", borderRadius: 6, padding: "4px 0", textAlign: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default" }}
+                style={{ width: "100%", background: isAdmin ? "#1e2135" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a2d4a" : "#1a1d2e"}`, color: isAdmin ? "#eee" : "#666", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 <option value={3}>3</option><option value={4}>4</option><option value={5}>5</option>
               </select>
@@ -1699,7 +1699,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
               <select key={i} value={t}
                 disabled={!isAdmin}
                 onChange={e => { if (!isAdmin) return; const n = [...parTimes]; n[i] = Number(e.target.value); setParTimes(n); }}
-                style={{ width: "100%", background: isAdmin ? "#1a2a1a" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a4a2a" : "#1a2a1a"}`, color: isAdmin ? "#6effa0" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default" }}
+                style={{ width: "100%", background: isAdmin ? "#1a2a1a" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a4a2a" : "#1a2a1a"}`, color: isAdmin ? "#6effa0" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 {PAR_TIME_CHOICES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
@@ -1725,7 +1725,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
                   setPars(nxt);
                   setParTimes(pt => { const n = [...pt]; const tbl = parTimeTable(playersPerGroup); if (n[i+9] === tbl[p]) n[i+9] = tbl[Number(e.target.value)]; return n; });
                 }}
-                style={{ width: "100%", background: isAdmin ? "#1e2135" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a2d4a" : "#1a1d2e"}`, color: isAdmin ? "#eee" : "#666", borderRadius: 6, padding: "4px 0", textAlign: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default" }}
+                style={{ width: "100%", background: isAdmin ? "#1e2135" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a2d4a" : "#1a1d2e"}`, color: isAdmin ? "#eee" : "#666", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 <option value={3}>3</option><option value={4}>4</option><option value={5}>5</option>
               </select>
@@ -1738,7 +1738,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
               <select key={i} value={t}
                 disabled={!isAdmin}
                 onChange={e => { if (!isAdmin) return; const n = [...parTimes]; n[i + 9] = Number(e.target.value); setParTimes(n); }}
-                style={{ width: "100%", background: isAdmin ? "#1a2a1a" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a4a2a" : "#1a2a1a"}`, color: isAdmin ? "#6effa0" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default" }}
+                style={{ width: "100%", background: isAdmin ? "#1a2a1a" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a4a2a" : "#1a2a1a"}`, color: isAdmin ? "#6effa0" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 {PAR_TIME_CHOICES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
