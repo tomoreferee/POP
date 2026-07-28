@@ -3698,6 +3698,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // instead of navigating to a new screen. Closes itself once a time is recorded.
   const [quickRecord, setQuickRecord] = useState(null); // { groupId, targetSlot } or null
   const [collapsedTables, setCollapsedTables] = useState({}); // { [tableKey]: true } — folded schedule tables
+  // Per-device hole focus: each marshal only supervises a few holes, so they can
+  // hide the rest of the columns. Stored locally (not shared) — one device, one view.
+  const [focusHoles, setFocusHoles] = useState(() => {
+    try {
+      const raw = localStorage.getItem("pop_focus_holes");
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
+  });
+  const [showFocusPicker, setShowFocusPicker] = useState(false);
+  const saveFocusHoles = (next) => {
+    setFocusHoles(next);
+    try { localStorage.setItem("pop_focus_holes", JSON.stringify(next)); } catch {}
+  };
   // Delete a WN/MN/TM log entry from the dashboard (in case of a mistaken tap) — confirmed via popup before removal
   const [deleteLogConfirm, setDeleteLogConfirm] = useState(null); // { groupId, idx } or null
   const deleteLogAt = (groupId, idx) => {
@@ -3849,6 +3863,61 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           }}>▶ Resume play</button>
         )}
       </div>
+
+      {/* Per-device hole focus — hide columns for holes this marshal doesn't supervise */}
+      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "8px 24px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <button onClick={() => setShowFocusPicker(v => !v)}
+          style={{
+            background: focusHoles.length ? "#1a4a8a" : "#0d0f1a",
+            border: `1px solid ${focusHoles.length ? "#4e9af1" : "#2a2d4a"}`,
+            color: focusHoles.length ? "#fff" : "#8890b8",
+            borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0,
+          }}>
+          🎯 My holes{focusHoles.length ? ` (${focusHoles.length})` : ""}
+        </button>
+        {focusHoles.length > 0 && (
+          <>
+            <span style={{ fontSize: 12, color: "#8890b8" }}>
+              แสดงเฉพาะ {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
+            </span>
+            <button onClick={() => saveFocusHoles([])}
+              style={{ marginLeft: "auto", background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
+              ✕ Show all
+            </button>
+          </>
+        )}
+      </div>
+
+      {showFocusPicker && (
+        <div style={{ background: "#0d0f1a", borderBottom: "1px solid #2a2d4a", padding: "12px 24px" }}>
+          <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 8 }}>เลือกหลุมที่ดูแล (ไม่เลือกเลย = แสดงทุกหลุม) — บันทึกไว้เฉพาะเครื่องนี้</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+            {Array.from({ length: 18 }, (_, i) => i).map(hi => {
+              const on = focusHoles.includes(hi);
+              return (
+                <button key={hi}
+                  onClick={() => saveFocusHoles(on ? focusHoles.filter(x => x !== hi) : [...focusHoles, hi])}
+                  style={{
+                    width: 42, height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                    background: on ? "#1a4a8a" : "#141626",
+                    border: `1px solid ${on ? "#4e9af1" : "#2a2d4a"}`,
+                    color: on ? "#fff" : "#8890b8",
+                  }}>H{hi + 1}</button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i))}
+              style={{ background: "#141626", border: "1px solid #2a2d4a", color: "#8890b8", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H1–H9</button>
+            <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i + 9))}
+              style={{ background: "#141626", border: "1px solid #2a2d4a", color: "#8890b8", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H10–H18</button>
+            <button onClick={() => saveFocusHoles([])}
+              style={{ background: "#141626", border: "1px solid #2a2d4a", color: "#8890b8", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show all</button>
+            <button onClick={() => setShowFocusPicker(false)}
+              style={{ marginLeft: "auto", background: "#1a4a2a", border: "1px solid #6effa066", color: "#6effa0", borderRadius: 7, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
+          </div>
+        </div>
+      )}
 
       {/* Export Modal — copy each sheet's data as TSV, paste directly into Excel/Sheets.
           (File downloads are unreliable inside sandboxed artifact webviews, so
@@ -4145,7 +4214,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: 80 }}>Group</th>
                         <th style={{ ...thStyle, color: colColor, position: "sticky", left: 80, zIndex: 2, background: "#0d0f1a", minWidth: 56, borderRight: "1px solid #2a2d4a" }}>Start</th>
                         {order.map((hi, i) => (
-                          <th key={hi} style={i === 9 ? { ...thStyle, borderLeft: `2px solid ${colColor}88` } : thStyle}>H{hi + 1}</th>
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
+                            <th key={hi} style={i === 9 ? { ...thStyle, borderLeft: `2px solid ${colColor}88` } : thStyle}>H{hi + 1}</th>
+                          )
                         ))}
                       </tr>
                     </thead>
@@ -4235,6 +4306,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               })()}
                             </td>
                             {order.map((hi, slot) => {
+                              if (focusHoles.length && !focusHoles.includes(hi)) return null;
                               const hd = data?.holeData?.[hi];
                               const startTime = hd?.startTime;
                               const endTime = hd?.endTime;
