@@ -1751,7 +1751,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 180 }}>
               <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700 }}>🚶 Transit Time</div>
-              <div style={{ fontSize: 10, color: "#8890b8" }}>H9→H10 (ออกหลุม 1) / H18→H1 (ออกหลุม 10)</div>
+              <div style={{ fontSize: 10, color: "#8890b8" }}>H9→H10 (starting hole 1) / H18→H1 (starting hole 10)</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
               <button onClick={() => isAdmin && setTurnTime(t => Math.max(0, t - 1))} disabled={!isAdmin}
@@ -3893,12 +3893,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             color: focusHoles.length ? "#fff" : "#8890b8",
             borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0,
           }}>
-          🎯 My holes{focusHoles.length ? ` (${focusHoles.length})` : ""}
+          🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
         </button>
         {focusHoles.length > 0 && (
           <>
             <span style={{ fontSize: 12, color: "#8890b8" }}>
-              แสดงเฉพาะ {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
+              Showing {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
             </span>
             <button onClick={() => saveFocusHoles([])}
               style={{ marginLeft: "auto", background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
@@ -3910,7 +3910,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       {showFocusPicker && (
         <div style={{ background: "#0d0f1a", borderBottom: "1px solid #2a2d4a", padding: "12px 24px" }}>
-          <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 8 }}>เลือกหลุมที่ดูแล (ไม่เลือกเลย = แสดงทุกหลุม) — บันทึกไว้เฉพาะเครื่องนี้</div>
+          <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 8 }}>Select the holes you supervise (none selected = show all) — saved on this device only</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {Array.from({ length: 18 }, (_, i) => i).map(hi => {
               const on = focusHoles.includes(hi);
