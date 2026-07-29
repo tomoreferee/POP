@@ -4152,13 +4152,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
           if (alertGroups.length === 0 && !hasAfternoon) return (
             <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ All groups within normal range
+              ✓ All groups are in position.
             </div>
           );
 
           if (alertGroups.length === 0) return (
             <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ All groups within normal range
+              ✓ All groups are in position.
             </div>
           );
 
@@ -4194,7 +4194,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               )}
               {morningAlerts.length === 0 && afternoonAlerts.length === 0 && (
                 <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-                  ✓ All groups within normal range
+                  ✓ All groups are in position.
                 </div>
               )}
             </div>
