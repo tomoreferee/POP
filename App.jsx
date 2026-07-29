@@ -3885,40 +3885,42 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       </div>
 
       {/* Per-device hole focus — hide columns for holes this marshal doesn't supervise */}
-      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "8px 24px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <button onClick={() => setShowFocusPicker(v => !v)}
-          style={{
-            background: focusHoles.length ? "#1a4a8a" : "#0d0f1a",
-            border: `1px solid ${focusHoles.length ? "#4e9af1" : "#2a2d4a"}`,
-            color: focusHoles.length ? "#fff" : "#8890b8",
-            borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0,
-          }}>
-          🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
-        </button>
-        {focusHoles.length > 0 && (
-          <>
-            <span style={{ fontSize: 12, color: "#8890b8" }}>
-              Showing {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
-            </span>
+      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "8px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => setShowFocusPicker(v => !v)}
+            style={{
+              background: focusHoles.length ? "#1a4a8a" : "#0d0f1a",
+              border: `1px solid ${focusHoles.length ? "#4e9af1" : "#2a2d4a"}`,
+              color: focusHoles.length ? "#fff" : "#8890b8",
+              borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0,
+            }}>
+            🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
+          </button>
+          {focusHoles.length > 0 && (
             <button onClick={() => saveFocusHoles([])}
               style={{ marginLeft: "auto", background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
               ✕ Show all
             </button>
-          </>
+          )}
+        </div>
+        {focusHoles.length > 0 && (
+          <div style={{ fontSize: 12, color: "#8890b8", marginTop: 6 }}>
+            Showing {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
+          </div>
         )}
       </div>
 
       {showFocusPicker && (
         <div style={{ background: "#0d0f1a", borderBottom: "1px solid #2a2d4a", padding: "12px 24px" }}>
           <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 8 }}>Select the holes you supervise (none selected = show all) — saved on this device only</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 6, marginBottom: 10 }}>
             {Array.from({ length: 18 }, (_, i) => i).map(hi => {
               const on = focusHoles.includes(hi);
               return (
                 <button key={hi}
                   onClick={() => saveFocusHoles(on ? focusHoles.filter(x => x !== hi) : [...focusHoles, hi])}
                   style={{
-                    width: 42, height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                    width: "100%", height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0,
                     background: on ? "#1a4a8a" : "#141626",
                     border: `1px solid ${on ? "#4e9af1" : "#2a2d4a"}`,
                     color: on ? "#fff" : "#8890b8",
