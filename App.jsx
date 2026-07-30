@@ -1443,7 +1443,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, onSwitchRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, onSwitchRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1455,11 +1455,17 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
   // The tournament record may arrive after this screen first mounts (async fetch), and
   // it changes when switching tournaments — pull its saved course setup in whenever
   // it appears so every round of a tournament shares the same pars / par times / turn time.
+  // Whatever the live round is actually running takes priority over the tournament
+  // default — otherwise this screen could show stale values (e.g. opened on another
+  // device) and "Start tracking" would silently overwrite the real schedule.
   useEffect(() => {
-    if (savedPars && savedPars.length === 18) setPars(savedPars);
-    if (savedParTimes && savedParTimes.length === 18) setParTimes(savedParTimes);
-    if (savedTurnTime !== null && savedTurnTime !== undefined) setTurnTime(savedTurnTime);
-  }, [savedPars, savedParTimes, savedTurnTime]);
+    const p = (livePars?.length === 18 ? livePars : null) ?? (savedPars?.length === 18 ? savedPars : null);
+    const pt = (liveParTimes?.length === 18 ? liveParTimes : null) ?? (savedParTimes?.length === 18 ? savedParTimes : null);
+    const tt = liveTurnTime ?? savedTurnTime;
+    if (p) setPars(p);
+    if (pt) setParTimes(pt);
+    if (tt !== null && tt !== undefined) setTurnTime(tt);
+  }, [savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime]);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
@@ -2004,7 +2010,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
         <button
           onClick={() => {
             if (!isAdmin && allGroups.length === 0) return;
-            if (hasLiveSession && !window.confirm("มี session ทำงานอยู่แล้ว\n\nการกด Start จะอัปเดตรายการกลุ่ม แต่ข้อมูลเวลาที่บันทึกไว้ของกลุ่มเดิมจะไม่ถูกลบ\n\nต้องการดำเนินการต่อหรือไม่?")) return;
+            if (hasLiveSession && !window.confirm("มี session ทำงานอยู่แล้ว\n\nการกดปุ่มนี้จะคำนวณ \"ตารางเวลาจบ\" ใหม่ทั้งหมด จากค่า Par / นาทีต่อหลุม / Transit time ที่ตั้งไว้ในหน้านี้\n\n• เวลาที่บันทึกไว้ของแต่ละกลุ่มจะไม่ถูกลบ\n• ค่าความต่าง (+/- นาที) จะถูกคำนวณใหม่ตามตารางใหม่\n\nต้องการดำเนินการต่อหรือไม่?")) return;
             onStart(allGroups, pars, parTimes, playersPerGroup, turnTime);
           }}
           disabled={!isAdmin && allGroups.length === 0}
@@ -2015,9 +2021,19 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
             fontFamily: "'Bebas Neue'", letterSpacing: 3, fontSize: 20,
           }}
         >
-          {(!isAdmin && allGroups.length === 0) ? "🔒 Waiting for Admin to set up groups" : "▶ Start tracking PACE OF PLAY"}
+          {(!isAdmin && allGroups.length === 0)
+            ? "🔒 Waiting for Admin to set up groups"
+            : hasLiveSession
+              ? "↻ Update schedule & continue"
+              : "▶ Start tracking PACE OF PLAY"}
         </button>
 
+        {hasLiveSession && (
+          <div style={{ fontSize: 11, color: "#8890b8", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
+            แก้ Par / นาทีต่อหลุม / Transit time ด้านบน แล้วกดปุ่มนี้เพื่อคำนวณตารางเวลาจบใหม่<br />
+            (เวลาที่บันทึกไว้แล้วจะไม่หาย)
+          </div>
+        )}
         {hasLiveSession && (
           <button
             onClick={onGoToDashboard}
@@ -5633,6 +5649,9 @@ export default function App() {
       savedPars={currentTournament?.pars || null}
       savedParTimes={currentTournament?.par_times || null}
       savedTurnTime={currentTournament?.turn_time ?? null}
+      livePars={groups.length > 0 ? pars : null}
+      liveParTimes={groups.length > 0 ? parTimes : null}
+      liveTurnTime={groups.length > 0 ? turnTime : null}
       onSwitchRound={() => setScreen("tournament")}
     />
   );
