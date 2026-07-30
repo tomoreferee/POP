@@ -1443,7 +1443,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onSwitchRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1565,6 +1565,26 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
 
   // merge for onStart
   const allGroups = [...groups1, ...groups10, ...groupsShotgun];
+
+  // While a round is live, edits here apply straight to the running schedule — no
+  // button press needed. Debounced so typing a time doesn't spam the server, and
+  // it never fires for an empty list (which would wipe the live session).
+  const liveEditKey = JSON.stringify({
+    g: allGroups.map(g => [g.id, g.name, g.startTime, g.startHole, g.section || ""]),
+    pars, parTimes, turnTime,
+  });
+  const skipFirstApply = useRef(true);
+  useEffect(() => {
+    if (!hasLiveSession || !isAdmin || !onApplyLiveEdits) return;
+    if (allGroups.length === 0) return;
+    // Don't fire on the initial mount / on the sync-down from the live session
+    if (skipFirstApply.current) { skipFirstApply.current = false; return; }
+    const t = setTimeout(() => {
+      onApplyLiveEdits(allGroups, pars, parTimes, playersPerGroup, turnTime);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [liveEditKey, hasLiveSession, isAdmin]);
+
 
   return (
     <div style={{ minHeight: "100vh", background: "#0d0f1a", color: "#eee", fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -2033,17 +2053,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
             fontFamily: "'Bebas Neue'", letterSpacing: 3, fontSize: 20,
           }}
         >
-          {(!isAdmin && allGroups.length === 0)
-            ? "🔒 Waiting for Admin to set up groups"
-            : hasLiveSession
-              ? "↻ Update schedule & continue"
-              : "▶ Start tracking PACE OF PLAY"}
+          {(!isAdmin && allGroups.length === 0) ? "🔒 Waiting for Admin to set up groups" : "▶ Start tracking PACE OF PLAY"}
         </button>
 
-        {hasLiveSession && (
-          <div style={{ fontSize: 11, color: "#8890b8", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
-            แก้ Par / นาทีต่อหลุม / Transit time ด้านบน แล้วกดปุ่มนี้เพื่อคำนวณตารางเวลาจบใหม่<br />
-            (เวลาที่บันทึกไว้แล้วจะไม่หาย)
+        {hasLiveSession && isAdmin && (
+          <div style={{ fontSize: 11, color: "#6effa0", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
+            ✓ แก้ชื่อกลุ่ม / เวลาเริ่ม / Par / นาทีต่อหลุม / Transit time ด้านบนได้เลย<br />
+            ตารางเวลาจบจะอัปเดตให้อัตโนมัติ (เวลาที่บันทึกไว้ไม่หาย)
           </div>
         )}
         {hasLiveSession && (
@@ -5514,6 +5530,45 @@ export default function App() {
     grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(g.id, data[g.id], seedWrittenAt); });
   };
 
+  // Applies Setup edits to the running round without navigating away and without
+  // ever touching recorded times — used for live editing of group names/start
+  // times/pars/par times/transit time.
+  const handleApplyLiveEdits = (grps, ps, pt, pxg, tt) => {
+    if (!grps || grps.length === 0) return;      // never wipe a live session
+    if (groups.length === 0) return;             // nothing live to update
+    const sch = {};
+    grps.forEach(g => { sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1); });
+
+    setGroups(grps);
+    setPars(ps);
+    setParTimes(pt);
+    setPlayersPerGroup(pxg ?? 3);
+    setTurnTime(tt ?? 1);
+    setBaseSchedules(sch);
+    setSchedules(sch);
+    saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1 });
+    setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1 } : prev);
+    saveAppState({
+      groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch,
+      suspensions, isSuspended, pendingStopTime,
+      tournamentId: currentTournament?.id, roundId: currentRound?.id,
+    });
+    // Give brand-new groups a blank scorecard; existing groups keep their data untouched.
+    const newOnes = grps.filter(g => !groupData[g.id]);
+    if (newOnes.length) {
+      const writtenAt = new Date().toISOString();
+      setGroupData(prev => {
+        const next = { ...prev };
+        newOnes.forEach(g => {
+          next[g.id] = { records: Array(18).fill(null), holeData: Array(18).fill(null).map(() => ({ startTime: null, endTime: null })), currentHole: 0 };
+          lastLocalWriteAt.current[g.id] = writtenAt;
+          saveGroupData(g.id, next[g.id], writtenAt);
+        });
+        return next;
+      });
+    }
+  };
+
   const handleSelectGroup = (g, targetSlot) => {
     setActiveGroup({ ...g, targetSlot: targetSlot ?? null });
     setScreen("group");
@@ -5673,6 +5728,7 @@ export default function App() {
       liveParTimes={groups.length > 0 ? parTimes : null}
       liveTurnTime={groups.length > 0 ? turnTime : null}
       liveGroups={groups}
+      onApplyLiveEdits={handleApplyLiveEdits}
       onSwitchRound={() => setScreen("tournament")}
     />
   );
