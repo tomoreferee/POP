@@ -31,6 +31,10 @@ const PAR_TIMES_BY_PLAYERS = {
 function parTimeTable(playersPerGroup) {
   return PAR_TIMES_BY_PLAYERS[playersPerGroup] ?? PAR_TIMES_BY_PLAYERS[3];
 }
+// Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
+// you can confirm at a glance whether the browser is running the newest deploy.
+const APP_BUILD = "2026-07-30-a";
+
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
 // Kept for any legacy reference — mirrors the 3-ball column (the common default).
@@ -1935,7 +1939,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
               </div>
             ))}
             <button onClick={addGroup10} style={{ marginTop: 6, background: "#0d0f1a", border: "1px dashed #4e9af144", color: "#4e9af1", borderRadius: 6, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, width: "100%" }}>
-              + Add H1 group0
+              + Add H10 group
             </button>
           </div>
           )}
@@ -2039,10 +2043,10 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
           })()}
         </div>
 
+        {!hasLiveSession && (
         <button
           onClick={() => {
             if (!isAdmin && allGroups.length === 0) return;
-            if (hasLiveSession && !window.confirm("มี session ทำงานอยู่แล้ว\n\nการกดปุ่มนี้จะคำนวณ \"ตารางเวลาจบ\" ใหม่ทั้งหมด จากค่า Par / นาทีต่อหลุม / Transit time ที่ตั้งไว้ในหน้านี้\n\n• เวลาที่บันทึกไว้ของแต่ละกลุ่มจะไม่ถูกลบ\n• ค่าความต่าง (+/- นาที) จะถูกคำนวณใหม่ตามตารางใหม่\n\nต้องการดำเนินการต่อหรือไม่?")) return;
             onStart(allGroups, pars, parTimes, playersPerGroup, turnTime);
           }}
           disabled={!isAdmin && allGroups.length === 0}
@@ -2055,13 +2059,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
         >
           {(!isAdmin && allGroups.length === 0) ? "🔒 Waiting for Admin to set up groups" : "▶ Start tracking PACE OF PLAY"}
         </button>
-
-        {hasLiveSession && isAdmin && (
-          <div style={{ fontSize: 11, color: "#6effa0", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
-            ✓ แก้ชื่อกลุ่ม / เวลาเริ่ม / Par / นาทีต่อหลุม / Transit time ด้านบนได้เลย<br />
-            ตารางเวลาจบจะอัปเดตให้อัตโนมัติ (เวลาที่บันทึกไว้ไม่หาย)
-          </div>
         )}
+
         {hasLiveSession && (
           <button
             onClick={onGoToDashboard}
@@ -2072,6 +2071,12 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
             }}
           >📊 Back to Dashboard</button>
         )}
+
+        {/* Build marker — bump this string whenever the file changes so it's obvious
+            at a glance whether the browser is running the latest deploy. */}
+        <div style={{ textAlign: "center", fontSize: 10, color: "#3a3f5a", marginTop: 20, letterSpacing: 1 }}>
+          build {APP_BUILD}
+        </div>
       </div>
 
       {/* Clear Groups Confirm Modal */}
