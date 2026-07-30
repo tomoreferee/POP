@@ -1443,7 +1443,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, onSwitchRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onSwitchRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1455,6 +1455,18 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
   // The tournament record may arrive after this screen first mounts (async fetch), and
   // it changes when switching tournaments — pull its saved course setup in whenever
   // it appears so every round of a tournament shares the same pars / par times / turn time.
+  // The groups actually running in the live round live in Supabase, not in this
+  // device's local draft. Pull them into the editable lists so this screen always
+  // shows the real group list (and so pressing the start/update button can't wipe
+  // a live session just because this device's local draft happens to be empty).
+  const liveGroupsKey = (liveGroups || []).map(g => `${g.id}:${g.name}:${g.startTime}:${g.startHole}:${g.section || ""}`).join("|");
+  useEffect(() => {
+    if (!liveGroups || liveGroups.length === 0) return;
+    setGroups1(liveGroups.filter(g => (g.startHole || 1) === 1));
+    setGroups10(liveGroups.filter(g => (g.startHole || 1) === 10));
+    setGroupsShotgun(liveGroups.filter(g => (g.startHole || 1) !== 1 && (g.startHole || 1) !== 10));
+  }, [liveGroupsKey]);
+
   // Whatever the live round is actually running takes priority over the tournament
   // default — otherwise this screen could show stale values (e.g. opened on another
   // device) and "Start tracking" would silently overwrite the real schedule.
@@ -5450,6 +5462,14 @@ export default function App() {
     const previousGroups = groups;
     const hadSessionBefore = previousGroups.length > 0;
 
+    // Safety net: never let an empty group list replace a running session. This
+    // used to silently wipe the schedule (and orphan every group's recorded times)
+    // whenever the Setup screen was opened on a device with no local group draft.
+    if (hadSessionBefore && (!grps || grps.length === 0)) {
+      window.alert("ไม่พบรายการกลุ่มในหน้านี้ จึงไม่อัปเดตตาราง\n\nเพื่อความปลอดภัย ระบบจะไม่ลบตารางและเวลาที่บันทึกไว้ของ session ที่กำลังทำงานอยู่\n\nลองรีเฟรชหน้าเพื่อโหลดรายการกลุ่มจากเซิร์ฟเวอร์ก่อน แล้วลองอีกครั้ง");
+      return;
+    }
+
     const sch = {};
     const data = {};
     grps.forEach(g => {
@@ -5652,6 +5672,7 @@ export default function App() {
       livePars={groups.length > 0 ? pars : null}
       liveParTimes={groups.length > 0 ? parTimes : null}
       liveTurnTime={groups.length > 0 ? turnTime : null}
+      liveGroups={groups}
       onSwitchRound={() => setScreen("tournament")}
     />
   );
