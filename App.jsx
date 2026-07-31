@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-a";
+const APP_BUILD = "2026-07-30-b";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4437,6 +4437,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         );
                       })}
                     </tbody>
+                    {/* Repeat the hole numbers at the bottom — with long group lists
+                        the header scrolls out of view, so this keeps it obvious which
+                        hole each column belongs to. */}
+                    <tfoot>
+                      <tr style={{ background: "#0d0f1a" }}>
+                        <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: 80, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Group</th>
+                        <th style={{ ...thStyle, color: colColor, position: "sticky", left: 80, zIndex: 2, background: "#0d0f1a", minWidth: 56, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Start</th>
+                        {order.map((hi, i) => (
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
+                            <th key={hi} style={{ ...thStyle, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>H{hi + 1}</th>
+                          )
+                        ))}
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
                 )}
