@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-b";
+const APP_BUILD = "2026-07-30-c";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4133,11 +4133,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 background: "#141626", border: `1px solid ${g.color}44`, borderRadius: 12,
                 padding: 12, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s",
                 boxShadow: status === "late" ? `0 0 20px #ff707022` : "none",
+                minWidth: 0, overflow: "hidden",
               }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 30px ${g.color}22`; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = status === "late" ? `0 0 20px #ff707022` : "none"; }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
                   <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{g.name}</div>
                   <div style={{ flexShrink: 0 }}><StatusBadge status={status} /></div>
@@ -4212,7 +4213,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           );
 
           if (!hasAfternoon) return (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
               {alertGroups.map(renderGroupCard)}
             </div>
           );
@@ -4225,7 +4226,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     <div style={{ fontSize: 12, color: "#8899cc", fontWeight: 700, letterSpacing: 2 }}>🌅 MORNING</div>
                     <div style={{ flex: 1, height: 1, background: "#2a2d4a" }} />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
                     {morningAlerts.map(renderGroupCard)}
                   </div>
                 </div>
@@ -4236,7 +4237,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700, letterSpacing: 2 }}>☀️ AFTERNOON</div>
                     <div style={{ flex: 1, height: 1, background: "#2a2d4a" }} />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
                     {afternoonAlerts.map(renderGroupCard)}
                   </div>
                 </div>
