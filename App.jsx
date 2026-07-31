@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-c";
+const APP_BUILD = "2026-07-30-d";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -330,6 +330,26 @@ function getGroupSides(groups) {
 //    cushion — the following group is still judged against the normal schedule.
 //  • The very first group of each side has no group ahead, so it's treated as if
 //    the group ahead played every hole exactly on schedule (diff = 0).
+// Single source of truth for a group's status badge — rated relative to the group
+// ahead of it. Used by the Dashboard cards/table and passed into the record screen
+// so the same group can never show two different badges.
+function computeGroupStatusFor(g, groups, groupData, parTimes) {
+  const gd = groupData?.[g.id];
+  if (!gd || !gd.holeData) return "idle";
+  const order = getHoleOrder(g.startHole || 1);
+  for (let s = 17; s >= 0; s--) {
+    const hi = order[s];
+    const hd = gd.holeData[hi];
+    if (hd?.startTime && hd?.endTime) {
+      const diff = computeHoleDiff(hd, hi, parTimes);
+      if (diff === null) return "idle";
+      const frontDiff = getFrontGroupDiffAtHole(groups, g, hi, groupData, parTimes);
+      return getRelativeStatus(diff, frontDiff);
+    }
+  }
+  return "idle";
+}
+
 function getGroupSideIndex(groups, group) {
   const timeToMin = t => { const [h, m] = (t || "0:00").split(":").map(Number); return h * 60 + m; };
   const side = groups
@@ -2146,7 +2166,7 @@ function TimeInput({ value, onChange, label, color = "#4e9af1" }) {
 
 // ─── Group Monitor ────────────────────────────────────────────────────────────
 function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpdate, onBack, currentUser,
-  isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel, compact }) {
+  isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel, compact, statusOverride }) {
   const initHoleData = () =>
     group.holeData ?? Array(18).fill(null).map(() => ({ startTime: null, endTime: null }));
   const numPlayers = playersPerGroup || 3; // how many P1..Pn quick-select buttons to offer for TM / Bad Time
@@ -2557,7 +2577,10 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     return getStatus(diffs[diffs.length - 1]);
   };
 
-  const status = overallStatus();
+  // The Dashboard rates a group relative to the group ahead of it; when it opens this
+  // screen it passes that same rating in so the badge here can't disagree with the
+  // badge on the card/table the user just tapped.
+  const status = statusOverride ?? overallStatus();
   const bgColor = { ok: "#0a1f15", warn: "#1f180a", late: "#1f0a0a", idle: "#0d0f1a" }[status];
   const done = currentSlot >= 18;
 
@@ -4682,6 +4705,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 pendingStopTime={pendingStopTime}
                 hideLog={true}
                 onRecorded={() => setQuickRecord(null)}
+                statusOverride={getGroupStatus(qGroup)}
                 compact={true}
               />
             </div>
@@ -5819,6 +5843,7 @@ export default function App() {
         parTimes={parTimes}
         playersPerGroup={playersPerGroup}
         schedule={schedules[activeGroup.id]}
+        statusOverride={computeGroupStatusFor(activeGroup, groups, groupData, parTimes)}
         onUpdate={(update) => handleUpdateGroup(activeGroup.id, update)}
         onBack={() => setScreen("dashboard")}
         currentUser={currentUser}
