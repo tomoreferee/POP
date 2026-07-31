@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-d";
+const APP_BUILD = "2026-07-30-e";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -511,7 +511,7 @@ function useTimer() {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
+function StatusBadge({ status, small }) {
   const cfg = {
     ok:   { bg: "#1a6b3a", text: "#6effa0", label: "✓ On time" },
     warn: { bg: "#7a5a00", text: "#ffd966", label: "⚠ Less OOP" },
@@ -523,11 +523,11 @@ function StatusBadge({ status }) {
     <span style={{
       background: c.bg,
       color: c.text,
-      padding: "2px 10px",
+      padding: small ? "2px 7px" : "2px 10px",
       borderRadius: 99,
-      fontSize: 12,
+      fontSize: small ? 10 : 12,
       fontWeight: 700,
-      letterSpacing: "0.05em",
+      letterSpacing: small ? 0 : "0.05em",
       border: `1px solid ${c.text}33`,
       whiteSpace: "nowrap",
     }}>{c.label}</span>
@@ -4164,7 +4164,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
                   <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{g.name}</div>
-                  <div style={{ flexShrink: 0 }}><StatusBadge status={status} /></div>
+                  <div style={{ flexShrink: 0 }}><StatusBadge status={status} small /></div>
                 </div>
                 <div style={{ background: "#0d0f1a", borderRadius: 99, height: 4, marginBottom: 6, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${(hole / 18) * 100}%`, background: g.color, borderRadius: 99, transition: "width 0.5s" }} />
