@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-g";
+const APP_BUILD = "2026-07-30-h";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4136,7 +4136,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {!isSuspended && suspensions.length > 0 && (
         <div style={{
           background: "#141210", borderBottom: "1px solid #ff996633",
-          padding: "8px 24px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          padding: "8px 24px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5,
         }}>
           <span style={{ color: "#ff9966", fontSize: 12, fontWeight: 700 }}>⏱ Time shift</span>
           {suspensions.map((s, i) => (
@@ -4152,7 +4152,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               {onSuspendEdit && <span style={{ color: "#4e9af1", marginLeft: 4 }}>✏️</span>}
             </span>
           ))}
-          <span style={{ marginLeft: "auto", fontSize: 13, color: "#ff9966", fontWeight: 700 }}>Total +{totalOffsetMin} min</span>
+          <span style={{ fontSize: 13, color: "#ff9966", fontWeight: 700 }}>Total +{totalOffsetMin} min</span>
         </div>
       )}
 
