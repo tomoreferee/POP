@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-e";
+const APP_BUILD = "2026-07-30-g";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -511,6 +511,47 @@ function useTimer() {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+// Shows who else is signed in right now (live, via Supabase Presence).
+function OnlineUsers({ users, currentUser }) {
+  const [open, setOpen] = useState(false);
+  if (!users || users.length === 0) return null;
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={() => setOpen(v => !v)}
+        title="ดูว่าใครออนไลน์อยู่"
+        style={{
+          display: "flex", alignItems: "center", gap: 5,
+          background: "#0a2a10", border: "1px solid #6effa044", color: "#6effa0",
+          borderRadius: 99, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+        }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#6effa0", boxShadow: "0 0 6px #6effa0", flexShrink: 0 }} />
+        {users.length} online
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 900 }} />
+          <div style={{
+            position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 901,
+            background: "#141626", border: "1px solid #2a2d4a", borderRadius: 10,
+            padding: 8, minWidth: 170, boxShadow: "0 12px 40px #000a",
+          }}>
+            <div style={{ fontSize: 10, color: "#8890b8", letterSpacing: 1, padding: "2px 8px 6px" }}>ONLINE NOW</div>
+            {users.map(u => (
+              <div key={u.username} style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 8px", borderRadius: 6, background: u.username === currentUser ? "#1a4a8a33" : "transparent" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6effa0", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: "#eee", fontWeight: u.username === currentUser ? 700 : 400 }}>
+                  {u.username}{u.username === currentUser ? " (you)" : ""}
+                </span>
+                {u.isAdmin && <span style={{ fontSize: 9, color: "#ffd966", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 4px", marginLeft: "auto" }}>admin</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function StatusBadge({ status, small }) {
   const cfg = {
     ok:   { bg: "#1a6b3a", text: "#6effa0", label: "✓ On time" },
@@ -3783,12 +3824,13 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, tournamentName, hostVenue, roundLabel, onSelectGroup, onBack, currentUser,
-  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onLogout, onNavigateSummary, onUpdateGroupData }) {
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, tournamentName, hostVenue, roundLabel, onlineUsers, onSelectGroup, onBack, currentUser,
+  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
   const [quickRecord, setQuickRecord] = useState(null); // { groupId, targetSlot } or null
+  const [editSuspension, setEditSuspension] = useState(null); // { idx, stopTime, resumeTime } while editing a recorded stop
   const [collapsedTables, setCollapsedTables] = useState({}); // { [tableKey]: true } — folded schedule tables
   // Per-device hole focus: each marshal only supervises a few holes, so they can
   // hide the rest of the columns. Stored locally (not shared) — one device, one view.
@@ -3898,8 +3940,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 24px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
         <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
-        {/* Right side: user + clock + logout */}
+        {/* Right side: online + user + clock + logout */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          <OnlineUsers users={onlineUsers} currentUser={currentUser} />
           {currentUser && (
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
@@ -4077,6 +4120,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             color: "#6effa0", borderRadius: 7, padding: "5px 14px",
             cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
           }}>▶ Resume play</button>
+          {onSuspendCancel && (
+            <button onClick={() => { if (window.confirm("ยกเลิกการหยุดเล่นครั้งนี้?\n\nใช้กรณีกดผิด — จะไม่มีการบันทึกช่วงเวลาหยุด และตารางเวลาไม่ถูกเลื่อน")) onSuspendCancel(); }}
+              title="กดผิด? ยกเลิกโดยไม่บันทึก"
+              style={{
+                background: "#2a0a0a", border: "1px solid #ff707088",
+                color: "#ff7070", borderRadius: 7, padding: "5px 12px",
+                cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+              }}>✕ Cancel</button>
+          )}
         </div>
       )}
 
@@ -4084,16 +4136,67 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {!isSuspended && suspensions.length > 0 && (
         <div style={{
           background: "#141210", borderBottom: "1px solid #ff996633",
-          padding: "8px 24px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+          padding: "8px 24px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
         }}>
           <span style={{ color: "#ff9966", fontSize: 12, fontWeight: 700 }}>⏱ Time shift</span>
           {suspensions.map((s, i) => (
-            <span key={i} style={{ fontSize: 12, color: "#aaa" }}>
+            <span key={i}
+              onClick={() => onSuspendEdit && setEditSuspension({ idx: i, stopTime: s.stopTime, resumeTime: s.resumeTime })}
+              title={onSuspendEdit ? "แตะเพื่อแก้ไข / ลบ" : undefined}
+              style={{
+                fontSize: 12, color: "#aaa", background: "#0d0f1a", border: "1px solid #2a2d4a",
+                borderRadius: 6, padding: "3px 8px", cursor: onSuspendEdit ? "pointer" : "default",
+              }}>
               #{i + 1}: <b style={{ color: "#ffd966" }}>{s.stopTime}</b> → <b style={{ color: "#6effa0" }}>{s.resumeTime}</b>
               <b style={{ color: "#ff9966" }}> +{s.offsetMin}min</b>
+              {onSuspendEdit && <span style={{ color: "#4e9af1", marginLeft: 4 }}>✏️</span>}
             </span>
           ))}
           <span style={{ marginLeft: "auto", fontSize: 13, color: "#ff9966", fontWeight: 700 }}>Total +{totalOffsetMin} min</span>
+        </div>
+      )}
+
+      {editSuspension && (
+        <div onClick={() => setEditSuspension(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #ff996688", borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #000" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#ff9966", marginBottom: 16 }}>
+              ⏱ Edit stop #{editSuspension.idx + 1}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+              <div>
+                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Stop time</label>
+                <input type="time" value={editSuspension.stopTime}
+                  onChange={e => setEditSuspension(v => ({ ...v, stopTime: e.target.value }))}
+                  style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#ffd966", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 15, outline: "none", marginTop: 4 }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Resume time</label>
+                <input type="time" value={editSuspension.resumeTime}
+                  onChange={e => setEditSuspension(v => ({ ...v, resumeTime: e.target.value }))}
+                  style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#6effa0", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 15, outline: "none", marginTop: 4 }} />
+              </div>
+              {(() => {
+                const [sh, sm] = (editSuspension.stopTime || "0:00").split(":").map(Number);
+                const [rh, rm] = (editSuspension.resumeTime || "0:00").split(":").map(Number);
+                const off = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
+                return <div style={{ fontSize: 12, color: "#ff9966" }}>ตารางเวลาจะเลื่อน <b>+{off} นาที</b></div>;
+              })()}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { onSuspendEdit(editSuspension.idx, editSuspension.stopTime, editSuspension.resumeTime); setEditSuspension(null); }}
+                style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                ✓ Save
+              </button>
+              <button onClick={() => { if (window.confirm(`ลบการหยุดเล่น #${editSuspension.idx + 1}?\n\nตารางเวลาจะถูกคำนวณใหม่โดยไม่รวมช่วงเวลานี้`)) { onSuspendDelete(editSuspension.idx); setEditSuspension(null); } }}
+                style={{ background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 }}>
+                🗑
+              </button>
+              <button onClick={() => setEditSuspension(null)}
+                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -5332,6 +5435,7 @@ export default function App() {
   const [parTimes, setParTimes] = useState([]);
   const [playersPerGroup, setPlayersPerGroup] = useState(3);
   const [turnTime, setTurnTime] = useState(1);
+  const [onlineUsers, setOnlineUsers] = useState([]); // [{ username, isAdmin, since }] — live presence
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
   const [currentRound, setCurrentRound] = useState(null);           // { id, tournament_id, label, status, is_qualifying }
   const [baseSchedules, setBaseSchedules] = useState({}); // original schedules
@@ -5456,6 +5560,40 @@ export default function App() {
     };
   }, []);
 
+  // ─── Live presence: who else is using the app right now ──────────────────────
+  // Uses Supabase Realtime Presence (no extra table needed). Each signed-in device
+  // announces itself on a shared channel; leaving/closing the tab drops it
+  // automatically, so the list self-cleans without any timeout logic.
+  useEffect(() => {
+    if (!currentUser) { setOnlineUsers([]); return; }
+    const channel = supabase.channel("presence_pace_monitor", {
+      config: { presence: { key: `${currentUser}-${Math.random().toString(36).slice(2, 8)}` } },
+    });
+    const readState = () => {
+      const raw = channel.presenceState();
+      const seen = new Map();
+      Object.values(raw).forEach(entries => {
+        entries.forEach(e => {
+          if (!e?.username) return;
+          // One row per person even if they have several tabs/devices open
+          const prev = seen.get(e.username);
+          if (!prev || (e.since && e.since < prev.since)) seen.set(e.username, e);
+        });
+      });
+      setOnlineUsers(Array.from(seen.values()).sort((a, b) => a.username.localeCompare(b.username)));
+    };
+    channel
+      .on("presence", { event: "sync" }, readState)
+      .on("presence", { event: "join" }, readState)
+      .on("presence", { event: "leave" }, readState)
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({ username: currentUser, isAdmin, since: new Date().toISOString() });
+        }
+      });
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUser, isAdmin]);
+
   // Calculate the total offset
   const totalOffsetMin = suspensions.reduce((acc, s) => acc + (s.offsetMin ?? 0), 0);
 
@@ -5484,6 +5622,31 @@ export default function App() {
     setIsSuspended(false);
     setPendingStopTime("");
     saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", tournamentId: currentTournament?.id, roundId: currentRound?.id });
+  };
+
+  // Cancel a stop that was pressed by mistake — nothing is recorded, the clock
+  // simply carries on as if it never happened.
+  const handleSuspendCancel = () => {
+    setIsSuspended(false);
+    setPendingStopTime("");
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: false, pendingStopTime: "", tournamentId: currentTournament?.id, roundId: currentRound?.id });
+  };
+
+  // Edit an already-recorded suspension (wrong stop/resume time typed in).
+  const handleSuspendEdit = (idx, stopTimeStr, resumeTimeStr) => {
+    const [sh, sm] = stopTimeStr.split(":").map(Number);
+    const [rh, rm] = resumeTimeStr.split(":").map(Number);
+    const offsetMin = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
+    const nextSuspensions = suspensions.map((s, i) => i === idx ? { stopTime: stopTimeStr, resumeTime: resumeTimeStr, offsetMin } : s);
+    setSuspensions(nextSuspensions);
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, tournamentId: currentTournament?.id, roundId: currentRound?.id });
+  };
+
+  // Remove a suspension entirely — its offset stops being applied to every schedule.
+  const handleSuspendDelete = (idx) => {
+    const nextSuspensions = suspensions.filter((_, i) => i !== idx);
+    setSuspensions(nextSuspensions);
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, tournamentId: currentTournament?.id, roundId: currentRound?.id });
   };
 
   const handleLogin = (username, admin) => {
@@ -5788,6 +5951,7 @@ export default function App() {
       tournamentName={currentTournament?.name || ""}
       hostVenue={currentTournament?.host_venue || ""}
       roundLabel={currentRound?.label || ""}
+      onlineUsers={onlineUsers}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
       currentUser={currentUser}
@@ -5797,6 +5961,9 @@ export default function App() {
       totalOffsetMin={totalOffsetMin}
       onSuspendStop={handleSuspendStop}
       onSuspendResume={handleSuspendResume}
+      onSuspendCancel={handleSuspendCancel}
+      onSuspendEdit={handleSuspendEdit}
+      onSuspendDelete={handleSuspendDelete}
       onLogout={handleLogout}
       onNavigateSummary={() => setScreen("summary")}
       onUpdateGroupData={handleUpdateGroup}
