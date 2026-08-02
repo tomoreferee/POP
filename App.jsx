@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-k";
+const APP_BUILD = "2026-07-30-l";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -3830,6 +3830,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
   const [quickRecord, setQuickRecord] = useState(null); // { groupId, targetSlot } or null
+  const [fitAllHoles, setFitAllHoles] = useState(() => {
+    try { return localStorage.getItem("pop_fit_all_holes") === "1"; } catch { return false; }
+  });
+  const toggleFitAll = () => {
+    setFitAllHoles(v => {
+      const next = !v;
+      try { localStorage.setItem("pop_fit_all_holes", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
   const [editSuspension, setEditSuspension] = useState(null); // { idx, stopTime, resumeTime } while editing a recorded stop
   const [collapsedTables, setCollapsedTables] = useState({}); // { [tableKey]: true } — folded schedule tables
   // Per-device hole focus: each marshal only supervises a few holes, so they can
@@ -4040,6 +4050,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0,
             }}>
             🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
+          </button>
+          <button onClick={toggleFitAll}
+            title="ย่อคอลัมน์ให้เห็นครบ 18 หลุมในจอเดียว (สำหรับ TD / CR)"
+            style={{
+              background: fitAllHoles ? "#1a4a8a" : "#0d0f1a",
+              border: `1px solid ${fitAllHoles ? "#4e9af1" : "#2a2d4a"}`,
+              color: fitAllHoles ? "#fff" : "#8890b8",
+              borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0,
+            }}>
+            {fitAllHoles ? "🔍 Normal view" : "⛶ Fit 18 holes"}
           </button>
           {focusHoles.length > 0 && (
             <button onClick={() => saveFocusHoles([])}
@@ -4405,6 +4425,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeLabel = meta.label;
             const tableKey = `${sectionKey}-${startHole}`;
             const isCollapsed = !!collapsedTables[tableKey];
+            // Fit-18 view: shrink every column so all 18 holes sit on one screen.
+            const th = fitAllHoles ? { ...thStyle, padding: "5px 1px", fontSize: 10, minWidth: 0 } : thStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: "4px 1px" } : tdStyle;
+            const nameColW = fitAllHoles ? 52 : 80;
+            const startColW = fitAllHoles ? 36 : 56;
             return (
               <div key={tableKey} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
                 <div
@@ -4419,11 +4444,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: 80 }}>Group</th>
-                        <th style={{ ...thStyle, color: colColor, position: "sticky", left: 80, zIndex: 2, background: "#0d0f1a", minWidth: 56, borderRight: "1px solid #2a2d4a" }}>Start</th>
+                        <th style={{ ...th, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: nameColW }}>Group</th>
+                        <th style={{ ...th, color: colColor, position: "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", minWidth: startColW, borderRight: "1px solid #2a2d4a" }}>Start</th>
                         {order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={i === 9 ? { ...thStyle, borderLeft: `2px solid ${colColor}88` } : thStyle}>H{hi + 1}</th>
+                            <th key={hi} style={i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>H{hi + 1}</th>
                           )
                         ))}
                       </tr>
@@ -4448,7 +4473,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         return (
                           <tr key={g.id}>
                             <td onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })}
-                              style={{ ...tdStyle, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: "sticky", left: 0, zIndex: 1, background: "#141626", minWidth: 80 }}
+                              style={{ ...td, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: "sticky", left: 0, zIndex: 1, background: "#141626", minWidth: nameColW }}
                               onMouseEnter={e => e.currentTarget.style.background = `${g.color}22`}
                               onMouseLeave={e => e.currentTarget.style.background = "#141626"}
                             >
@@ -4484,7 +4509,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             </td>
                             <td
                               onClick={e => e.stopPropagation()}
-                              style={{ ...tdStyle, color: colColor, fontWeight: 700, position: "sticky", left: 80, zIndex: 1, background: "#141626", minWidth: 56, borderRight: "1px solid #2a2d4a" }}
+                              style={{ ...td, color: colColor, fontWeight: 700, position: "sticky", left: nameColW, zIndex: 1, background: "#141626", minWidth: startColW, borderRight: "1px solid #2a2d4a" }}
                             >
                               <div>{g.startTime}</div>
                               {(() => {
@@ -4523,15 +4548,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const handleHoleClick = () => setQuickRecord({ groupId: g.id, targetSlot: slot });
                               const deadline = (sch?.[hi] ?? 0) + (parTimes?.[hi] ?? 14);
                               if (!endTime || !startTime) {
-                                const showMnPreview = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
-                                const showTmPreview = tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
+                                const showMnPreview = !fitAllHoles && mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
+                                const showTmPreview = !fitAllHoles && tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
                                 return (
-                                  <td key={hi} onClick={handleHoleClick} style={{ ...tdStyle, color: "#666f99", cursor: "pointer", transition: "background 0.15s", ...(slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
+                                  <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#666f99", cursor: "pointer", transition: "background 0.15s", ...(slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
-                                    {holeLogs.map((l, li) => (
+                                    <div style={{ fontSize: fitAllHoles ? 10 : 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
+                                    {(fitAllHoles ? [] : holeLogs).map((l, li) => (
                                       <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px" }}>
                                         {l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                       </div>
@@ -4557,12 +4582,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const cellBgHover = `${color}3d`;
                               return (
                                 <td key={hi} onClick={handleHoleClick}
-                                  style={{ ...tdStyle, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg, ...(slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
+                                  style={{ ...td, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg, ...(slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                   onMouseEnter={e => e.currentTarget.style.background = cellBgHover}
                                   onMouseLeave={e => e.currentTarget.style.background = cellBg}
                                 >
-                                  <div style={{ fontSize: 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
-                                  {holeLogs.map((l, li) => (
+                                  <div style={{ fontSize: fitAllHoles ? 13 : 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
+                                  {(fitAllHoles ? [] : holeLogs).map((l, li) => (
                                     <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
                                       {l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
                                     </div>
@@ -4579,11 +4604,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         hole each column belongs to. */}
                     <tfoot>
                       <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...thStyle, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: 80, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Group</th>
-                        <th style={{ ...thStyle, color: colColor, position: "sticky", left: 80, zIndex: 2, background: "#0d0f1a", minWidth: 56, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Start</th>
+                        <th style={{ ...th, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Group</th>
+                        <th style={{ ...th, color: colColor, position: "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", minWidth: startColW, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Start</th>
                         {order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={{ ...thStyle, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>H{hi + 1}</th>
+                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>H{hi + 1}</th>
                           )
                         ))}
                       </tr>
