@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-i";
+const APP_BUILD = "2026-07-30-j";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -3999,6 +3999,36 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         )}
       </div>
 
+      {!isSuspended && suspensions.length > 0 && (
+        <div style={{
+          background: "#141210", borderBottom: "1px solid #ff996633",
+          padding: "8px 24px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5,
+        }}>
+          <span style={{ color: "#ff9966", fontSize: 12, fontWeight: 700 }}>⏱ Time shift</span>
+          {suspensions.map((s, i) => (
+            <span key={i}
+              onClick={() => onSuspendEdit && setEditSuspension({ idx: i, stopTime: s.stopTime, resumeTime: s.resumeTime })}
+              title={onSuspendEdit ? "แตะเพื่อแก้ไข / ลบ" : undefined}
+              style={{
+                display: "grid",
+                // Fixed columns keep every row's arrow, offset and pencil in line
+                gridTemplateColumns: "26px 46px 12px 46px 62px 16px",
+                alignItems: "center", gap: 4,
+                fontSize: 12, color: "#aaa", background: "#0d0f1a", border: "1px solid #2a2d4a",
+                borderRadius: 6, padding: "3px 8px", cursor: onSuspendEdit ? "pointer" : "default",
+              }}>
+              <span>#{i + 1}</span>
+              <b style={{ color: "#ffd966" }}>{s.stopTime}</b>
+              <span style={{ textAlign: "center" }}>→</span>
+              <b style={{ color: "#6effa0" }}>{s.resumeTime}</b>
+              <b style={{ color: "#ff9966", textAlign: "right" }}>+{s.offsetMin}min</b>
+              <span style={{ color: "#4e9af1", textAlign: "right" }}>{onSuspendEdit ? "✏️" : ""}</span>
+            </span>
+          ))}
+          <span style={{ fontSize: 13, color: "#ff9966", fontWeight: 700, marginTop: 2 }}>Total +{totalOffsetMin} min</span>
+        </div>
+      )}
+
       {/* Per-device hole focus — hide columns for holes this marshal doesn't supervise */}
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "8px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -4133,35 +4163,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       )}
 
       {/* Suspension History Banner */}
-      {!isSuspended && suspensions.length > 0 && (
-        <div style={{
-          background: "#141210", borderBottom: "1px solid #ff996633",
-          padding: "8px 24px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5,
-        }}>
-          <span style={{ color: "#ff9966", fontSize: 12, fontWeight: 700 }}>⏱ Time shift</span>
-          {suspensions.map((s, i) => (
-            <span key={i}
-              onClick={() => onSuspendEdit && setEditSuspension({ idx: i, stopTime: s.stopTime, resumeTime: s.resumeTime })}
-              title={onSuspendEdit ? "แตะเพื่อแก้ไข / ลบ" : undefined}
-              style={{
-                display: "grid",
-                // Fixed columns keep every row's arrow, offset and pencil in line
-                gridTemplateColumns: "26px 46px 12px 46px 62px 16px",
-                alignItems: "center", gap: 4,
-                fontSize: 12, color: "#aaa", background: "#0d0f1a", border: "1px solid #2a2d4a",
-                borderRadius: 6, padding: "3px 8px", cursor: onSuspendEdit ? "pointer" : "default",
-              }}>
-              <span>#{i + 1}</span>
-              <b style={{ color: "#ffd966" }}>{s.stopTime}</b>
-              <span style={{ textAlign: "center" }}>→</span>
-              <b style={{ color: "#6effa0" }}>{s.resumeTime}</b>
-              <b style={{ color: "#ff9966", textAlign: "right" }}>+{s.offsetMin}min</b>
-              <span style={{ color: "#4e9af1", textAlign: "right" }}>{onSuspendEdit ? "✏️" : ""}</span>
-            </span>
-          ))}
-          <span style={{ fontSize: 13, color: "#ff9966", fontWeight: 700, marginTop: 2 }}>Total +{totalOffsetMin} min</span>
-        </div>
-      )}
 
       {editSuspension && (
         <div onClick={() => setEditSuspension(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
