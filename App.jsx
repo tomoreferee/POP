@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-j";
+const APP_BUILD = "2026-07-30-k";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4218,11 +4218,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeFromData = (gd?.holeData ?? []).filter(h => h?.endTime).length;
             const hole = Math.max(holeFromRecords, holeFromData);
             if (hole >= 18) return false;
-            const status = getGroupStatus(g);
             const mnActive = gd?.mnActive === true;
             const tmActive = gd?.tmActive === true;
-            const hasLoggedAction = (gd?.actionLogs ?? []).length > 0; // has WN, MN, or TM logged → keep showing even after it's back on time
-            return status === "late" || status === "warn" || mnActive || tmActive || hasLoggedAction;
+            // Only groups that have actually been flagged (WN / MN / TM / Bad Time)
+            // belong here — running behind on its own isn't enough, since that's
+            // already visible from the colours in the schedule table below.
+            const hasLoggedAction = (gd?.actionLogs ?? []).length > 0;
+            return mnActive || tmActive || hasLoggedAction;
           });
 
           // Sort groups with "late" status first, followed by "starting late", then on-time groups with a pending WN/MN
@@ -4336,13 +4338,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
           if (alertGroups.length === 0 && !hasAfternoon) return (
             <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ All groups are in position.
+              ✓ No groups flagged (WN / MN / TM).
             </div>
           );
 
           if (alertGroups.length === 0) return (
             <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ All groups are in position.
+              ✓ No groups flagged (WN / MN / TM).
             </div>
           );
 
@@ -4378,7 +4380,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               )}
               {morningAlerts.length === 0 && afternoonAlerts.length === 0 && (
                 <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-                  ✓ All groups are in position.
+                  ✓ No groups flagged (WN / MN / TM).
                 </div>
               )}
             </div>
