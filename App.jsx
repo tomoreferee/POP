@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-h";
+const APP_BUILD = "2026-07-30-i";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4144,15 +4144,22 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               onClick={() => onSuspendEdit && setEditSuspension({ idx: i, stopTime: s.stopTime, resumeTime: s.resumeTime })}
               title={onSuspendEdit ? "แตะเพื่อแก้ไข / ลบ" : undefined}
               style={{
+                display: "grid",
+                // Fixed columns keep every row's arrow, offset and pencil in line
+                gridTemplateColumns: "26px 46px 12px 46px 62px 16px",
+                alignItems: "center", gap: 4,
                 fontSize: 12, color: "#aaa", background: "#0d0f1a", border: "1px solid #2a2d4a",
                 borderRadius: 6, padding: "3px 8px", cursor: onSuspendEdit ? "pointer" : "default",
               }}>
-              #{i + 1}: <b style={{ color: "#ffd966" }}>{s.stopTime}</b> → <b style={{ color: "#6effa0" }}>{s.resumeTime}</b>
-              <b style={{ color: "#ff9966" }}> +{s.offsetMin}min</b>
-              {onSuspendEdit && <span style={{ color: "#4e9af1", marginLeft: 4 }}>✏️</span>}
+              <span>#{i + 1}</span>
+              <b style={{ color: "#ffd966" }}>{s.stopTime}</b>
+              <span style={{ textAlign: "center" }}>→</span>
+              <b style={{ color: "#6effa0" }}>{s.resumeTime}</b>
+              <b style={{ color: "#ff9966", textAlign: "right" }}>+{s.offsetMin}min</b>
+              <span style={{ color: "#4e9af1", textAlign: "right" }}>{onSuspendEdit ? "✏️" : ""}</span>
             </span>
           ))}
-          <span style={{ fontSize: 13, color: "#ff9966", fontWeight: 700 }}>Total +{totalOffsetMin} min</span>
+          <span style={{ fontSize: 13, color: "#ff9966", fontWeight: 700, marginTop: 2 }}>Total +{totalOffsetMin} min</span>
         </div>
       )}
 
