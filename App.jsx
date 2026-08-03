@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-c";
+const APP_BUILD = "2026-07-31-d (beta)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -3965,7 +3965,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 24px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>BETA</span>
+        </div>
         {/* Right side: online + user + clock + logout */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           {/* Online indicator hidden for now — re-enable by restoring this line:
@@ -4921,7 +4924,10 @@ function LoginScreen({ onLogin, users, hasSession }) {
       }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontFamily: "'Bebas Neue'", fontSize: 38, letterSpacing: 5, color: "#4e9af1" }}>⛳ POP APP</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 38, letterSpacing: 5, color: "#4e9af1" }}>⛳ POP APP</div>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 5, padding: "2px 7px" }}>BETA</span>
+          </div>
           <div style={{ fontSize: 12, color: "#8890b8", marginTop: 4, letterSpacing: 2 }}>Golf Referee · Pace of Play System</div>
           {hasSession && (
             <div style={{ marginTop: 12, background: "#0a1a0a", border: "1px solid #6effa044", borderRadius: 8, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}>
