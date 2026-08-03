@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-w";
+const APP_BUILD = "2026-07-30-x";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4297,43 +4297,35 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             return (
               <div key={g.id} onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })} style={{
                 background: "#141626", border: `1px solid ${g.color}44`, borderRadius: 12,
-                padding: 12, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s",
-                boxShadow: status === "late" ? `0 0 20px #ff707022` : "none",
+                padding: "8px 10px", cursor: "pointer", transition: "box-shadow 0.15s",
+                boxShadow: status === "late" ? `0 0 14px #ff707022` : "none",
                 minWidth: 0, overflow: "hidden",
               }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 30px ${g.color}22`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = status === "late" ? `0 0 20px #ff707022` : "none"; }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 18px ${g.color}22`; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = status === "late" ? `0 0 14px #ff707022` : "none"; }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+                {/* One compact row: dot · name · progress · last hole diff · status */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
-                  <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{g.name}</div>
-                  <div style={{ flexShrink: 0 }}><StatusBadge status={status} small /></div>
+                  <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>{g.name}</div>
+                  <div style={{ fontSize: 11, color: "#9aa2c7", whiteSpace: "nowrap", flexShrink: 0 }}>H{hole}/18</div>
+                  {nowDiff !== null ? (
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, color: "#8890b8" }}>H{lastHoleIdx + 1}</span>
+                      <span style={{ fontFamily: "'Bebas Neue'", fontSize: 17, color: diffColor, lineHeight: 1 }}>{nowDiff > 0 ? `+${nowDiff}` : nowDiff}</span>
+                      {lastEndTime && <span style={{ fontSize: 11, color: "#888" }}>{lastEndTime}</span>}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 11, color: "#8890b8", whiteSpace: "nowrap", flexShrink: 0 }}>No data yet</span>
+                  )}
+                  <div style={{ marginLeft: "auto", flexShrink: 0 }}><StatusBadge status={status} small /></div>
                 </div>
-                <div style={{ background: "#0d0f1a", borderRadius: 99, height: 4, marginBottom: 6, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${(hole / 18) * 100}%`, background: g.color, borderRadius: 99, transition: "width 0.5s" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9aa2c7" }}>
-                  <span>H{hole}/18</span>
-                  <span>{g.startTime}</span>
-                </div>
-                {nowDiff !== null && (
-                  <div style={{ marginTop: 8, padding: "6px", background: "#0d0f1a", borderRadius: 6, textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#8890b8" }}>Hole {lastHoleIdx + 1}</div>
-                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, color: diffColor, lineHeight: 1.2 }}>{nowDiff > 0 ? `+${nowDiff}` : nowDiff} min</div>
-                    {lastEndTime && <div style={{ fontSize: 11, color: "#888" }}>Finished <span style={{ color: "#eee", fontWeight: 700 }}>{lastEndTime}</span></div>}
-                  </div>
-                )}
-                {nowDiff === null && (
-                  <div style={{ marginTop: 8, padding: "6px", background: "#0d0f1a", borderRadius: 6, textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#8890b8" }}>No data yet</div>
-                  </div>
-                )}
                 {(() => {
                   const logs = (gd?.actionLogs ?? []).map((l, idx) => ({ ...l, idx }));
                   if (logs.length === 0 && !mnActive && !tmActive) return null;
                   const items = summarizeStatusLogs(logs, mnActive, tmActive);
                   return (
-                    <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
+                    <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 4 }}>
                       {items.map(it => (
                         <span key={it.key} onClick={(e) => { if (it.idx !== undefined) { e.stopPropagation(); setEditLogPopup({ groupId: g.id, idx: it.idx }); } }} style={{
                           display: "inline-flex", alignItems: "center", gap: 3,
@@ -4379,7 +4371,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           );
 
           if (!hasAfternoon) return (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {alertGroups.map(renderGroupCard)}
             </div>
           );
@@ -4392,7 +4384,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     <div style={{ fontSize: 12, color: "#8899cc", fontWeight: 700, letterSpacing: 2 }}>🌅 MORNING</div>
                     <div style={{ flex: 1, height: 1, background: "#2a2d4a" }} />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {morningAlerts.map(renderGroupCard)}
                   </div>
                 </div>
@@ -4403,7 +4395,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700, letterSpacing: 2 }}>☀️ AFTERNOON</div>
                     <div style={{ flex: 1, height: 1, background: "#2a2d4a" }} />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {afternoonAlerts.map(renderGroupCard)}
                   </div>
                 </div>
