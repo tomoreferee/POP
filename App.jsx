@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-x";
+const APP_BUILD = "2026-07-30-y";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -353,6 +353,13 @@ function computeGroupStatusFor(g, groups, groupData, parTimes) {
 // Inserts a genuine empty column at the front-nine / back-nine turn. Using a real
 // cell (rather than padding) means the gap never steals width from the numbers,
 // which is what made them overlap in the width-locked "fit 18" view.
+// One-letter badge text for the width-locked "fit 18" view: W / M / T / B.
+function shortLogLabel(l) {
+  if (l.badTime) return "B";
+  const letter = l.type === "WN" ? "W" : l.type === "MN" ? "M" : l.type === "TM" ? "T" : l.type?.[0] || "?";
+  return l.off ? `×${letter}` : letter;
+}
+
 function withTurnGap(cells, width, keyPrefix, Tag = "td") {
   const out = cells.slice();
   out.splice(9, 0, <Tag key={`turngap-${keyPrefix}`} style={{ width, minWidth: width, padding: 0, border: "none", background: "transparent" }} />);
@@ -4484,7 +4491,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 <span>{fitAllHoles ? g.name.replace(/^\s*group\s*/i, "") : g.name}</span>
                                 {!fitAllHoles && <span style={{ fontSize: 11, color: "#8890b8" }}>›</span>}
                               </div>
-                              <div style={{ display: fitAllHoles ? "none" : "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
+                              <div style={{ display: "flex", gap: fitAllHoles ? 1 : 3, marginTop: fitAllHoles ? 2 : 4, justifyContent: "center", flexWrap: "wrap" }}>
                                 {data?.roundFinished === true && (
                                   <span
                                     onClick={(e) => {
@@ -4494,19 +4501,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       }
                                     }}
                                     title="กดเพื่อยกเลิกสถานะจบรอบ"
-                                    style={{ fontSize: 11, fontWeight: 700, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa044", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
-                                  >🏁 FINISHED</span>
+                                    style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa044", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
+                                  >{fitAllHoles ? "🏁" : "🏁 FINISHED"}</span>
                                 )}
-                                {hasWN && <span style={{ fontSize: 11, fontWeight: 700, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 5px" }}>WN</span>}
+                                {hasWN && <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "W" : "WN"}</span>}
                                 {mnActiveNow ? (
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a66", border: "1px solid #4e9af144", borderRadius: 4, padding: "1px 5px" }}>👁 MN</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a66", border: "1px solid #4e9af144", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "M" : "👁 MN"}</span>
                                 ) : hasMN && (
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#888", background: "#1a1a1a66", border: "1px solid #55555544", borderRadius: 4, padding: "1px 5px" }}>✕ MN</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#888", background: "#1a1a1a66", border: "1px solid #55555544", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×M" : "✕ MN"}</span>
                                 )}
                                 {tmActiveNow ? (
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002066", border: "1px solid #ff6ec744", borderRadius: 4, padding: "1px 5px" }}>⏱ TM</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002066", border: "1px solid #ff6ec744", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "T" : "⏱ TM"}</span>
                                 ) : hasTM && (
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#888", background: "#1a1a1a66", border: "1px solid #55555544", borderRadius: 4, padding: "1px 5px" }}>✕ TM</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#888", background: "#1a1a1a66", border: "1px solid #55555544", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×T" : "✕ TM"}</span>
                                 )}
                               </div>
                             </td>
@@ -4556,8 +4563,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const handleHoleClick = () => setQuickRecord({ groupId: g.id, targetSlot: slot });
                               const deadline = (sch?.[hi] ?? 0) + (parTimes?.[hi] ?? 14);
                               if (!endTime || !startTime) {
-                                const showMnPreview = !fitAllHoles && mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
-                                const showTmPreview = !fitAllHoles && tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
+                                const showMnPreview = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
+                                const showTmPreview = tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
                                 return (
                                   <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#666f99", cursor: "pointer", transition: "background 0.15s", ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
@@ -4574,19 +4581,21 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     })() : (
                                       <div style={{ fontSize: 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
                                     )}
-                                    {(fitAllHoles ? [] : holeLogs).map((l, li) => (
-                                      <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px" }}>
-                                        {l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
+                                    {holeLogs.map((l, li) => (
+                                      <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
+                                        {fitAllHoles
+                                          ? shortLogLabel(l)
+                                          : (l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
                                       </div>
                                     ))}
                                     {showMnPreview && (
-                                      <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a55", border: "1px dashed #4e9af155", borderRadius: 4, padding: "1px 4px" }}>
-                                        👁 MN{data?.mnName ? ` - ${data.mnName}` : ""}
+                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a55", border: "1px dashed #4e9af155", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
+                                        {fitAllHoles ? "M" : <>👁 MN{data?.mnName ? ` - ${data.mnName}` : ""}</>}
                                       </div>
                                     )}
                                     {showTmPreview && (
-                                      <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002055", border: "1px dashed #ff6ec755", borderRadius: 4, padding: "1px 4px" }}>
-                                        ⏱ TM {data?.tmName ? `- ${data.tmName}` : ""}
+                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002055", border: "1px dashed #ff6ec755", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
+                                        {fitAllHoles ? "T" : <>⏱ TM {data?.tmName ? `- ${data.tmName}` : ""}</>}
                                       </div>
                                     )}
                                   </td>
@@ -4605,9 +4614,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   onMouseLeave={e => e.currentTarget.style.background = cellBg}
                                 >
                                   <div style={{ fontSize: fitAllHoles ? 11 : 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
-                                  {(fitAllHoles ? [] : holeLogs).map((l, li) => (
-                                    <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
-                                      {l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
+                                  {holeLogs.map((l, li) => (
+                                    <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                      {fitAllHoles
+                                        ? shortLogLabel(l)
+                                        : (l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
                                     </div>
                                   ))}
                                 </td>
