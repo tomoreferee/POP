@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-b";
+const APP_BUILD = "2026-07-31-c";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4526,7 +4526,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   <div>{g.startTime.slice(0, 2)}</div>
                                   <div>{g.startTime.slice(3)}</div>
                                   {(data?.delayMin ?? 0) > 0 && (
-                                    <div style={{ fontSize: 9, color: "#ffd966", marginTop: 1 }}>+{data.delayMin}</div>
+                                    <div style={{ fontSize: 9, color: "#eee", marginTop: 1 }}>+{data.delayMin}</div>
                                   )}
                                 </div>
                               ) : <div>{g.startTime}</div>}
