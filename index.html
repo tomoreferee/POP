@@ -2,19 +2,33 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>POP App</title>
     <style>
       html, body {
         overscroll-behavior-y: none;
         overscroll-behavior-x: none;
         height: 100%;
+        /* Nothing may widen the page itself — the schedule tables scroll inside
+           their own containers. Without this a wide table pushes the document
+           wider than the screen, which iOS shows as a zoomed-in page on load. */
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        margin: 0;
+        /* Stop iOS from auto-inflating text when it thinks a column is too narrow */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
       }
       #root {
         height: 100%;
+        width: 100%;
+        max-width: 100%;
         overflow-y: auto;
+        overflow-x: hidden;
         overscroll-behavior-y: contain;
       }
+      *, *::before, *::after { box-sizing: border-box; }
     </style>
   </head>
   <body>
