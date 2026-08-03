@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-n";
+const APP_BUILD = "2026-07-30-o";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4426,10 +4426,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const tableKey = `${sectionKey}-${startHole}`;
             const isCollapsed = !!collapsedTables[tableKey];
             // Fit-18 view: shrink every column so all 18 holes sit on one screen.
-            const th = fitAllHoles ? { ...thStyle, padding: "5px 1px", fontSize: 10, minWidth: 0 } : thStyle;
-            const td = fitAllHoles ? { ...tdStyle, padding: "4px 1px" } : tdStyle;
-            const nameColW = fitAllHoles ? 34 : 80;
-            const startColW = fitAllHoles ? 34 : 56;
+            const th = fitAllHoles ? { ...thStyle, padding: "4px 0", fontSize: 9, minWidth: 0 } : thStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: "3px 0" } : tdStyle;
+            const nameColW = fitAllHoles ? 26 : 80;
+            const startColW = fitAllHoles ? 30 : 56;
             return (
               <div key={tableKey} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
                 <div
@@ -4477,9 +4477,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               onMouseEnter={e => e.currentTarget.style.background = `${g.color}22`}
                               onMouseLeave={e => e.currentTarget.style.background = "#141626"}
                             >
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: fitAllHoles ? 0 : 5 }}>
                                 <span>{fitAllHoles ? g.name.replace(/^\s*group\s*/i, "") : g.name}</span>
-                                <span style={{ fontSize: 11, color: "#8890b8" }}>›</span>
+                                {!fitAllHoles && <span style={{ fontSize: 11, color: "#8890b8" }}>›</span>}
                               </div>
                               <div style={{ display: fitAllHoles ? "none" : "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
                                 {data?.roundFinished === true && (
@@ -4555,7 +4555,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
-                                    <div style={{ fontSize: fitAllHoles ? 10 : 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
+                                    <div style={{ fontSize: fitAllHoles ? 9 : 16, fontWeight: 700, color: "#9aa2c7", letterSpacing: fitAllHoles ? "-0.5px" : undefined }}>{minToTime(deadline)}</div>
                                     {(fitAllHoles ? [] : holeLogs).map((l, li) => (
                                       <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px" }}>
                                         {l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
