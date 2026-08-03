@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-v";
+const APP_BUILD = "2026-07-30-w";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -348,6 +348,15 @@ function computeGroupStatusFor(g, groups, groupData, parTimes) {
     }
   }
   return "idle";
+}
+
+// Inserts a genuine empty column at the front-nine / back-nine turn. Using a real
+// cell (rather than padding) means the gap never steals width from the numbers,
+// which is what made them overlap in the width-locked "fit 18" view.
+function withTurnGap(cells, width, keyPrefix, Tag = "td") {
+  const out = cells.slice();
+  out.splice(9, 0, <Tag key={`turngap-${keyPrefix}`} style={{ width, minWidth: width, padding: 0, border: "none", background: "transparent" }} />);
+  return out;
 }
 
 function getGroupSideIndex(groups, group) {
@@ -4429,6 +4438,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // Fit-18 view: shrink every column so all 18 holes sit on one screen.
             const th = fitAllHoles ? { ...thStyle, padding: "4px 0", fontSize: 9, minWidth: 0 } : thStyle;
             const td = fitAllHoles ? { ...tdStyle, padding: "3px 0" } : tdStyle;
+            const turnGapW = fitAllHoles ? 8 : 0;
             const nameColW = fitAllHoles ? 26 : 80;
             const startColW = fitAllHoles ? 28 : 56;
             return (
@@ -4447,11 +4457,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                       <tr style={{ background: "#0d0f1a" }}>
                         <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
                         <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a" }}>{fitAllHoles ? "Time" : "Start"}</th>
-                        {order.map((hi, i) => (
+                        {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={i === 9 ? { ...th, ...(fitAllHoles ? { boxShadow: "inset 1px 0 0 #2a2d4a" } : { paddingLeft: 22 }) } : (i === 8 && !fitAllHoles ? { ...th, paddingRight: 22 } : th)}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
+                            <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
                           )
-                        ))}
+                        )), turnGapW, `h-${tableKey}`, "th")}
                       </tr>
                     </thead>
                     <tbody>
@@ -4544,7 +4554,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 );
                               })()}
                             </td>
-                            {order.map((hi, slot) => {
+                            {withTurnGap(order.map((hi, slot) => {
                               if (focusHoles.length && !focusHoles.includes(hi)) return null;
                               const hd = data?.holeData?.[hi];
                               const startTime = hd?.startTime;
@@ -4557,7 +4567,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 const showMnPreview = !fitAllHoles && mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
                                 const showTmPreview = !fitAllHoles && tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
                                 return (
-                                  <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#666f99", cursor: "pointer", transition: "background 0.15s", ...(slot === 9 ? (fitAllHoles ? { boxShadow: "inset 1px 0 0 #2a2d4a" } : { paddingLeft: 22 }) : (slot === 8 && !fitAllHoles ? { paddingRight: 22 } : {})) }}
+                                  <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#666f99", cursor: "pointer", transition: "background 0.15s", ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
@@ -4598,7 +4608,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const cellBgHover = `${color}3d`;
                               return (
                                 <td key={hi} onClick={handleHoleClick}
-                                  style={{ ...td, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg, ...(slot === 9 ? (fitAllHoles ? { boxShadow: "inset 1px 0 0 #2a2d4a" } : { paddingLeft: 22 }) : (slot === 8 && !fitAllHoles ? { paddingRight: 22 } : {})) }}
+                                  style={{ ...td, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg, ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                   onMouseEnter={e => e.currentTarget.style.background = cellBgHover}
                                   onMouseLeave={e => e.currentTarget.style.background = cellBg}
                                 >
@@ -4610,7 +4620,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   ))}
                                 </td>
                               );
-                            })}
+                            }), turnGapW, `b-${tableKey}-${g.id}`, "td")}
                           </tr>
                         );
                       })}
@@ -4622,11 +4632,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                       <tr style={{ background: "#0d0f1a" }}>
                         <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>{fitAllHoles ? "Grp" : "Group"}</th>
                         <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>{fitAllHoles ? "Time" : "Start"}</th>
-                        {order.map((hi, i) => (
+                        {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(i === 9 ? (fitAllHoles ? { boxShadow: "inset 1px 0 0 #2a2d4a" } : { paddingLeft: 22 }) : (i === 8 && !fitAllHoles ? { paddingRight: 22 } : {})) }}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
+                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
                           )
-                        ))}
+                        )), turnGapW, `f-${tableKey}`, "th")}
                       </tr>
                     </tfoot>
                   </table>
