@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-o";
+const APP_BUILD = "2026-07-30-p";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4440,12 +4440,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                 </div>
                 {!isCollapsed && (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
+                <div style={{ overflowX: fitAllHoles ? "hidden" : "auto" }}>
+                  <table style={{ borderCollapse: "collapse", fontSize: 13, ...(fitAllHoles ? { width: "100%", tableLayout: "fixed" } : {}) }}>
                     <thead>
                       <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...th, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: nameColW }}>Group</th>
-                        <th style={{ ...th, color: colColor, position: "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", minWidth: startColW, borderRight: "1px solid #2a2d4a" }}>Start</th>
+                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW }}>Group</th>
+                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a" }}>Start</th>
                         {order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>H{hi + 1}</th>
@@ -4473,7 +4473,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         return (
                           <tr key={g.id}>
                             <td onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })}
-                              style={{ ...td, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: "sticky", left: 0, zIndex: 1, background: "#141626", minWidth: nameColW }}
+                              style={{ ...td, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 1, background: "#141626", width: nameColW, minWidth: nameColW }}
                               onMouseEnter={e => e.currentTarget.style.background = `${g.color}22`}
                               onMouseLeave={e => e.currentTarget.style.background = "#141626"}
                             >
@@ -4509,7 +4509,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             </td>
                             <td
                               onClick={e => e.stopPropagation()}
-                              style={{ ...td, color: colColor, fontWeight: 700, position: "sticky", left: nameColW, zIndex: 1, background: "#141626", minWidth: startColW, borderRight: "1px solid #2a2d4a" }}
+                              style={{ ...td, color: colColor, fontWeight: 700, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 1, background: "#141626", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a" }}
                             >
                               <div style={{ fontSize: fitAllHoles ? 11 : undefined }}>{g.startTime}</div>
                               {!fitAllHoles && (() => {
@@ -4555,7 +4555,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
-                                    <div style={{ fontSize: fitAllHoles ? 9 : 16, fontWeight: 700, color: "#9aa2c7", letterSpacing: fitAllHoles ? "-0.5px" : undefined }}>{minToTime(deadline)}</div>
+                                    {fitAllHoles
+                                      ? <div style={{ fontSize: 11, color: "#3f4763" }}>·</div>
+                                      : <div style={{ fontSize: 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>}
                                     {(fitAllHoles ? [] : holeLogs).map((l, li) => (
                                       <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px" }}>
                                         {l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
@@ -4586,7 +4588,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   onMouseEnter={e => e.currentTarget.style.background = cellBgHover}
                                   onMouseLeave={e => e.currentTarget.style.background = cellBg}
                                 >
-                                  <div style={{ fontSize: fitAllHoles ? 13 : 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
+                                  <div style={{ fontSize: fitAllHoles ? 11 : 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
                                   {(fitAllHoles ? [] : holeLogs).map((l, li) => (
                                     <div key={li} style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 4, padding: "1px 4px", whiteSpace: "nowrap" }}>
                                       {l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>}
@@ -4604,8 +4606,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         hole each column belongs to. */}
                     <tfoot>
                       <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...th, position: "sticky", left: 0, zIndex: 2, background: "#0d0f1a", minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Group</th>
-                        <th style={{ ...th, color: colColor, position: "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", minWidth: startColW, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Start</th>
+                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Group</th>
+                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Start</th>
                         {order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>H{hi + 1}</th>
