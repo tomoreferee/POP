@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-r";
+const APP_BUILD = "2026-07-30-s";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4444,11 +4444,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   <table style={{ borderCollapse: "collapse", fontSize: 13, ...(fitAllHoles ? { width: "100%", tableLayout: "fixed" } : {}) }}>
                     <thead>
                       <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW }}>Group</th>
-                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a" }}>Start</th>
+                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
+                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>H{hi + 1}</th>
+                            <th key={hi} style={i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         ))}
                       </tr>
@@ -4619,11 +4619,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         hole each column belongs to. */}
                     <tfoot>
                       <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Group</th>
-                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>Start</th>
+                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>{fitAllHoles ? "Grp" : "Group"}</th>
+                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>H{hi + 1}</th>
+                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         ))}
                       </tr>
