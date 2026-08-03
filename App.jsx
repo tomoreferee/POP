@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-m";
+const APP_BUILD = "2026-07-30-n";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4429,7 +4429,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const th = fitAllHoles ? { ...thStyle, padding: "5px 1px", fontSize: 10, minWidth: 0 } : thStyle;
             const td = fitAllHoles ? { ...tdStyle, padding: "4px 1px" } : tdStyle;
             const nameColW = fitAllHoles ? 34 : 80;
-            const startColW = fitAllHoles ? 36 : 56;
+            const startColW = fitAllHoles ? 34 : 56;
             return (
               <div key={tableKey} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
                 <div
@@ -4481,7 +4481,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 <span>{fitAllHoles ? g.name.replace(/^\s*group\s*/i, "") : g.name}</span>
                                 <span style={{ fontSize: 11, color: "#8890b8" }}>›</span>
                               </div>
-                              <div style={{ display: "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
+                              <div style={{ display: fitAllHoles ? "none" : "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
                                 {data?.roundFinished === true && (
                                   <span
                                     onClick={(e) => {
@@ -4511,8 +4511,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               onClick={e => e.stopPropagation()}
                               style={{ ...td, color: colColor, fontWeight: 700, position: "sticky", left: nameColW, zIndex: 1, background: "#141626", minWidth: startColW, borderRight: "1px solid #2a2d4a" }}
                             >
-                              <div>{g.startTime}</div>
-                              {(() => {
+                              <div style={{ fontSize: fitAllHoles ? 11 : undefined }}>{g.startTime}</div>
+                              {!fitAllHoles && (() => {
                                 const delayMin = data?.delayMin ?? 0;
                                 const setDelay = (val) => {
                                   const n = Math.max(0, parseInt(val, 10) || 0);
