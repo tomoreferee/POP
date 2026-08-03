@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-30-z";
+const APP_BUILD = "2026-07-31-a";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4491,7 +4491,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 <span>{fitAllHoles ? g.name.replace(/^\s*group\s*/i, "") : g.name}</span>
                                 {!fitAllHoles && <span style={{ fontSize: 11, color: "#8890b8" }}>›</span>}
                               </div>
-                              <div style={{ display: "flex", gap: fitAllHoles ? 1 : 3, marginTop: fitAllHoles ? 2 : 4, justifyContent: "center", flexWrap: "wrap" }}>
+                              <div style={{ display: fitAllHoles ? "none" : "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
                                 {data?.roundFinished === true && (
                                   <span
                                     onClick={(e) => {

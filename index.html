@@ -29,6 +29,13 @@
         overscroll-behavior-y: contain;
       }
       *, *::before, *::after { box-sizing: border-box; }
+      /* iOS Safari zooms the whole page in when a focused text field is under
+         16px, and it stays zoomed afterwards. Keeping text inputs at 16px stops
+         that without disabling the user's own pinch-zoom. */
+      input[type="text"], input[type="password"], input[type="number"],
+      input[type="time"], input:not([type]), textarea {
+        font-size: 16px !important;
+      }
     </style>
   </head>
   <body>
