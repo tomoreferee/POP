@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-n (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-o (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1570,20 +1570,22 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
               {availableRoundLabels.map(label => {
                 const r = rounds.find(rr => rr.label === label);
                 const isLive = r && r.id === liveRoundId;
-                const isFinished = r?.status === "finished";
+                // Every round keeps its own data now, so the old "finished" flag no
+                // longer locks anything — it just means the round has been used.
+                const hasData = !!r && (r.status === "finished" || r.status === "live");
                 return (
                   <button key={label} onClick={() => handlePickRound(label)} disabled={busy}
                     style={{
                       padding: "16px 0", borderRadius: 10, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
-                      background: isLive ? "#1a4a2a" : isFinished ? "#1a1a1a" : "#0d0f1a",
-                      border: `1px solid ${isLive ? "#6effa0" : isFinished ? "#3a3a3a" : "#2a2d4a"}`,
+                      background: isLive ? "#1a4a2a" : hasData ? "#141a2a" : "#0d0f1a",
+                      border: `1px solid ${isLive ? "#6effa0" : hasData ? "#4e9af155" : "#2a2d4a"}`,
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}>
-                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 26, letterSpacing: 2, color: isLive ? "#6effa0" : isFinished ? "#666" : "#eee" }}>
+                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 26, letterSpacing: 2, color: isLive ? "#6effa0" : "#eee" }}>
                       {label === "Q" ? "Q" : `R${label}`}
                     </div>
-                    <div style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#6effa0" : isFinished ? "#666" : "#8890b8" }}>
-                      {isLive ? "● LIVE" : isFinished ? "FINISHED" : r ? "SET UP" : "NOT STARTED"}
+                    <div style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#6effa0" : hasData ? "#4e9af1" : "#8890b8" }}>
+                      {isLive ? "● LIVE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
                     </div>
                   </button>
                 );
@@ -2383,21 +2385,22 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
                 {ROUND_LABELS.map(label => {
                   const r = pickerRounds.find(rr => rr.label === label);
                   const isCurrent = label === roundLabel;
-                  const isFinished = r?.status === "finished";
+                  // Rounds keep their own data now, so this only signals "already used"
+                  const hasData = !!r && (r.status === "finished" || r.status === "live");
                   return (
                     <button key={label}
                       onClick={() => { setShowRoundPicker(false); if (!isCurrent) onPickRound?.(label); }}
                       style={{
                         padding: "14px 0", borderRadius: 10, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
-                        background: isCurrent ? "#1a4a2a" : isFinished ? "#1a1a1a" : "#0d0f1a",
-                        border: `1px solid ${isCurrent ? "#6effa0" : isFinished ? "#3a3a3a" : "#2a2d4a"}`,
+                        background: isCurrent ? "#1a4a2a" : hasData ? "#141a2a" : "#0d0f1a",
+                        border: `1px solid ${isCurrent ? "#6effa0" : hasData ? "#4e9af155" : "#2a2d4a"}`,
                         display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                       }}>
-                      <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 1, color: isCurrent ? "#6effa0" : isFinished ? "#666" : "#eee" }}>
+                      <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 1, color: isCurrent ? "#6effa0" : "#eee" }}>
                         {label === "Q" ? "Q" : `R${label}`}
                       </span>
-                      <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#6effa0" : isFinished ? "#666" : "#8890b8" }}>
-                        {isCurrent ? "● CURRENT" : isFinished ? "FINISHED" : r ? "SET UP" : "NEW"}
+                      <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#6effa0" : hasData ? "#4e9af1" : "#8890b8" }}>
+                        {isCurrent ? "● CURRENT" : hasData ? "HAS DATA" : r ? "SET UP" : "NEW"}
                       </span>
                     </button>
                   );
