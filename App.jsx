@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-p (beta · multi-tournament)";
+const APP_BUILD = "2026-08-01-a (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1206,8 +1206,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   const [newNumRounds, setNewNumRounds] = useState(4);
   const [busy, setBusy] = useState(false);
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
-  const [accessMap, setAccessMap] = useState({});         // { tournamentId: [username, ...] }
-  const [managingAccess, setManagingAccess] = useState(null); // tournament being edited for access
+  const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
+  const [managingRoles, setManagingRoles] = useState(null); // tournament whose positions are being assigned
+  const [draftRoles, setDraftRoles] = useState({});        // working copy while the dialog is open
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
 
   // Opening the picker also makes that tournament the selected one, so the round
@@ -1219,10 +1220,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   };
 
   const reloadTournaments = async () => {
-    const [t, acc] = await Promise.all([fetchTournaments(), fetchTournamentAccess()]);
-    setAccessMap(acc);
-    // Users only see the tournaments they've been given access to
-    const visible = t.filter(x => canUserSeeTournament(x, acc, currentUser, isAdmin));
+    const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+    setRolesMap(roles);
+    // Referees only see the tournament they hold a position in
+    const visible = t.filter(x => canUserSeeTournament(x, roles, currentUser, isAdmin));
     setTournaments(visible);
     return visible;
   };
@@ -1318,59 +1319,93 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     if (selectedTournamentId === t.id) setSelectedTournamentId(null);
   };
 
+  // Starting the tournament opens it to the assigned referees.
+  const handleToggleStarted = async (t) => {
+    if (busy) return;
+    const starting = t.run_state !== "started";
+    if (starting) {
+      const roles = rolesMap[t.id] || {};
+      if (Object.keys(roles).length === 0) {
+        window.alert(`ยังไม่ได้กำหนดตำแหน่งให้ใครใน "${t.name}"\n\nกดปุ่ม 👥 เพื่อกำหนด TD / CR / R1-R6 ก่อนเริ่มการแข่งขัน`);
+        return;
+      }
+      const staff = Object.entries(roles).map(([p, u]) => `• ${p} — ${u}`).join("\n");
+      if (!window.confirm(`เริ่มการแข่งขัน "${t.name}"?\n\n${staff}\n\nกรรมการเหล่านี้จะเข้าทัวร์นี้ได้ทันทีเมื่อ login`)) return;
+    } else {
+      if (!window.confirm(`หยุดการแข่งขัน "${t.name}" ชั่วคราว?\n\nกรรมการจะยังไม่ถูกออกจากระบบ แต่คนที่ login ใหม่จะยังเข้าไม่ได้จนกว่าจะเริ่มอีกครั้ง`)) return;
+    }
+    setBusy(true);
+    await setTournamentRunState(t.id, starting ? "started" : "draft");
+    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, run_state: starting ? "started" : "draft" } : x));
+    setBusy(false);
+  };
+
   const handleToggleClosed = async (t) => {
     if (busy) return;
     const closing = t.status !== "closed";
     const msg = closing
-      ? `ปิดการแข่งขัน "${t.name}"?\n\nกรรมการทั่วไปจะเข้าทัวร์นี้ไม่ได้อีก และต้องเลือกทัวร์อื่นแทน\n(admin ยังเข้าดู/แก้ไขได้ตามปกติ)`
-      : `เปิดการแข่งขัน "${t.name}" อีกครั้ง?\n\nกรรมการทั่วไปจะกลับเข้าทัวร์นี้ได้`;
+      ? `ปิดการแข่งขัน "${t.name}"?\n\n• กรรมการทุกคนจะถูกออกจากระบบทันที\n• ตำแหน่ง TD / CR / R1-R6 ทั้งหมดจะถูกล้าง\n• เปิดใหม่ต้องกำหนดตำแหน่งใหม่\n\n(admin ไม่ถูกออกจากระบบ และยังเข้าดู/แก้ไขได้)`
+      : `เปิดการแข่งขัน "${t.name}" อีกครั้ง?\n\nอย่าลืมกำหนดตำแหน่ง TD / CR / R1-R6 ใหม่ก่อนให้กรรมการเข้าใช้งาน`;
     if (!window.confirm(msg)) return;
     setBusy(true);
     await setTournamentStatus(t.id, closing ? "closed" : "open");
+    // Closing wipes the roster — every event is staffed fresh.
+    if (closing) {
+      await clearTournamentRoles(t.id);
+      setRolesMap(prev => ({ ...prev, [t.id]: {} }));
+    }
     setBusy(false);
     setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, status: closing ? "closed" : "open" } : x));
   };
 
-  const handleSaveAccess = async (tournamentId, usernames) => {
-    // A referee belongs to exactly one tournament at a time, so nobody can be
-    // recording times against the wrong one. Anyone added here is removed from
-    // whichever other tournament they were assigned to.
+  const openRolesDialog = (t) => {
+    setDraftRoles({ ...(rolesMap[t.id] || {}) });
+    setManagingRoles(t);
+  };
+
+  const handleSaveRoles = async () => {
+    if (!managingRoles) return;
+    const tid = managingRoles.id;
+    const assigned = Object.values(draftRoles).filter(Boolean);
+
+    // A referee holds a position in only one tournament at a time, so nobody can
+    // end up recording against the wrong event.
     const moving = [];
-    Object.entries(accessMap).forEach(([tid, names]) => {
-      if (tid === tournamentId) return;
-      names.forEach(n => {
-        if (usernames.includes(n)) {
-          const from = tournaments.find(t => t.id === tid);
-          moving.push({ name: n, fromId: tid, fromName: from?.name || "(unknown)" });
+    Object.entries(rolesMap).forEach(([otherTid, roles]) => {
+      if (otherTid === tid) return;
+      Object.entries(roles).forEach(([pos, user]) => {
+        if (assigned.includes(user)) {
+          const from = tournaments.find(t => t.id === otherTid);
+          moving.push({ user, pos, otherTid, fromName: from?.name || "(unknown)" });
         }
       });
     });
 
     if (moving.length > 0) {
-      const lines = moving.map(m => `• ${m.name} — ย้ายมาจาก "${m.fromName}"`).join("\n");
-      const ok = window.confirm(
-        `กรรมการอยู่ได้ครั้งละ 1 การแข่งขันเท่านั้น\n\n${lines}\n\n` +
-        `คนเหล่านี้จะถูกนำออกจากการแข่งขันเดิม และย้ายมาอยู่การแข่งขันนี้แทน\n\nดำเนินการต่อหรือไม่?`
-      );
-      if (!ok) return;
+      const lines = moving.map(m => `• ${m.user} — ${m.pos} ของ "${m.fromName}"`).join("\n");
+      if (!window.confirm(
+        `กรรมการรับตำแหน่งได้ครั้งละ 1 การแข่งขันเท่านั้น\n\n${lines}\n\n` +
+        `คนเหล่านี้จะถูกถอดจากตำแหน่งเดิม แล้วย้ายมาการแข่งขันนี้\n\nดำเนินการต่อหรือไม่?`
+      )) return;
     }
 
     setBusy(true);
-    // Strip them out of every other tournament first
-    const nextMap = { ...accessMap };
-    for (const [tid, names] of Object.entries(accessMap)) {
-      if (tid === tournamentId) continue;
-      const pruned = names.filter(n => !usernames.includes(n));
-      if (pruned.length !== names.length) {
-        await setTournamentAccess(tid, pruned);
-        nextMap[tid] = pruned;
+    const nextMap = { ...rolesMap };
+    // Remove them from the other tournaments first
+    for (const [otherTid, roles] of Object.entries(rolesMap)) {
+      if (otherTid === tid) continue;
+      const pruned = Object.fromEntries(Object.entries(roles).filter(([, u]) => !assigned.includes(u)));
+      if (Object.keys(pruned).length !== Object.keys(roles).length) {
+        await setTournamentRoles(otherTid, pruned);
+        nextMap[otherTid] = pruned;
       }
     }
-    await setTournamentAccess(tournamentId, usernames);
-    nextMap[tournamentId] = usernames;
-    setAccessMap(nextMap);
+    const cleaned = Object.fromEntries(Object.entries(draftRoles).filter(([, u]) => !!u));
+    await setTournamentRoles(tid, cleaned);
+    nextMap[tid] = cleaned;
+    setRolesMap(nextMap);
     setBusy(false);
-    setManagingAccess(null);
+    setManagingRoles(null);
   };
 
   const handlePickRound = async (label) => {
@@ -1378,6 +1413,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     // A closed competition is read-only for everyone except admins
     if (selectedTournament?.status === "closed" && !isAdmin) {
       window.alert(`การแข่งขัน "${selectedTournament.name}" ปิดแล้ว\n\nกรุณาเลือกการแข่งขันอื่น`);
+      return;
+    }
+    if (selectedTournament?.run_state !== "started" && !isAdmin) {
+      window.alert(`การแข่งขัน "${selectedTournament.name}" ยังไม่เริ่ม\n\nกรุณารอ admin กดเริ่มการแข่งขันก่อน`);
       return;
     }
     setRoundPickerFor(null);
@@ -1465,12 +1504,27 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                     style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</span>
-                      {t.status === "closed" && (
+                      {t.status === "closed" ? (
                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ff7070", background: "#2a0a0a", border: "1px solid #ff707055", borderRadius: 4, padding: "1px 5px" }}>CLOSED</span>
+                      ) : t.run_state === "started" ? (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a10", border: "1px solid #6effa055", borderRadius: 4, padding: "1px 5px" }}>● STARTED</span>
+                      ) : (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#8890b8", background: "#0d0f1a", border: "1px solid #8890b844", borderRadius: 4, padding: "1px 5px" }}>DRAFT</span>
                       )}
-                      {(accessMap[t.id]?.length > 0) && (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px" }}>🔒 {accessMap[t.id].length}</span>
-                      )}
+                      {(() => {
+                        const filled = Object.values(rolesMap[t.id] || {}).filter(Boolean).length;
+                        const mine = positionOf(rolesMap, t.id, currentUser);
+                        return (
+                          <>
+                            {mine && (
+                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "1px 5px" }}>คุณคือ {mine}</span>
+                            )}
+                            {filled > 0 && (
+                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px" }}>👥 {filled}</span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
                   </button>
@@ -1483,13 +1537,18 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                     </button>
                     {isAdmin && (
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+                        <button onClick={() => handleToggleStarted(t)}
+                          title={t.run_state === "started" ? "หยุดการแข่งขันชั่วคราว" : "เริ่มการแข่งขัน"}
+                          style={{ background: "#0d0f1a", border: `1px solid ${t.run_state === "started" ? "#6effa066" : "#8890b844"}`, color: t.run_state === "started" ? "#6effa0" : "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          {t.run_state === "started" ? "⏸" : "▶"}
+                        </button>
                         <button onClick={() => handleToggleClosed(t)}
                           title={t.status === "closed" ? "เปิดการแข่งขันอีกครั้ง" : "ปิดการแข่งขัน"}
                           style={{ background: "#0d0f1a", border: `1px solid ${t.status === "closed" ? "#6effa044" : "#ffd96644"}`, color: t.status === "closed" ? "#6effa0" : "#ffd966", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           {t.status === "closed" ? "🔓" : "🔒"}
                         </button>
-                        <button onClick={() => setManagingAccess(t)}
-                          title="กำหนดว่าใครเข้าทัวร์นี้ได้"
+                        <button onClick={() => openRolesDialog(t)}
+                          title="กำหนดตำแหน่ง TD / CR / R1-R6"
                           style={{ background: "#0d0f1a", border: "1px solid #8890b844", color: "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           👥
                         </button>
@@ -1619,73 +1678,69 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
         </div>
       )}
 
-      {managingAccess && (() => {
-        const current = accessMap[managingAccess.id] || [];
-        const allUserRows = (allUsers || []).map(u => {
-          // Which other tournament (if any) this referee is currently assigned to
-          let assignedTo = null;
-          Object.entries(accessMap).forEach(([tid, names]) => {
-            if (tid !== managingAccess.id && names.includes(u.username)) {
-              assignedTo = tournaments.find(t => t.id === tid)?.name || "another tournament";
-            }
-          });
-          return { name: u.username, isAdmin: u.isAdmin === true, assignedTo };
+      {managingRoles && (() => {
+        const takenBy = (name) => Object.entries(draftRoles).find(([, u]) => u === name)?.[0] ?? null;
+        const setPos = (pos, name) => setDraftRoles(prev => {
+          const next = { ...prev };
+          // One position per person: clear them out of any other slot first
+          Object.keys(next).forEach(p => { if (next[p] === name) delete next[p]; });
+          if (name) next[pos] = name; else delete next[pos];
+          return next;
         });
-        const toggle = (name) => {
-          const next = current.includes(name) ? current.filter(x => x !== name) : [...current, name];
-          setAccessMap(prev => ({ ...prev, [managingAccess.id]: next }));
-        };
         return (
-          <div onClick={() => setManagingAccess(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1300, padding: 16 }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#eee", marginBottom: 4 }}>👥 Who can access</div>
-              <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 14 }}>{managingAccess.name}</div>
-              <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 10, lineHeight: 1.6 }}>
-                ไม่เลือกใครเลย = กรรมการทุกคนเข้าได้<br />
-                เลือกบางคน = เฉพาะคนที่เลือกเท่านั้น (admin เข้าได้เสมอ)
+          <div onClick={() => setManagingRoles(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1100, padding: "24px 16px", overflowY: "auto" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #000" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1" }}>👥 POSITIONS</div>
+              <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 4 }}>{managingRoles.name}</div>
+              <div style={{ fontSize: 11, color: "#666", marginBottom: 16, lineHeight: 1.6 }}>
+                TD / CR แก้หน้า Setup ได้ · R1-R6 บันทึกเวลาอย่างเดียว<br />
+                1 คนรับได้ 1 ตำแหน่ง และอยู่ได้ครั้งละ 1 การแข่งขัน
               </div>
-              <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, padding: 8, maxHeight: 260, overflowY: "auto", marginBottom: 16 }}>
-                {allUserRows.length === 0 ? (
-                  <div style={{ padding: 12, textAlign: "center", color: "#666", fontSize: 12 }}>ไม่มีผู้ใช้ในระบบ</div>
-                ) : allUserRows.map(({ name, isAdmin: rowIsAdmin, assignedTo }) => {
-                  // Admins always have access, so their row is shown but locked on.
-                  const on = rowIsAdmin || current.includes(name);
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                {TOURNAMENT_POSITIONS.map(pos => {
+                  const isLead = SETUP_EDIT_POSITIONS.includes(pos);
                   return (
-                    <button key={name} onClick={() => { if (!rowIsAdmin) toggle(name); }}
-                      title={rowIsAdmin ? "admin เข้าได้ทุกการแข่งขันเสมอ" : undefined}
-                      style={{
-                        width: "100%", display: "flex", alignItems: "center", gap: 8, textAlign: "left",
-                        background: on ? (rowIsAdmin ? "#2a2a1a" : "#1a4a8a") : "transparent",
-                        border: `1px solid ${on ? (rowIsAdmin ? "#ffd96644" : "#4e9af1") : "transparent"}`,
-                        borderRadius: 6, padding: "7px 9px",
-                        cursor: rowIsAdmin ? "default" : "pointer",
-                        marginBottom: 3, fontFamily: "inherit",
-                      }}>
-                      <span style={{ fontSize: 13, color: rowIsAdmin ? "#ffd966" : (on ? "#fff" : "#8890b8") }}>{rowIsAdmin ? "🔑" : (on ? "☑" : "☐")}</span>
-                      <span style={{ fontSize: 13, color: on ? "#fff" : "#aaa", fontWeight: on ? 700 : 400 }}>{name}</span>
-                      {rowIsAdmin ? (
-                        <span style={{ marginLeft: "auto", fontSize: 9, color: "#ffd966", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 5px" }}>admin</span>
-                      ) : assignedTo ? (
-                        <span title={`ขณะนี้อยู่ใน "${assignedTo}" — เลือกที่นี่จะย้ายมา`}
-                          style={{ marginLeft: "auto", fontSize: 9, color: "#ff9966", border: "1px solid #ff996644", borderRadius: 4, padding: "1px 5px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          ⇄ {assignedTo}
-                        </span>
-                      ) : null}
-                    </button>
+                    <div key={pos} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{
+                        width: 44, flexShrink: 0, textAlign: "center", fontSize: 12, fontWeight: 700,
+                        color: isLead ? "#ffd966" : "#8890b8",
+                        background: isLead ? "#2a1a0066" : "#0d0f1a",
+                        border: `1px solid ${isLead ? "#ffd96655" : "#2a2d4a"}`,
+                        borderRadius: 6, padding: "6px 0",
+                      }}>{pos}</span>
+                      <select
+                        value={draftRoles[pos] || ""}
+                        onChange={e => setPos(pos, e.target.value)}
+                        style={{ flex: 1, background: "#0d0f1a", border: "1px solid #2a2d4a", color: draftRoles[pos] ? "#eee" : "#666", borderRadius: 7, padding: "8px 10px", fontFamily: "inherit", fontSize: 13, outline: "none" }}
+                      >
+                        <option value="">— ว่าง —</option>
+                        {(allUsers || []).map(u => {
+                          const held = takenBy(u.username);
+                          const busyElsewhere = held && held !== pos;
+                          return (
+                            <option key={u.username} value={u.username} disabled={busyElsewhere}>
+                              {u.username}{busyElsewhere ? ` (เป็น ${held} อยู่)` : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
                   );
                 })}
               </div>
+
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => handleSaveAccess(managingAccess.id, current)} disabled={busy}
-                  style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "10px", cursor: busy ? "wait" : "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                <button onClick={handleSaveRoles} disabled={busy}
+                  style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
                   ✓ Save
                 </button>
-                <button onClick={() => handleSaveAccess(managingAccess.id, [])} disabled={busy}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
-                  Everyone
+                <button onClick={() => setDraftRoles({})} disabled={busy}
+                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                  Clear all
                 </button>
-                <button onClick={() => setManagingAccess(null)}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                <button onClick={() => setManagingRoles(null)}
+                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
                   Cancel
                 </button>
               </div>
@@ -1736,7 +1791,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, tournamentId, onPickRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, tournamentId, onPickRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1965,30 +2020,36 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
             Two clearly separate actions: change the whole tournament (goes back
             to the picker screen), or just change the round within it (popup). */}
         {(tournamentName || roundLabel) && (
-          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: "14px 20px", marginBottom: 24, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ minWidth: 0 }}>
+          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
+            {/* Tournament block */}
+            <div style={{ padding: "14px 20px" }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
               {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
               {isAdmin && onSwitchTournament && (
                 <button onClick={onSwitchTournament}
-                  style={{ marginTop: 8, fontSize: 11, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af144", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                  style={{ marginTop: 10, fontSize: 12, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af166", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                   ⇄ Switch Tournament
                 </button>
               )}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-              {roundLabel && (
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#6effa0", background: "#1a4a2a66", border: "1px solid #6effa044", borderRadius: 6, padding: "5px 12px" }}>
+
+            {/* Divider between the two levels */}
+            {roundLabel && <div style={{ borderTop: "1px solid #2a2d4a" }} />}
+
+            {/* Round block — left-aligned with the tournament above it */}
+            {roundLabel && (
+              <div style={{ padding: "12px 20px 14px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#6effa0", background: "#1a4a2a66", border: "1px solid #6effa044", borderRadius: 8, height: 34, padding: "0 16px", display: "inline-flex", alignItems: "center" }}>
                   {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}
                 </span>
-              )}
-              {isAdmin && tournamentId && (
-                <button onClick={openRoundPicker}
-                  style={{ fontSize: 11, color: "#6effa0", background: "#0d0f1a", border: "1px solid #6effa044", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
-                  ⇄ Switch Round
-                </button>
-              )}
-            </div>
+                {isAdmin && tournamentId && (
+                  <button onClick={openRoundPicker}
+                    style={{ fontSize: 12, color: "#6effa0", background: "#0d0f1a", border: "1px solid #6effa066", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                    ⇄ Switch Round
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -5659,6 +5720,16 @@ async function saveGroupData(roundId, groupId, data, updatedAt) {
 // ─── Tournament / Round helpers ─────────────────────────────────────────────
 // Closing a competition stops non-admin users from entering it, so nobody can
 // accidentally record times into a tournament that has already finished.
+// A tournament stays in 'draft' while positions are being assigned; starting it
+// opens the doors so assigned referees log straight in.
+async function setTournamentRunState(id, runState) {
+  try {
+    await supabase.from("tournaments").update({
+      run_state: runState,
+      started_at: runState === "started" ? new Date().toISOString() : null,
+    }).eq("id", id);
+  } catch {}
+}
 async function setTournamentStatus(id, status) {
   try {
     await supabase.from("tournaments").update({
@@ -5689,11 +5760,52 @@ async function setTournamentAccess(tournamentId, usernames) {
     }
   } catch {}
 }
-function canUserSeeTournament(t, accessMap, username, isAdmin) {
-  if (isAdmin) return true;                       // admins always see everything
-  const allowed = accessMap?.[t.id];
-  if (!allowed || allowed.length === 0) return true; // no restriction set
-  return allowed.includes(username);
+// ─── Tournament positions ───────────────────────────────────────────────────
+// TD/CR run the event and may edit Setup; R1-R6 are referees who record times.
+const TOURNAMENT_POSITIONS = ["TD", "CR", "R1", "R2", "R3", "R4", "R5", "R6"];
+const SETUP_EDIT_POSITIONS = ["TD", "CR"];
+
+// { tournamentId: { TD: "NP", R1: "CS", ... } }
+async function fetchAllRoles() {
+  try {
+    const { data, error } = await supabase.from("tournament_roles").select("*");
+    if (error || !data) return {};
+    const map = {};
+    data.forEach(r => {
+      if (!map[r.tournament_id]) map[r.tournament_id] = {};
+      map[r.tournament_id][r.position] = r.username;
+    });
+    return map;
+  } catch { return {}; }
+}
+// Replaces the whole roster for one tournament in a single pass.
+async function setTournamentRoles(tournamentId, roles) {
+  try {
+    await supabase.from("tournament_roles").delete().eq("tournament_id", tournamentId);
+    const rows = Object.entries(roles)
+      .filter(([, username]) => !!username)
+      .map(([position, username]) => ({ tournament_id: tournamentId, position, username }));
+    if (rows.length) await supabase.from("tournament_roles").insert(rows);
+    return true;
+  } catch { return false; }
+}
+async function clearTournamentRoles(tournamentId) {
+  try { await supabase.from("tournament_roles").delete().eq("tournament_id", tournamentId); } catch {}
+}
+// Which position (if any) this person holds in this tournament
+function positionOf(rolesMap, tournamentId, username) {
+  const roles = rolesMap?.[tournamentId];
+  if (!roles || !username) return null;
+  return Object.entries(roles).find(([, u]) => u === username)?.[0] ?? null;
+}
+function canEditSetup(rolesMap, tournamentId, username, isAdmin) {
+  if (isAdmin) return true;
+  return SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, tournamentId, username));
+}
+// A referee only sees the tournament they hold a position in.
+function canUserSeeTournament(t, rolesMap, username, isAdmin) {
+  if (isAdmin) return true;
+  return positionOf(rolesMap, t.id, username) !== null;
 }
 
 async function fetchTournaments() {
@@ -5870,6 +5982,7 @@ export default function App() {
   const [parTimes, setParTimes] = useState([]);
   const [playersPerGroup, setPlayersPerGroup] = useState(3);
   const [turnTime, setTurnTime] = useState(1);
+  const [rolesMap, setRolesMap] = useState({});   // { tournamentId: { TD: "NP", ... } } — App-level copy
   const [usersReturnTo, setUsersReturnTo] = useState("setup"); // where Manage Users should go Back to
   const [onlineUsers, setOnlineUsers] = useState([]); // [{ username, isAdmin, since }] — live presence
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
@@ -5959,6 +6072,9 @@ export default function App() {
       } catch {}
       setCurrentTournament(tournament);
       setCurrentRound(round);
+      // Positions decide who may edit Setup, so they must be loaded before the
+      // restored session lands on a screen.
+      setRolesMap(await fetchAllRoles());
 
       // ─── Restore login session (survives refresh / pull-to-refresh) ─────────
       try {
@@ -6141,21 +6257,55 @@ export default function App() {
     saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, roundId: currentRound?.id });
   };
 
-  const handleLogin = (username, admin) => {
+  const handleLogin = async (username, admin) => {
     setCurrentUser(username);
     setIsAdmin(admin === true);
-    // If a session is currently running (already loaded from Supabase) → go straight to the dashboard.
-    // Otherwise, if no tournament/round has been picked yet, start there first.
+    try {
+      localStorage.setItem("pop_app_user", username);
+      localStorage.setItem("pop_app_is_admin", admin === true ? "true" : "false");
+    } catch {}
+
+    // A referee holds a position in exactly one open tournament, so send them
+    // straight there — no picker, no chance of landing on the wrong event.
+    if (admin !== true) {
+      const [allT, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+      setRolesMap(roles);
+      const mine = allT.find(t => t.status !== "closed" && t.run_state === "started" && positionOf(roles, t.id, username));
+      if (mine) {
+        const rs = await fetchRounds(mine.id);
+        // Prefer the round already running, otherwise the most recent one
+        const target = rs.find(r => r.status === "live") || rs[rs.length - 1];
+        if (target) { await loadRound(mine, target, "resume"); return; }
+        setCurrentTournament(mine);
+        setScreen("tournament");
+        return;
+      }
+    }
+
     if (currentTournament && currentRound) {
       setScreen(groups.length ? "dashboard" : "setup");
     } else {
       setScreen("tournament");
     }
-    try {
-      localStorage.setItem("pop_app_user", username);
-      localStorage.setItem("pop_app_is_admin", admin === true ? "true" : "false");
-    } catch {}
   };
+
+  // Closing a tournament signs its referees out everywhere. Each device watches
+  // the tournaments table and drops out the moment its own event is closed.
+  useEffect(() => {
+    if (!currentUser || isAdmin || !currentTournament?.id) return;
+    const channel = supabase
+      .channel(`tournament_closed_${currentTournament.id}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "tournaments", filter: `id=eq.${currentTournament.id}` },
+        (payload) => {
+          if (payload.new?.status === "closed") {
+            window.alert(`การแข่งขัน "${payload.new.name || ""}" ปิดแล้ว\n\nระบบจะออกจากระบบให้อัตโนมัติ`);
+            handleLogout();
+          }
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUser, isAdmin, currentTournament?.id]);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -6406,7 +6556,12 @@ export default function App() {
     <SetupScreen
       onStart={handleStart}
       currentUser={currentUser}
-      isAdmin={isAdmin}
+      // TD and CR run the event, so they get the same editing rights as an admin
+      // on this screen. Assigning positions and deleting tournaments stay
+      // admin-only and live on the Tournament screen.
+      isAdmin={canEditSetup(rolesMap, currentTournament?.id, currentUser, isAdmin)}
+      isTrueAdmin={isAdmin}
+      myPosition={positionOf(rolesMap, currentTournament?.id, currentUser)}
       onManageUsers={() => { setUsersReturnTo("setup"); setScreen("users"); }}
       onLogout={handleLogout}
       onClearSession={handleClearSession}
