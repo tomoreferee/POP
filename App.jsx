@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-h (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-j (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1192,7 +1192,7 @@ function saveSetup(data) {
 // data first, then starts the new one fresh.
 const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
 
-function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups, allUsers }) {
+function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups, allUsers }) {
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournamentId, setSelectedTournamentId] = useState(liveTournamentId || null);
   const [rounds, setRounds] = useState([]);
@@ -1369,9 +1369,15 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   return (
     <div style={{ background: "#0d0f1a", minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #2a2d4a" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #2a2d4a", gap: 10, flexWrap: "wrap" }}>
         <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1" }}>🏆 TOURNAMENT</div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {isAdmin && onManageUsers && (
+            <button
+              onClick={onManageUsers}
+              style={{ background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, letterSpacing: 1, flexShrink: 0 }}
+            >🔑 Manage Users</button>
+          )}
           {currentUser && <span style={{ fontSize: 12, color: "#8899cc" }}>👤 {currentUser}</span>}
           <LogoutButton onLogout={onLogout} />
         </div>
@@ -1530,7 +1536,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
 
       {managingAccess && (() => {
         const current = accessMap[managingAccess.id] || [];
-        const nonAdminUsers = (allUsers || []).filter(u => !u.isAdmin).map(u => u.username);
+        const allUserRows = (allUsers || []).map(u => ({ name: u.username, isAdmin: u.isAdmin === true }));
         const toggle = (name) => {
           const next = current.includes(name) ? current.filter(x => x !== name) : [...current, name];
           setAccessMap(prev => ({ ...prev, [managingAccess.id]: next }));
@@ -1545,20 +1551,27 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
                 เลือกบางคน = เฉพาะคนที่เลือกเท่านั้น (admin เข้าได้เสมอ)
               </div>
               <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, padding: 8, maxHeight: 260, overflowY: "auto", marginBottom: 16 }}>
-                {nonAdminUsers.length === 0 ? (
-                  <div style={{ padding: 12, textAlign: "center", color: "#666", fontSize: 12 }}>ไม่มีผู้ใช้ทั่วไปในระบบ</div>
-                ) : nonAdminUsers.map(name => {
-                  const on = current.includes(name);
+                {allUserRows.length === 0 ? (
+                  <div style={{ padding: 12, textAlign: "center", color: "#666", fontSize: 12 }}>ไม่มีผู้ใช้ในระบบ</div>
+                ) : allUserRows.map(({ name, isAdmin: rowIsAdmin }) => {
+                  // Admins always have access, so their row is shown but locked on.
+                  const on = rowIsAdmin || current.includes(name);
                   return (
-                    <button key={name} onClick={() => toggle(name)}
+                    <button key={name} onClick={() => { if (!rowIsAdmin) toggle(name); }}
+                      title={rowIsAdmin ? "admin เข้าได้ทุกการแข่งขันเสมอ" : undefined}
                       style={{
                         width: "100%", display: "flex", alignItems: "center", gap: 8, textAlign: "left",
-                        background: on ? "#1a4a8a" : "transparent",
-                        border: `1px solid ${on ? "#4e9af1" : "transparent"}`,
-                        borderRadius: 6, padding: "7px 9px", cursor: "pointer", marginBottom: 3, fontFamily: "inherit",
+                        background: on ? (rowIsAdmin ? "#2a2a1a" : "#1a4a8a") : "transparent",
+                        border: `1px solid ${on ? (rowIsAdmin ? "#ffd96644" : "#4e9af1") : "transparent"}`,
+                        borderRadius: 6, padding: "7px 9px",
+                        cursor: rowIsAdmin ? "default" : "pointer",
+                        marginBottom: 3, fontFamily: "inherit",
                       }}>
-                      <span style={{ fontSize: 13, color: on ? "#fff" : "#8890b8" }}>{on ? "☑" : "☐"}</span>
+                      <span style={{ fontSize: 13, color: rowIsAdmin ? "#ffd966" : (on ? "#fff" : "#8890b8") }}>{rowIsAdmin ? "🔑" : (on ? "☑" : "☐")}</span>
                       <span style={{ fontSize: 13, color: on ? "#fff" : "#aaa", fontWeight: on ? 700 : 400 }}>{name}</span>
+                      {rowIsAdmin && (
+                        <span style={{ marginLeft: "auto", fontSize: 9, color: "#ffd966", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 5px" }}>admin</span>
+                      )}
                     </button>
                   );
                 })}
@@ -5683,6 +5696,7 @@ export default function App() {
   const [parTimes, setParTimes] = useState([]);
   const [playersPerGroup, setPlayersPerGroup] = useState(3);
   const [turnTime, setTurnTime] = useState(1);
+  const [usersReturnTo, setUsersReturnTo] = useState("setup"); // where Manage Users should go Back to
   const [onlineUsers, setOnlineUsers] = useState([]); // [{ username, isAdmin, since }] — live presence
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
   const [currentRound, setCurrentRound] = useState(null);           // { id, tournament_id, label, status, is_qualifying }
@@ -6128,6 +6142,7 @@ export default function App() {
       liveRoundId={currentRound?.id || null}
       hasLiveGroups={groups.length > 0}
       allUsers={users}
+      onManageUsers={() => { setUsersReturnTo("tournament"); setScreen("users"); }}
       onRoundSelected={async (tournament, round, action) => {
         // Every round now owns its data, so switching is simply "load that round".
         // Nothing belonging to the round we're leaving is ever cleared.
@@ -6189,7 +6204,7 @@ export default function App() {
     <UserManagementScreen
       users={users}
       onUpdateUsers={handleUpdateUsers}
-      onBack={() => setScreen("setup")}
+      onBack={() => setScreen(usersReturnTo)}
       currentUser={currentUser}
       onLogout={handleLogout}
     />
@@ -6200,7 +6215,7 @@ export default function App() {
       onStart={handleStart}
       currentUser={currentUser}
       isAdmin={isAdmin}
-      onManageUsers={() => setScreen("users")}
+      onManageUsers={() => { setUsersReturnTo("setup"); setScreen("users"); }}
       onLogout={handleLogout}
       onClearSession={handleClearSession}
       hasLiveSession={groups.length > 0}
