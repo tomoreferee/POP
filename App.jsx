@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-m (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-n (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1436,13 +1436,13 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: showCreate ? 16 : 0 }}>
               {tournaments.map(t => (
                 <div key={t.id} style={{
-                  display: "flex", alignItems: "center", gap: 8,
                   padding: "12px 14px", borderRadius: 8, fontFamily: "inherit",
                   background: selectedTournamentId === t.id && !showCreate ? "#1a4a8a" : "#0d0f1a",
                   border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#4e9af1" : "#2a2d4a"}`,
                 }}>
+                  {/* Row 1 — name + venue, full width so long names don't wrap awkwardly */}
                   <button onClick={() => openRoundPicker(t)}
-                    style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+                    style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</span>
                       {t.status === "closed" && (
@@ -1454,32 +1454,38 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                     </div>
                     {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
                   </button>
-                  <button onClick={() => openRoundPicker(t)}
-                    style={{ flexShrink: 0, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff", borderRadius: 7, padding: "7px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-                    Select
-                  </button>
-                  {isAdmin && (
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button onClick={() => handleToggleClosed(t)}
-                        title={t.status === "closed" ? "เปิดการแข่งขันอีกครั้ง" : "ปิดการแข่งขัน"}
-                        style={{ background: "#0d0f1a", border: `1px solid ${t.status === "closed" ? "#6effa044" : "#ffd96644"}`, color: t.status === "closed" ? "#6effa0" : "#ffd966", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
-                        {t.status === "closed" ? "🔓" : "🔒"}
-                      </button>
-                      <button onClick={() => setManagingAccess(t)}
-                        title="กำหนดว่าใครเข้าทัวร์นี้ได้"
-                        style={{ background: "#0d0f1a", border: "1px solid #8890b844", color: "#8890b8", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
-                        👥
-                      </button>
-                      <button onClick={() => handleStartEdit(t)}
-                        style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
-                        ✏️
-                      </button>
-                      <button onClick={() => handleDeleteTournament(t)}
-                        style={{ background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
-                        🗑
-                      </button>
-                    </div>
-                  )}
+
+                  {/* Row 2 — Select on the left, admin tools on the right, all same height */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
+                    <button onClick={() => openRoundPicker(t)}
+                      style={{ background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff", borderRadius: 7, height: 32, padding: "0 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                      Select
+                    </button>
+                    {isAdmin && (
+                      <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+                        <button onClick={() => handleToggleClosed(t)}
+                          title={t.status === "closed" ? "เปิดการแข่งขันอีกครั้ง" : "ปิดการแข่งขัน"}
+                          style={{ background: "#0d0f1a", border: `1px solid ${t.status === "closed" ? "#6effa044" : "#ffd96644"}`, color: t.status === "closed" ? "#6effa0" : "#ffd966", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          {t.status === "closed" ? "🔓" : "🔒"}
+                        </button>
+                        <button onClick={() => setManagingAccess(t)}
+                          title="กำหนดว่าใครเข้าทัวร์นี้ได้"
+                          style={{ background: "#0d0f1a", border: "1px solid #8890b844", color: "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          👥
+                        </button>
+                        <button onClick={() => handleStartEdit(t)}
+                          title="แก้ไขข้อมูลการแข่งขัน"
+                          style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          ✏️
+                        </button>
+                        <button onClick={() => handleDeleteTournament(t)}
+                          title="ลบการแข่งขัน"
+                          style={{ background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          🗑
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
