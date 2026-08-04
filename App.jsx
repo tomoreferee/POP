@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-o (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-p (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1242,12 +1242,32 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   }, [selectedTournamentId]);
 
   const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
-  const availableRoundLabels = selectedTournament
-    ? [
+  // Which round slots to offer. Prefer the tournament's saved configuration, but
+  // tournaments created before that setting existed have it blank — for those,
+  // infer the list from the rounds that actually exist instead of assuming Q+4.
+  const availableRoundLabels = (() => {
+    if (!selectedTournament) return ROUND_LABELS;
+    const existing = rounds.map(r => r.label);
+    const configured = selectedTournament.num_rounds != null || selectedTournament.has_qualifying != null;
+
+    if (configured) {
+      const list = [
         ...(selectedTournament.has_qualifying !== false ? ["Q"] : []),
         ...ROUND_LABELS.filter(l => l !== "Q").slice(0, selectedTournament.num_rounds ?? 4),
-      ]
-    : ROUND_LABELS;
+      ];
+      // Never hide a round that already holds data
+      existing.forEach(l => { if (!list.includes(l)) list.push(l); });
+      return ROUND_LABELS.filter(l => list.includes(l));
+    }
+
+    // Unconfigured: show what exists (plus the next round so it can be started)
+    if (existing.length === 0) return ROUND_LABELS;
+    const numbered = existing.filter(l => l !== "Q").map(Number).filter(n => !isNaN(n));
+    const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
+    const list = [...existing];
+    if (nextNum <= 4 && !list.includes(String(nextNum))) list.push(String(nextNum));
+    return ROUND_LABELS.filter(l => list.includes(l));
+  })();
 
   const resetForm = () => {
     setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
@@ -1736,6 +1756,17 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
     setPickerRounds(await fetchRounds(tournamentId));
     setPickerLoading(false);
   };
+  // Offer the rounds this tournament actually uses, plus the next one so a new
+  // round can still be started — not a blanket Q + R1..R4.
+  const pickerLabels = (() => {
+    const existing = pickerRounds.map(r => r.label);
+    if (existing.length === 0) return ROUND_LABELS;
+    const numbered = existing.filter(l => l !== "Q").map(Number).filter(n => !isNaN(n));
+    const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
+    const list = [...existing];
+    if (nextNum <= 4 && !list.includes(String(nextNum))) list.push(String(nextNum));
+    return ROUND_LABELS.filter(l => list.includes(l));
+  })();
 
   // The tournament record may arrive after this screen first mounts (async fetch), and
   // it changes when switching tournaments — pull its saved course setup in whenever
@@ -2382,7 +2413,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
               <div style={{ padding: 24, textAlign: "center", color: "#8890b8", fontSize: 13 }}>Loading…</div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
-                {ROUND_LABELS.map(label => {
+                {pickerLabels.map(label => {
                   const r = pickerRounds.find(rr => rr.label === label);
                   const isCurrent = label === roundLabel;
                   // Rounds keep their own data now, so this only signals "already used"
