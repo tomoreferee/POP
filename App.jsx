@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-f (beta)";
+const APP_BUILD = "2026-07-31-g (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1192,7 +1192,7 @@ function saveSetup(data) {
 // data first, then starts the new one fresh.
 const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
 
-function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups }) {
+function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups, allUsers }) {
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournamentId, setSelectedTournamentId] = useState(liveTournamentId || null);
   const [rounds, setRounds] = useState([]);
@@ -1206,13 +1206,23 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
   const [newNumRounds, setNewNumRounds] = useState(4);
   const [busy, setBusy] = useState(false);
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
+  const [accessMap, setAccessMap] = useState({});         // { tournamentId: [username, ...] }
+  const [managingAccess, setManagingAccess] = useState(null); // tournament being edited for access
+
+  const reloadTournaments = async () => {
+    const [t, acc] = await Promise.all([fetchTournaments(), fetchTournamentAccess()]);
+    setAccessMap(acc);
+    // Users only see the tournaments they've been given access to
+    const visible = t.filter(x => canUserSeeTournament(x, acc, currentUser, isAdmin));
+    setTournaments(visible);
+    return visible;
+  };
 
   useEffect(() => {
     (async () => {
-      const t = await fetchTournaments();
-      setTournaments(t);
-      if (!selectedTournamentId && t.length) setSelectedTournamentId(t[0].id);
-      if (!t.length) setShowCreate(true);
+      const visible = await reloadTournaments();
+      if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
+      if (!visible.length && isAdmin) setShowCreate(true);
       setLoading(false);
     })();
   }, []);
@@ -1279,8 +1289,34 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
     if (selectedTournamentId === t.id) setSelectedTournamentId(null);
   };
 
+  const handleToggleClosed = async (t) => {
+    if (busy) return;
+    const closing = t.status !== "closed";
+    const msg = closing
+      ? `ปิดการแข่งขัน "${t.name}"?\n\nกรรมการทั่วไปจะเข้าทัวร์นี้ไม่ได้อีก และต้องเลือกทัวร์อื่นแทน\n(admin ยังเข้าดู/แก้ไขได้ตามปกติ)`
+      : `เปิดการแข่งขัน "${t.name}" อีกครั้ง?\n\nกรรมการทั่วไปจะกลับเข้าทัวร์นี้ได้`;
+    if (!window.confirm(msg)) return;
+    setBusy(true);
+    await setTournamentStatus(t.id, closing ? "closed" : "open");
+    setBusy(false);
+    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, status: closing ? "closed" : "open" } : x));
+  };
+
+  const handleSaveAccess = async (tournamentId, usernames) => {
+    setBusy(true);
+    await setTournamentAccess(tournamentId, usernames);
+    setAccessMap(prev => ({ ...prev, [tournamentId]: usernames }));
+    setBusy(false);
+    setManagingAccess(null);
+  };
+
   const handlePickRound = async (label) => {
     if (busy) return;
+    // A closed competition is read-only for everyone except admins
+    if (selectedTournament?.status === "closed" && !isAdmin) {
+      window.alert(`การแข่งขัน "${selectedTournament.name}" ปิดแล้ว\n\nกรุณาเลือกการแข่งขันอื่น`);
+      return;
+    }
     const existing = rounds.find(r => r.label === label);
 
     // Already the live round — just continue straight in, no data changes.
@@ -1295,10 +1331,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
       setViewingRound(full || existing);
       return;
     }
-    if (liveRoundId && hasLiveGroups) {
-      const ok = window.confirm(`รอบปัจจุบันยังมีข้อมูลอยู่\n\nการเริ่มรอบ "${label}" จะเก็บสำรองข้อมูลรอบปัจจุบันแล้วเคลียร์หน้าจอเพื่อเริ่มรอบใหม่\n\nดำเนินการต่อหรือไม่?`);
-      if (!ok) return;
-    }
     setBusy(true);
     let round = existing;
     if (!round) {
@@ -1310,10 +1342,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
 
   const handleReopenRound = async () => {
     if (!viewingRound || busy) return;
-    if (liveRoundId && hasLiveGroups && liveRoundId !== viewingRound.id) {
-      const ok = window.confirm(`รอบปัจจุบันยังมีข้อมูลอยู่\n\nการเปิดรอบ "${viewingRound.label}" กลับมาแก้ไข จะเก็บสำรองข้อมูลรอบปัจจุบันก่อนแล้วค่อยดึงข้อมูลรอบ "${viewingRound.label}" กลับมาให้แก้ไข\n\nดำเนินการต่อหรือไม่?`);
-      if (!ok) return;
-    }
     setBusy(true);
     await onRoundSelected(selectedTournament, viewingRound, "reopen");
     setBusy(false);
@@ -1365,11 +1393,29 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
                 }}>
                   <button onClick={() => { setSelectedTournamentId(t.id); setShowCreate(false); }}
                     style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</span>
+                      {t.status === "closed" && (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ff7070", background: "#2a0a0a", border: "1px solid #ff707055", borderRadius: 4, padding: "1px 5px" }}>CLOSED</span>
+                      )}
+                      {(accessMap[t.id]?.length > 0) && (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px" }}>🔒 {accessMap[t.id].length}</span>
+                      )}
+                    </div>
                     {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
                   </button>
                   {isAdmin && (
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => handleToggleClosed(t)}
+                        title={t.status === "closed" ? "เปิดการแข่งขันอีกครั้ง" : "ปิดการแข่งขัน"}
+                        style={{ background: "#0d0f1a", border: `1px solid ${t.status === "closed" ? "#6effa044" : "#ffd96644"}`, color: t.status === "closed" ? "#6effa0" : "#ffd966", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                        {t.status === "closed" ? "🔓" : "🔒"}
+                      </button>
+                      <button onClick={() => setManagingAccess(t)}
+                        title="กำหนดว่าใครเข้าทัวร์นี้ได้"
+                        style={{ background: "#0d0f1a", border: "1px solid #8890b844", color: "#8890b8", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                        👥
+                      </button>
                       <button onClick={() => handleStartEdit(t)}
                         style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 6, padding: "5px 9px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
                         ✏️
@@ -1481,6 +1527,60 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onRoundSelected
           </div>
         )}
       </div>
+
+      {managingAccess && (() => {
+        const current = accessMap[managingAccess.id] || [];
+        const nonAdminUsers = (allUsers || []).filter(u => !u.isAdmin).map(u => u.username);
+        const toggle = (name) => {
+          const next = current.includes(name) ? current.filter(x => x !== name) : [...current, name];
+          setAccessMap(prev => ({ ...prev, [managingAccess.id]: next }));
+        };
+        return (
+          <div onClick={() => setManagingAccess(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1300, padding: 16 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #000" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#eee", marginBottom: 4 }}>👥 Who can access</div>
+              <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 14 }}>{managingAccess.name}</div>
+              <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 10, lineHeight: 1.6 }}>
+                ไม่เลือกใครเลย = กรรมการทุกคนเข้าได้<br />
+                เลือกบางคน = เฉพาะคนที่เลือกเท่านั้น (admin เข้าได้เสมอ)
+              </div>
+              <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, padding: 8, maxHeight: 260, overflowY: "auto", marginBottom: 16 }}>
+                {nonAdminUsers.length === 0 ? (
+                  <div style={{ padding: 12, textAlign: "center", color: "#666", fontSize: 12 }}>ไม่มีผู้ใช้ทั่วไปในระบบ</div>
+                ) : nonAdminUsers.map(name => {
+                  const on = current.includes(name);
+                  return (
+                    <button key={name} onClick={() => toggle(name)}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: 8, textAlign: "left",
+                        background: on ? "#1a4a8a" : "transparent",
+                        border: `1px solid ${on ? "#4e9af1" : "transparent"}`,
+                        borderRadius: 6, padding: "7px 9px", cursor: "pointer", marginBottom: 3, fontFamily: "inherit",
+                      }}>
+                      <span style={{ fontSize: 13, color: on ? "#fff" : "#8890b8" }}>{on ? "☑" : "☐"}</span>
+                      <span style={{ fontSize: 13, color: on ? "#fff" : "#aaa", fontWeight: on ? 700 : 400 }}>{name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => handleSaveAccess(managingAccess.id, current)} disabled={busy}
+                  style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "10px", cursor: busy ? "wait" : "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                  ✓ Save
+                </button>
+                <button onClick={() => handleSaveAccess(managingAccess.id, [])} disabled={busy}
+                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                  Everyone
+                </button>
+                <button onClick={() => setManagingAccess(null)}
+                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {viewingRound && (() => {
         const snapshot = viewingRound.archived_app_state || {};
@@ -5303,8 +5403,13 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 //                        replaced, a snapshot of app_state + group_data is archived
 //                        onto its row before the live tables are cleared for the next round
 // `app_users`         → login accounts, shared across every judge/device
-async function fetchAppState() {
-  const { data, error } = await supabase.from("app_state").select("*").eq("id", "main").maybeSingle();
+// Live state is stored per ROUND, so several tournaments can run at the same
+// time without overwriting each other. Every read/write below is scoped by
+// roundId — passing a null roundId is treated as "no round selected" and is a
+// no-op, which prevents a half-loaded screen from clobbering real data.
+async function fetchAppState(roundId) {
+  if (!roundId) return null;
+  const { data, error } = await supabase.from("round_state").select("*").eq("round_id", roundId).maybeSingle();
   if (error || !data) return null;
   return {
     groups: data.groups ?? [],
@@ -5315,14 +5420,15 @@ async function fetchAppState() {
     suspensions: data.suspensions ?? [],
     isSuspended: data.is_suspended ?? false,
     pendingStopTime: data.pending_stop_time ?? "",
-    tournamentId: data.tournament_id ?? null,
-    roundId: data.round_id ?? null,
+    playersPerGroup: data.players_per_group ?? 3,
+    turnTime: data.turn_time ?? 1,
   };
 }
-async function saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, tournamentId, roundId }) {
+async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime }) {
+  if (!roundId) return;
   try {
-    await supabase.from("app_state").upsert({
-      id: "main",
+    await supabase.from("round_state").upsert({
+      round_id: roundId,
       groups, pars,
       par_times: parTimes,
       base_schedules: baseSchedules,
@@ -5330,28 +5436,32 @@ async function saveAppState({ groups, pars, parTimes, baseSchedules, schedules, 
       suspensions,
       is_suspended: isSuspended,
       pending_stop_time: pendingStopTime,
-      tournament_id: tournamentId ?? null,
-      round_id: roundId ?? null,
+      ...(playersPerGroup !== undefined ? { players_per_group: playersPerGroup } : {}),
+      ...(turnTime !== undefined ? { turn_time: turnTime } : {}),
       updated_at: new Date().toISOString(),
     });
   } catch {}
 }
-async function clearAppState(groupIds) {
+async function clearAppState(roundId) {
+  if (!roundId) return;
   try {
-    await supabase.from("app_state").delete().eq("id", "main");
-    if (groupIds?.length) await supabase.from("group_data").delete().in("group_id", groupIds.map(String));
+    await supabase.from("round_state").delete().eq("round_id", roundId);
+    await supabase.from("round_group_data").delete().eq("round_id", roundId);
   } catch {}
 }
-async function fetchAllGroupData() {
-  const { data, error } = await supabase.from("group_data").select("*");
+async function fetchAllGroupData(roundId) {
+  if (!roundId) return {};
+  const { data, error } = await supabase.from("round_group_data").select("*").eq("round_id", roundId);
   if (error || !data) return {};
   const gd = {};
   data.forEach(row => { gd[row.group_id] = row.data; });
   return gd;
 }
-async function saveGroupData(groupId, data, updatedAt) {
+async function saveGroupData(roundId, groupId, data, updatedAt) {
+  if (!roundId) return;
   try {
-    await supabase.from("group_data").upsert({
+    await supabase.from("round_group_data").upsert({
+      round_id: roundId,
       group_id: String(groupId),
       data,
       updated_at: updatedAt || new Date().toISOString(),
@@ -5360,6 +5470,45 @@ async function saveGroupData(groupId, data, updatedAt) {
 }
 
 // ─── Tournament / Round helpers ─────────────────────────────────────────────
+// Closing a competition stops non-admin users from entering it, so nobody can
+// accidentally record times into a tournament that has already finished.
+async function setTournamentStatus(id, status) {
+  try {
+    await supabase.from("tournaments").update({
+      status,
+      closed_at: status === "closed" ? new Date().toISOString() : null,
+    }).eq("id", id);
+  } catch {}
+}
+// Access rules: a tournament with NO access rows is visible to everyone.
+// Once any row exists, only the listed usernames (plus admins) can see it.
+async function fetchTournamentAccess() {
+  const { data, error } = await supabase.from("tournament_access").select("*");
+  if (error || !data) return {};
+  const map = {};
+  data.forEach(r => {
+    if (!map[r.tournament_id]) map[r.tournament_id] = [];
+    map[r.tournament_id].push(r.username);
+  });
+  return map;
+}
+async function setTournamentAccess(tournamentId, usernames) {
+  try {
+    await supabase.from("tournament_access").delete().eq("tournament_id", tournamentId);
+    if (usernames.length) {
+      await supabase.from("tournament_access").insert(
+        usernames.map(username => ({ tournament_id: tournamentId, username }))
+      );
+    }
+  } catch {}
+}
+function canUserSeeTournament(t, accessMap, username, isAdmin) {
+  if (isAdmin) return true;                       // admins always see everything
+  const allowed = accessMap?.[t.id];
+  if (!allowed || allowed.length === 0) return true; // no restriction set
+  return allowed.includes(username);
+}
+
 async function fetchTournaments() {
   const { data, error } = await supabase.from("tournaments").select("*").order("created_at", { ascending: false });
   if (error || !data) return [];
@@ -5515,21 +5664,12 @@ export default function App() {
     });
   }, []);
 
-  // ─── Load shared state (app_state + group_data + users) from Supabase on mount ──
+  // ─── Load users, then restore this device's own tournament/round ────────────
+  // Which round this device is working on is remembered locally, so two devices
+  // can be in different tournaments at the same time.
   useEffect(() => {
     (async () => {
-      const [state, gd, u] = await Promise.all([fetchAppState(), fetchAllGroupData(), fetchUsers()]);
-      if (state) {
-        setGroups(state.groups);
-        setPars(state.pars);
-        setParTimes(state.parTimes);
-        setBaseSchedules(state.baseSchedules);
-        setSchedules(state.schedules);
-        setSuspensions(state.suspensions);
-        setIsSuspended(state.isSuspended);
-        setPendingStopTime(state.pendingStopTime);
-      }
-      setGroupData(gd || {});
+      const u = await fetchUsers();
       if (u && u.length) {
         setUsers(u);
       } else {
@@ -5537,10 +5677,32 @@ export default function App() {
         pushUsers(DEFAULT_USERS);
       }
 
-      // Restore which tournament/round the live app_state belongs to, if any
-      let tournament = null, round = null;
-      if (state?.tournamentId) tournament = await fetchTournamentById(state.tournamentId);
-      if (state?.roundId) round = await fetchRoundById(state.roundId);
+      let tournament = null, round = null, state = null;
+      try {
+        const savedTid = localStorage.getItem("pop_tournament_id");
+        const savedRid = localStorage.getItem("pop_round_id");
+        if (savedTid) tournament = await fetchTournamentById(savedTid);
+        if (savedRid) round = await fetchRoundById(savedRid);
+        // A round that was deleted, or belongs to another tournament, is ignored
+        if (round && tournament && round.tournament_id !== tournament.id) round = null;
+        if (round) {
+          state = await fetchAppState(round.id);
+          const gd = await fetchAllGroupData(round.id);
+          setGroupData(gd || {});
+          if (state) {
+            setGroups(state.groups);
+            setPars(state.pars);
+            setParTimes(state.parTimes);
+            setBaseSchedules(state.baseSchedules);
+            setSchedules(state.schedules);
+            setSuspensions(state.suspensions);
+            setIsSuspended(state.isSuspended);
+            setPendingStopTime(state.pendingStopTime);
+            setPlayersPerGroup(state.playersPerGroup ?? 3);
+            setTurnTime(state.turnTime ?? 1);
+          }
+        }
+      } catch {}
       setCurrentTournament(tournament);
       setCurrentRound(round);
 
@@ -5551,7 +5713,9 @@ export default function App() {
         if (savedUser) {
           setCurrentUser(savedUser);
           setIsAdmin(savedIsAdmin);
-          if (tournament && round) {
+          // A closed competition is off-limits to non-admins — send them back to pick another
+          const blocked = tournament?.status === "closed" && !savedIsAdmin;
+          if (tournament && round && !blocked) {
             setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
           } else {
             setScreen("tournament");
@@ -5563,11 +5727,26 @@ export default function App() {
     })();
   }, []);
 
-  // ─── Realtime: subscribe to changes from other judges' devices ────────────────
+  // Remember this device's tournament/round so it reopens straight into it.
   useEffect(() => {
+    try {
+      if (currentTournament?.id) localStorage.setItem("pop_tournament_id", currentTournament.id);
+      else localStorage.removeItem("pop_tournament_id");
+      if (currentRound?.id) localStorage.setItem("pop_round_id", currentRound.id);
+      else localStorage.removeItem("pop_round_id");
+    } catch {}
+  }, [currentTournament?.id, currentRound?.id]);
+
+  // ─── Realtime: only for the round THIS device is working on ─────────────────
+  // Filtering by round_id is what keeps two tournaments from bleeding into each
+  // other — a change in another tournament never reaches this screen.
+  useEffect(() => {
+    const roundId = currentRound?.id;
+    if (!roundId) return;
+
     const stateChannel = supabase
-      .channel("app_state_sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "app_state" }, (payload) => {
+      .channel(`round_state_sync_${roundId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "round_state", filter: `round_id=eq.${roundId}` }, (payload) => {
         if (payload.eventType === "DELETE") {
           setGroups([]); setPars([]); setParTimes([]); setBaseSchedules({}); setSchedules({});
           setSuspensions([]); setIsSuspended(false); setPendingStopTime("");
@@ -5585,8 +5764,8 @@ export default function App() {
       .subscribe();
 
     const groupChannel = supabase
-      .channel("group_data_sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_data" }, (payload) => {
+      .channel(`round_group_data_sync_${roundId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "round_group_data", filter: `round_id=eq.${roundId}` }, (payload) => {
         if (payload.eventType === "DELETE") {
           const gid = payload.old?.group_id;
           setGroupData(prev => { const next = { ...prev }; delete next[gid]; return next; });
@@ -5601,6 +5780,14 @@ export default function App() {
       })
       .subscribe();
 
+    return () => {
+      supabase.removeChannel(stateChannel);
+      supabase.removeChannel(groupChannel);
+    };
+  }, [currentRound?.id]);
+
+  // Users are global, so this one isn't round-scoped.
+  useEffect(() => {
     const usersChannel = supabase
       .channel("users_sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "app_users" }, async () => {
@@ -5608,12 +5795,7 @@ export default function App() {
         if (u) setUsers(u);
       })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(stateChannel);
-      supabase.removeChannel(groupChannel);
-      supabase.removeChannel(usersChannel);
-    };
+    return () => { supabase.removeChannel(usersChannel); };
   }, []);
 
   // ─── Live presence: who else is using the app right now ──────────────────────
@@ -5666,7 +5848,7 @@ export default function App() {
   const handleSuspendStop = (stopTimeStr) => {
     setPendingStopTime(stopTimeStr);
     setIsSuspended(true);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr, tournamentId: currentTournament?.id, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr, roundId: currentRound?.id });
   };
 
   const handleSuspendResume = (resumeTimeStr) => {
@@ -5677,7 +5859,7 @@ export default function App() {
     setSuspensions(nextSuspensions);
     setIsSuspended(false);
     setPendingStopTime("");
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", tournamentId: currentTournament?.id, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", roundId: currentRound?.id });
   };
 
   // Cancel a stop that was pressed by mistake — nothing is recorded, the clock
@@ -5685,7 +5867,7 @@ export default function App() {
   const handleSuspendCancel = () => {
     setIsSuspended(false);
     setPendingStopTime("");
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: false, pendingStopTime: "", tournamentId: currentTournament?.id, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: false, pendingStopTime: "", roundId: currentRound?.id });
   };
 
   // Edit an already-recorded suspension (wrong stop/resume time typed in).
@@ -5695,14 +5877,14 @@ export default function App() {
     const offsetMin = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
     const nextSuspensions = suspensions.map((s, i) => i === idx ? { stopTime: stopTimeStr, resumeTime: resumeTimeStr, offsetMin } : s);
     setSuspensions(nextSuspensions);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, tournamentId: currentTournament?.id, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, roundId: currentRound?.id });
   };
 
   // Remove a suspension entirely — its offset stops being applied to every schedule.
   const handleSuspendDelete = (idx) => {
     const nextSuspensions = suspensions.filter((_, i) => i !== idx);
     setSuspensions(nextSuspensions);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, tournamentId: currentTournament?.id, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, roundId: currentRound?.id });
   };
 
   const handleLogin = (username, admin) => {
@@ -5788,9 +5970,9 @@ export default function App() {
       setPendingStopTime("");
     }
 
-    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, tournamentId: currentTournament?.id, roundId: currentRound?.id });
+    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, roundId: currentRound?.id });
     const seedWrittenAt = new Date().toISOString();
-    grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(g.id, data[g.id], seedWrittenAt); });
+    grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(currentRound?.id, g.id, data[g.id], seedWrittenAt); });
   };
 
   // Applies Setup edits to the running round without navigating away and without
@@ -5814,7 +5996,7 @@ export default function App() {
     saveAppState({
       groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch,
       suspensions, isSuspended, pendingStopTime,
-      tournamentId: currentTournament?.id, roundId: currentRound?.id,
+      roundId: currentRound?.id, playersPerGroup: pxg ?? 3, turnTime: tt ?? 1,
     });
     // Give brand-new groups a blank scorecard; existing groups keep their data untouched.
     const newOnes = grps.filter(g => !groupData[g.id]);
@@ -5825,7 +6007,7 @@ export default function App() {
         newOnes.forEach(g => {
           next[g.id] = { records: Array(18).fill(null), holeData: Array(18).fill(null).map(() => ({ startTime: null, endTime: null })), currentHole: 0 };
           lastLocalWriteAt.current[g.id] = writtenAt;
-          saveGroupData(g.id, next[g.id], writtenAt);
+          saveGroupData(currentRound?.id, g.id, next[g.id], writtenAt);
         });
         return next;
       });
@@ -5842,14 +6024,14 @@ export default function App() {
     lastLocalWriteAt.current[id] = writtenAt;
     setGroupData(prev => {
       const next = { ...prev, [id]: { ...prev[id], ...update } };
-      saveGroupData(id, next[id], writtenAt);
+      saveGroupData(currentRound?.id, id, next[id], writtenAt);
       return next;
     });
   };
 
   // Clear the entire session (admin only)
   const handleClearSession = () => {
-    clearAppState(groups.map(g => g.id));
+    clearAppState(currentRound?.id);
     setGroups([]);
     setPars([]);
     setParTimes([]);
@@ -5879,73 +6061,49 @@ export default function App() {
       liveTournamentId={currentTournament?.id || null}
       liveRoundId={currentRound?.id || null}
       hasLiveGroups={groups.length > 0}
+      allUsers={users}
       onRoundSelected={async (tournament, round, action) => {
-        if (action === "fresh") {
-          // Archive the previous round's data (if any) before wiping the live tables
-          if (currentRound && groups.length > 0) {
-            await archiveAndFinishRound(
-              currentRound.id,
-              { groups, pars, parTimes, turnTime, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
-              groupData
-            );
-            await clearAppState(groups.map(g => g.id));
-          } else if (currentRound && currentRound.status !== "finished") {
-            // No data was ever recorded for it — just mark it finished, nothing to archive
-            await markRoundStatus(currentRound.id, "finished");
+        // Every round now owns its data, so switching is simply "load that round".
+        // Nothing belonging to the round we're leaving is ever cleared.
+        if (action === "reopen") await markRoundStatus(round.id, "live");
+        const loadedRound = action === "reopen" ? { ...round, status: "live" } : round;
+
+        const state = await fetchAppState(round.id);
+        const gd = await fetchAllGroupData(round.id);
+
+        if (state) {
+          setGroups(state.groups);
+          setPars(state.pars);
+          setParTimes(state.parTimes);
+          setBaseSchedules(state.baseSchedules);
+          setSchedules(state.schedules);
+          setSuspensions(state.suspensions);
+          setIsSuspended(state.isSuspended);
+          setPendingStopTime(state.pendingStopTime);
+          setPlayersPerGroup(state.playersPerGroup ?? 3);
+          setTurnTime(state.turnTime ?? 1);
+          setGroupData(gd || {});
+        } else {
+          // Round has never been set up — start it blank, but inherit the course
+          // setup so pars / par times / transit time don't have to be re-entered.
+          let courseSetup = null;
+          if (tournament?.pars?.length === 18 && tournament?.par_times?.length === 18) {
+            courseSetup = { pars: tournament.pars, parTimes: tournament.par_times, turnTime: tournament.turn_time ?? 1 };
+          } else {
+            courseSetup = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
           }
           setGroups([]);
-          setPars([]);
-          setParTimes([]);
+          setPars(courseSetup?.pars || []);
+          setParTimes(courseSetup?.parTimes || []);
+          setTurnTime(courseSetup?.turnTime ?? 1);
           setBaseSchedules({});
           setSchedules({});
           setGroupData({});
           setSuspensions([]);
           setIsSuspended(false);
           setPendingStopTime("");
-          saveAppState({ groups: [], pars: [], parTimes: [], baseSchedules: {}, schedules: {}, suspensions: [], isSuspended: false, pendingStopTime: "", tournamentId: tournament.id, roundId: round.id });
-        } else if (action === "reopen") {
-          // Archive whatever's currently live (if it belongs to a different round) before restoring
-          if (currentRound && currentRound.id !== round.id && groups.length > 0) {
-            await archiveAndFinishRound(
-              currentRound.id,
-              { groups, pars, parTimes, turnTime, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime },
-              groupData
-            );
-            await clearAppState(groups.map(g => g.id));
-          }
-          const restored = round.archived_app_state || {};
-          const restoredGroups = restored.groups || [];
-          setGroups(restoredGroups);
-          setPars(restored.pars || []);
-          setParTimes(restored.parTimes || []);
-          setBaseSchedules(restored.baseSchedules || {});
-          setSchedules(restored.schedules || {});
-          setGroupData(round.archived_group_data || {});
-          setSuspensions(restored.suspensions || []);
-          setIsSuspended(restored.isSuspended || false);
-          setPendingStopTime(restored.pendingStopTime || "");
-          await markRoundStatus(round.id, "live");
-          const reopenedRound = { ...round, status: "live" };
-          saveAppState({
-            groups: restoredGroups, pars: restored.pars || [], parTimes: restored.parTimes || [],
-            baseSchedules: restored.baseSchedules || {}, schedules: restored.schedules || {},
-            suspensions: restored.suspensions || [], isSuspended: restored.isSuspended || false, pendingStopTime: restored.pendingStopTime || "",
-            tournamentId: tournament.id, roundId: round.id,
-          });
-          // restore each group's live data individually too, so realtime/group_data stays in sync
-          for (const g of restoredGroups) {
-            const gd = (round.archived_group_data || {})[g.id];
-            if (gd) await saveGroupData(g.id, gd, new Date().toISOString());
-          }
-          setCurrentTournament(tournament);
-          setCurrentRound(reopenedRound);
-          setScreen(restoredGroups.length ? "dashboard" : "setup");
-          return;
         }
-        // "resume" (already the live round) falls through to here too.
-        // Make sure the Setup screen starts with the course setup already used in
-        // this tournament: prefer the tournament record, otherwise recover it from
-        // the most recent earlier round so nothing has to be re-typed each round.
+
         let tournamentForSetup = tournament;
         const hasCourseSetup = tournament?.pars?.length === 18 && tournament?.par_times?.length === 18;
         if (!hasCourseSetup) {
@@ -5955,8 +6113,8 @@ export default function App() {
           }
         }
         setCurrentTournament(tournamentForSetup);
-        setCurrentRound(round);
-        setScreen("setup");
+        setCurrentRound(loadedRound);
+        setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
       }}
     />
   );
