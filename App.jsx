@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-j (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-k (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1303,9 +1303,43 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   };
 
   const handleSaveAccess = async (tournamentId, usernames) => {
+    // A referee belongs to exactly one tournament at a time, so nobody can be
+    // recording times against the wrong one. Anyone added here is removed from
+    // whichever other tournament they were assigned to.
+    const moving = [];
+    Object.entries(accessMap).forEach(([tid, names]) => {
+      if (tid === tournamentId) return;
+      names.forEach(n => {
+        if (usernames.includes(n)) {
+          const from = tournaments.find(t => t.id === tid);
+          moving.push({ name: n, fromId: tid, fromName: from?.name || "(unknown)" });
+        }
+      });
+    });
+
+    if (moving.length > 0) {
+      const lines = moving.map(m => `• ${m.name} — ย้ายมาจาก "${m.fromName}"`).join("\n");
+      const ok = window.confirm(
+        `กรรมการอยู่ได้ครั้งละ 1 การแข่งขันเท่านั้น\n\n${lines}\n\n` +
+        `คนเหล่านี้จะถูกนำออกจากการแข่งขันเดิม และย้ายมาอยู่การแข่งขันนี้แทน\n\nดำเนินการต่อหรือไม่?`
+      );
+      if (!ok) return;
+    }
+
     setBusy(true);
+    // Strip them out of every other tournament first
+    const nextMap = { ...accessMap };
+    for (const [tid, names] of Object.entries(accessMap)) {
+      if (tid === tournamentId) continue;
+      const pruned = names.filter(n => !usernames.includes(n));
+      if (pruned.length !== names.length) {
+        await setTournamentAccess(tid, pruned);
+        nextMap[tid] = pruned;
+      }
+    }
     await setTournamentAccess(tournamentId, usernames);
-    setAccessMap(prev => ({ ...prev, [tournamentId]: usernames }));
+    nextMap[tournamentId] = usernames;
+    setAccessMap(nextMap);
     setBusy(false);
     setManagingAccess(null);
   };
@@ -1536,7 +1570,16 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
 
       {managingAccess && (() => {
         const current = accessMap[managingAccess.id] || [];
-        const allUserRows = (allUsers || []).map(u => ({ name: u.username, isAdmin: u.isAdmin === true }));
+        const allUserRows = (allUsers || []).map(u => {
+          // Which other tournament (if any) this referee is currently assigned to
+          let assignedTo = null;
+          Object.entries(accessMap).forEach(([tid, names]) => {
+            if (tid !== managingAccess.id && names.includes(u.username)) {
+              assignedTo = tournaments.find(t => t.id === tid)?.name || "another tournament";
+            }
+          });
+          return { name: u.username, isAdmin: u.isAdmin === true, assignedTo };
+        });
         const toggle = (name) => {
           const next = current.includes(name) ? current.filter(x => x !== name) : [...current, name];
           setAccessMap(prev => ({ ...prev, [managingAccess.id]: next }));
@@ -1553,7 +1596,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
               <div style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, padding: 8, maxHeight: 260, overflowY: "auto", marginBottom: 16 }}>
                 {allUserRows.length === 0 ? (
                   <div style={{ padding: 12, textAlign: "center", color: "#666", fontSize: 12 }}>ไม่มีผู้ใช้ในระบบ</div>
-                ) : allUserRows.map(({ name, isAdmin: rowIsAdmin }) => {
+                ) : allUserRows.map(({ name, isAdmin: rowIsAdmin, assignedTo }) => {
                   // Admins always have access, so their row is shown but locked on.
                   const on = rowIsAdmin || current.includes(name);
                   return (
@@ -1569,9 +1612,14 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                       }}>
                       <span style={{ fontSize: 13, color: rowIsAdmin ? "#ffd966" : (on ? "#fff" : "#8890b8") }}>{rowIsAdmin ? "🔑" : (on ? "☑" : "☐")}</span>
                       <span style={{ fontSize: 13, color: on ? "#fff" : "#aaa", fontWeight: on ? 700 : 400 }}>{name}</span>
-                      {rowIsAdmin && (
+                      {rowIsAdmin ? (
                         <span style={{ marginLeft: "auto", fontSize: 9, color: "#ffd966", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 5px" }}>admin</span>
-                      )}
+                      ) : assignedTo ? (
+                        <span title={`ขณะนี้อยู่ใน "${assignedTo}" — เลือกที่นี่จะย้ายมา`}
+                          style={{ marginLeft: "auto", fontSize: 9, color: "#ff9966", border: "1px solid #ff996644", borderRadius: 4, padding: "1px 5px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          ⇄ {assignedTo}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
