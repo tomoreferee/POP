@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-e (beta)";
+const APP_BUILD = "2026-07-31-f (beta)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -3053,26 +3053,6 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               ✓ Confirm H{currentHole + 1} &nbsp;→&nbsp; {currentSlot < 17 ? `H${holeOrder[currentSlot + 1] + 1}` : "Finish"}
             </button>
           )}
-
-          {/* Finish round — closes the group out early (withdrawal, weather, etc.)
-              so it stops appearing in the Dashboard alert list. */}
-          <button
-            onClick={() => {
-              const played = holeData.filter(h => h?.endTime).length;
-              const lastHoleOfRound = holeOrder[17] + 1;
-              if (!window.confirm(`จบรอบของ ${group.name}?\n\nบันทึกไปแล้ว ${played}/18 หลุม (หลุมสุดท้ายของรอบนี้คือ H${lastHoleOfRound})\n\nกลุ่มนี้จะถูกทำเครื่องหมายว่าจบรอบแล้ว และจะไม่ขึ้นในรายการแจ้งเตือนอีก`)) return;
-              onUpdate({ holeData, records, currentHole: currentSlot, actionLogs, mnActive, mnName, tmActive, tmName, tmTarget, roundFinished: true });
-              onRecorded?.();
-            }}
-            style={{
-              width: "100%", marginTop: canConfirm ? 10 : 0,
-              background: "#1a1d2e", border: "1px solid #6effa066", color: "#6effa0",
-              borderRadius: 10, padding: "11px", cursor: "pointer",
-              fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            }}
-          >
-            🏁 Finish round (H{holeOrder[17] + 1})
-          </button>
 
           <div style={{ marginTop: canConfirm ? 16 : 0 }}>
           {/* MN Active Banner */}
