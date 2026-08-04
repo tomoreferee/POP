@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-a (beta · roles)";
+const APP_BUILD = "2026-08-01-b (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -6265,9 +6265,10 @@ export default function App() {
       localStorage.setItem("pop_app_is_admin", admin === true ? "true" : "false");
     } catch {}
 
-    // A referee holds a position in exactly one open tournament, so send them
-    // straight there — no picker, no chance of landing on the wrong event.
-    if (admin !== true) {
+    // Anyone holding a position in a started tournament goes straight there —
+    // including admins, who are often the TD or CR of the event they're running.
+    // Admins with no position still land on the picker so they can see everything.
+    {
       const [allT, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
       setRolesMap(roles);
       const mine = allT.find(t => t.status !== "closed" && t.run_state === "started" && positionOf(roles, t.id, username));
