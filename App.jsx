@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-g (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-h (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -5514,6 +5514,49 @@ async function fetchTournaments() {
   if (error || !data) return [];
   return data;
 }
+// One-time bridge for devices upgrading from the single-tournament build: they
+// have no saved tournament/round in localStorage yet, but the old `app_state`
+// row still points at whichever round was live, so we can recover it from there.
+// Read-only fallbacks against the pre-migration tables. Used only when the new
+// round-scoped tables have nothing for the round we're opening, so a partial or
+// missed migration can never look like lost data.
+async function fetchLegacyAppState() {
+  try {
+    const { data, error } = await supabase.from("app_state").select("*").eq("id", "main").maybeSingle();
+    if (error || !data) return null;
+    return {
+      groups: data.groups ?? [],
+      pars: data.pars ?? [],
+      parTimes: data.par_times ?? [],
+      baseSchedules: data.base_schedules ?? {},
+      schedules: data.schedules ?? {},
+      suspensions: data.suspensions ?? [],
+      isSuspended: data.is_suspended ?? false,
+      pendingStopTime: data.pending_stop_time ?? "",
+      playersPerGroup: 3,
+      turnTime: 1,
+    };
+  } catch { return null; }
+}
+async function fetchLegacyGroupData() {
+  try {
+    const { data, error } = await supabase.from("group_data").select("*");
+    if (error || !data) return {};
+    const gd = {};
+    data.forEach(row => { gd[row.group_id] = row.data; });
+    return gd;
+  } catch { return {}; }
+}
+
+async function fetchLegacyLiveRoundIds() {
+  try {
+    const { data, error } = await supabase
+      .from("app_state").select("tournament_id, round_id").eq("id", "main").maybeSingle();
+    if (error || !data) return null;
+    return { tournamentId: data.tournament_id ?? null, roundId: data.round_id ?? null };
+  } catch { return null; }
+}
+
 async function fetchTournamentById(id) {
   if (!id) return null;
   const { data, error } = await supabase.from("tournaments").select("*").eq("id", id).maybeSingle();
@@ -5679,15 +5722,38 @@ export default function App() {
 
       let tournament = null, round = null, state = null;
       try {
-        const savedTid = localStorage.getItem("pop_tournament_id");
-        const savedRid = localStorage.getItem("pop_round_id");
+        let savedTid = localStorage.getItem("pop_tournament_id");
+        let savedRid = localStorage.getItem("pop_round_id");
+        // First run after upgrading from the single-tournament build: nothing is
+        // saved on this device yet, so fall back to the old app_state pointer.
+        if (!savedTid && !savedRid) {
+          const legacy = await fetchLegacyLiveRoundIds();
+          if (legacy) {
+            savedTid = legacy.tournamentId;
+            savedRid = legacy.roundId;
+          }
+        }
         if (savedTid) tournament = await fetchTournamentById(savedTid);
         if (savedRid) round = await fetchRoundById(savedRid);
+        // If we only recovered the round, derive its tournament from it
+        if (round && !tournament && round.tournament_id) {
+          tournament = await fetchTournamentById(round.tournament_id);
+        }
         // A round that was deleted, or belongs to another tournament, is ignored
         if (round && tournament && round.tournament_id !== tournament.id) round = null;
         if (round) {
           state = await fetchAppState(round.id);
-          const gd = await fetchAllGroupData(round.id);
+          let gd = await fetchAllGroupData(round.id);
+          // Safety net: if the migration didn't reach this round, read the old
+          // single-tournament tables rather than showing an empty dashboard.
+          if (!state || (state.groups?.length ?? 0) === 0) {
+            const legacyState = await fetchLegacyAppState();
+            if (legacyState && (legacyState.groups?.length ?? 0) > 0) state = legacyState;
+          }
+          if (!gd || Object.keys(gd).length === 0) {
+            const legacyGd = await fetchLegacyGroupData();
+            if (legacyGd && Object.keys(legacyGd).length > 0) gd = legacyGd;
+          }
           setGroupData(gd || {});
           if (state) {
             setGroups(state.groups);
