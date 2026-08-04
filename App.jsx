@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-l (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-m (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1208,6 +1208,15 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
   const [accessMap, setAccessMap] = useState({});         // { tournamentId: [username, ...] }
   const [managingAccess, setManagingAccess] = useState(null); // tournament being edited for access
+  const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
+
+  // Opening the picker also makes that tournament the selected one, so the round
+  // list and access rules below all refer to it.
+  const openRoundPicker = (t) => {
+    setSelectedTournamentId(t.id);
+    setShowCreate(false);
+    setRoundPickerFor(t);
+  };
 
   const reloadTournaments = async () => {
     const [t, acc] = await Promise.all([fetchTournaments(), fetchTournamentAccess()]);
@@ -1351,6 +1360,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
       window.alert(`การแข่งขัน "${selectedTournament.name}" ปิดแล้ว\n\nกรุณาเลือกการแข่งขันอื่น`);
       return;
     }
+    setRoundPickerFor(null);
     const existing = rounds.find(r => r.label === label);
 
     // Already the live round — just continue straight in, no data changes.
@@ -1431,7 +1441,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                   background: selectedTournamentId === t.id && !showCreate ? "#1a4a8a" : "#0d0f1a",
                   border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#4e9af1" : "#2a2d4a"}`,
                 }}>
-                  <button onClick={() => { setSelectedTournamentId(t.id); setShowCreate(false); }}
+                  <button onClick={() => openRoundPicker(t)}
                     style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</span>
@@ -1443,6 +1453,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                       )}
                     </div>
                     {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
+                  </button>
+                  <button onClick={() => openRoundPicker(t)}
+                    style={{ flexShrink: 0, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff", borderRadius: 7, padding: "7px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                    Select
                   </button>
                   {isAdmin && (
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -1536,12 +1550,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
           )}
         </div>
 
-        {/* Round picker */}
-        {selectedTournament && !showCreate && (
-          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 4 }}>Select round</div>
-            <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>{selectedTournament.name}{selectedTournament.host_venue ? ` · ${selectedTournament.host_venue}` : ""}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+      </div>
+
+      {/* Round picker — opened by the Select button on a tournament row */}
+      {roundPickerFor && (
+        <div onClick={() => setRoundPickerFor(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #000" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 2 }}>Select round</div>
+            <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>
+              {roundPickerFor.name}{roundPickerFor.host_venue ? ` · ${roundPickerFor.host_venue}` : ""}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
               {availableRoundLabels.map(label => {
                 const r = rounds.find(rr => rr.label === label);
                 const isLive = r && r.id === liveRoundId;
@@ -1549,24 +1568,28 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                 return (
                   <button key={label} onClick={() => handlePickRound(label)} disabled={busy}
                     style={{
-                      padding: "18px 0", borderRadius: 10, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
+                      padding: "16px 0", borderRadius: 10, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
                       background: isLive ? "#1a4a2a" : isFinished ? "#1a1a1a" : "#0d0f1a",
                       border: `1px solid ${isLive ? "#6effa0" : isFinished ? "#3a3a3a" : "#2a2d4a"}`,
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}>
-                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 28, letterSpacing: 2, color: isLive ? "#6effa0" : isFinished ? "#666" : "#eee" }}>
+                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 26, letterSpacing: 2, color: isLive ? "#6effa0" : isFinished ? "#666" : "#eee" }}>
                       {label === "Q" ? "Q" : `R${label}`}
                     </div>
-                    <div style={{ fontSize: 10, letterSpacing: 1, color: isLive ? "#6effa0" : isFinished ? "#666" : "#8890b8" }}>
+                    <div style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#6effa0" : isFinished ? "#666" : "#8890b8" }}>
                       {isLive ? "● LIVE" : isFinished ? "FINISHED" : r ? "SET UP" : "NOT STARTED"}
                     </div>
                   </button>
                 );
               })}
             </div>
+            <button onClick={() => setRoundPickerFor(null)}
+              style={{ width: "100%", background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+              Cancel
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {managingAccess && (() => {
         const current = accessMap[managingAccess.id] || [];
