@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-07-31-k (beta · multi-tournament)";
+const APP_BUILD = "2026-07-31-l (beta · multi-tournament)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1685,7 +1685,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, tournamentId, onPickRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1693,6 +1693,18 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
   const [parTimes, setParTimes] = useState(() => savedParTimes ?? loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
   const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? loadSetup()?.turnTime ?? 1);
+
+  // Round switcher popup — loads this tournament's rounds on demand
+  const [showRoundPicker, setShowRoundPicker] = useState(false);
+  const [pickerRounds, setPickerRounds] = useState([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const openRoundPicker = async () => {
+    if (!tournamentId) return;
+    setShowRoundPicker(true);
+    setPickerLoading(true);
+    setPickerRounds(await fetchRounds(tournamentId));
+    setPickerLoading(false);
+  };
 
   // The tournament record may arrive after this screen first mounts (async fetch), and
   // it changes when switching tournaments — pull its saved course setup in whenever
@@ -1887,23 +1899,31 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
       </div>
 
       <div style={{ padding: "24px 24px" }}>
-        {/* ─── Tournament / Round context (chosen on the picker screen before Setup) ── */}
+        {/* ─── Tournament / Round context ──────────────────────────────────────
+            Two clearly separate actions: change the whole tournament (goes back
+            to the picker screen), or just change the round within it (popup). */}
         {(tournamentName || roundLabel) && (
-          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: "14px 20px", marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div>
+          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: "14px 20px", marginBottom: 24, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
               {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
+              {isAdmin && onSwitchTournament && (
+                <button onClick={onSwitchTournament}
+                  style={{ marginTop: 8, fontSize: 11, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af144", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                  ⇄ Switch Tournament
+                </button>
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
               {roundLabel && (
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#6effa0", background: "#1a4a2a66", border: "1px solid #6effa044", borderRadius: 6, padding: "5px 12px" }}>
                   {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}
                 </span>
               )}
-              {isAdmin && onSwitchRound && (
-                <button onClick={onSwitchRound}
-                  style={{ fontSize: 12, color: "#8890b8", background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit" }}>
-                  Switch
+              {isAdmin && tournamentId && (
+                <button onClick={openRoundPicker}
+                  style={{ fontSize: 11, color: "#6effa0", background: "#0d0f1a", border: "1px solid #6effa044", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                  ⇄ Switch Round
                 </button>
               )}
             </div>
@@ -2320,7 +2340,50 @@ function SetupScreen({ onStart, currentUser, isAdmin, onManageUsers, onLogout, o
         </div>
       </div>
 
-      {/* Clear Groups Confirm Modal */}
+      {/* Round switcher — pick another round of the SAME tournament */}
+      {showRoundPicker && (
+        <div onClick={() => setShowRoundPicker(false)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #6effa066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#6effa0", marginBottom: 2 }}>⇄ Switch Round</div>
+            <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>{tournamentName}</div>
+
+            {pickerLoading ? (
+              <div style={{ padding: 24, textAlign: "center", color: "#8890b8", fontSize: 13 }}>Loading…</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
+                {ROUND_LABELS.map(label => {
+                  const r = pickerRounds.find(rr => rr.label === label);
+                  const isCurrent = label === roundLabel;
+                  const isFinished = r?.status === "finished";
+                  return (
+                    <button key={label}
+                      onClick={() => { setShowRoundPicker(false); if (!isCurrent) onPickRound?.(label); }}
+                      style={{
+                        padding: "14px 0", borderRadius: 10, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
+                        background: isCurrent ? "#1a4a2a" : isFinished ? "#1a1a1a" : "#0d0f1a",
+                        border: `1px solid ${isCurrent ? "#6effa0" : isFinished ? "#3a3a3a" : "#2a2d4a"}`,
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                      }}>
+                      <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 1, color: isCurrent ? "#6effa0" : isFinished ? "#666" : "#eee" }}>
+                        {label === "Q" ? "Q" : `R${label}`}
+                      </span>
+                      <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#6effa0" : isFinished ? "#666" : "#8890b8" }}>
+                        {isCurrent ? "● CURRENT" : isFinished ? "FINISHED" : r ? "SET UP" : "NEW"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <button onClick={() => setShowRoundPicker(false)}
+              style={{ width: "100%", background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {clearModal && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -6142,6 +6205,77 @@ export default function App() {
     }
   };
 
+  // Loads a round (and its tournament) into the app. Shared by the Tournament
+  // picker screen and the Switch Round popup on the Setup screen, so both paths
+  // behave identically.
+  const loadRound = async (tournament, round, action) => {
+      // Every round now owns its data, so switching is simply "load that round".
+      // Nothing belonging to the round we're leaving is ever cleared.
+      if (action === "reopen") await markRoundStatus(round.id, "live");
+      const loadedRound = action === "reopen" ? { ...round, status: "live" } : round;
+
+      const state = await fetchAppState(round.id);
+      const gd = await fetchAllGroupData(round.id);
+
+      if (state) {
+        setGroups(state.groups);
+        setPars(state.pars);
+        setParTimes(state.parTimes);
+        setBaseSchedules(state.baseSchedules);
+        setSchedules(state.schedules);
+        setSuspensions(state.suspensions);
+        setIsSuspended(state.isSuspended);
+        setPendingStopTime(state.pendingStopTime);
+        setPlayersPerGroup(state.playersPerGroup ?? 3);
+        setTurnTime(state.turnTime ?? 1);
+        setGroupData(gd || {});
+      } else {
+        // Round has never been set up — start it blank, but inherit the course
+        // setup so pars / par times / transit time don't have to be re-entered.
+        let courseSetup = null;
+        if (tournament?.pars?.length === 18 && tournament?.par_times?.length === 18) {
+          courseSetup = { pars: tournament.pars, parTimes: tournament.par_times, turnTime: tournament.turn_time ?? 1 };
+        } else {
+          courseSetup = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
+        }
+        setGroups([]);
+        setPars(courseSetup?.pars || []);
+        setParTimes(courseSetup?.parTimes || []);
+        setTurnTime(courseSetup?.turnTime ?? 1);
+        setBaseSchedules({});
+        setSchedules({});
+        setGroupData({});
+        setSuspensions([]);
+        setIsSuspended(false);
+        setPendingStopTime("");
+      }
+
+      let tournamentForSetup = tournament;
+      const hasCourseSetup = tournament?.pars?.length === 18 && tournament?.par_times?.length === 18;
+      if (!hasCourseSetup) {
+        const recovered = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
+        if (recovered) {
+          tournamentForSetup = { ...tournament, pars: recovered.pars, par_times: recovered.parTimes, turn_time: recovered.turnTime };
+        }
+      }
+      setCurrentTournament(tournamentForSetup);
+      setCurrentRound(loadedRound);
+      setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
+  };
+
+  // Switch Round popup on the Setup screen: resolve (or create) the round for a
+  // label within the CURRENT tournament, then load it.
+  const handlePickRoundFromSetup = async (label) => {
+    if (!currentTournament) return;
+    const rounds = await fetchRounds(currentTournament.id);
+    let round = rounds.find(r => r.label === label);
+    if (!round) {
+      round = await createRound({ tournamentId: currentTournament.id, label, isQualifying: label === "Q" });
+      if (!round) { window.alert("สร้างรอบไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+    }
+    await loadRound(currentTournament, round, round.status === "finished" ? "reopen" : "resume");
+  };
+
   const handleSelectGroup = (g, targetSlot) => {
     setActiveGroup({ ...g, targetSlot: targetSlot ?? null });
     setScreen("group");
@@ -6191,60 +6325,7 @@ export default function App() {
       hasLiveGroups={groups.length > 0}
       allUsers={users}
       onManageUsers={() => { setUsersReturnTo("tournament"); setScreen("users"); }}
-      onRoundSelected={async (tournament, round, action) => {
-        // Every round now owns its data, so switching is simply "load that round".
-        // Nothing belonging to the round we're leaving is ever cleared.
-        if (action === "reopen") await markRoundStatus(round.id, "live");
-        const loadedRound = action === "reopen" ? { ...round, status: "live" } : round;
-
-        const state = await fetchAppState(round.id);
-        const gd = await fetchAllGroupData(round.id);
-
-        if (state) {
-          setGroups(state.groups);
-          setPars(state.pars);
-          setParTimes(state.parTimes);
-          setBaseSchedules(state.baseSchedules);
-          setSchedules(state.schedules);
-          setSuspensions(state.suspensions);
-          setIsSuspended(state.isSuspended);
-          setPendingStopTime(state.pendingStopTime);
-          setPlayersPerGroup(state.playersPerGroup ?? 3);
-          setTurnTime(state.turnTime ?? 1);
-          setGroupData(gd || {});
-        } else {
-          // Round has never been set up — start it blank, but inherit the course
-          // setup so pars / par times / transit time don't have to be re-entered.
-          let courseSetup = null;
-          if (tournament?.pars?.length === 18 && tournament?.par_times?.length === 18) {
-            courseSetup = { pars: tournament.pars, parTimes: tournament.par_times, turnTime: tournament.turn_time ?? 1 };
-          } else {
-            courseSetup = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
-          }
-          setGroups([]);
-          setPars(courseSetup?.pars || []);
-          setParTimes(courseSetup?.parTimes || []);
-          setTurnTime(courseSetup?.turnTime ?? 1);
-          setBaseSchedules({});
-          setSchedules({});
-          setGroupData({});
-          setSuspensions([]);
-          setIsSuspended(false);
-          setPendingStopTime("");
-        }
-
-        let tournamentForSetup = tournament;
-        const hasCourseSetup = tournament?.pars?.length === 18 && tournament?.par_times?.length === 18;
-        if (!hasCourseSetup) {
-          const recovered = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
-          if (recovered) {
-            tournamentForSetup = { ...tournament, pars: recovered.pars, par_times: recovered.parTimes, turn_time: recovered.turnTime };
-          }
-        }
-        setCurrentTournament(tournamentForSetup);
-        setCurrentRound(loadedRound);
-        setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
-      }}
+      onRoundSelected={loadRound}
     />
   );
 
@@ -6279,7 +6360,9 @@ export default function App() {
       liveTurnTime={groups.length > 0 ? turnTime : null}
       liveGroups={groups}
       onApplyLiveEdits={handleApplyLiveEdits}
-      onSwitchRound={() => setScreen("tournament")}
+      onSwitchTournament={() => setScreen("tournament")}
+      tournamentId={currentTournament?.id || null}
+      onPickRound={handlePickRoundFromSetup}
     />
   );
 
