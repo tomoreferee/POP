@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-h (beta · roles)";
+const APP_BUILD = "2026-08-01-i (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1973,7 +1973,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
             <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
           </div>
 
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {/* Right side: who's signed in, with Log out stacked underneath */}
+          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
             {currentUser && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                 <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
@@ -1983,7 +1984,11 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
                 </span>
               </span>
             )}
-            <LogoutButton onLogout={onLogout} />
+            <button onClick={onLogout}
+              style={{ background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 8, height: 38, padding: "0 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+            >⏏ Log out</button>
           </div>
         </div>
 
