@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-e (beta · roles)";
+const APP_BUILD = "2026-08-01-f (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -480,8 +480,9 @@ function LogoutButton({ onLogout }) {
       onClick={onLogout}
       style={{
         background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070",
-        borderRadius: 7, padding: "5px 10px", cursor: "pointer",
+        borderRadius: 7, height: 30, padding: "0 12px", cursor: "pointer",
         fontFamily: "inherit", fontSize: 12, fontWeight: 700, letterSpacing: 0.5,
+        whiteSpace: "nowrap", flexShrink: 0,
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
       onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
@@ -1969,36 +1970,34 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
           </div>
           <div style={{ fontSize: 11, color: "#8890b8" }}>Golf Referee · Pace of Play System</div>
         </div>
-        {/* Right column — 2 rows */}
-        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          {/* Row 1: user info + logout */}
+        {/* Right column — every control is the same height so the two rows line up */}
+        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          {/* Row 1: who's signed in + logout */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {currentUser && (
-              <>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 7 }}>
                 <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
                 <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700 }}>{currentUser}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: isAdmin ? "#ffd966" : "#4e9af1", background: isAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "1px 6px", letterSpacing: 1 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: isAdmin ? "#ffd966" : "#4e9af1", background: isAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "1px 6px", letterSpacing: 1 }}>
                   {isAdmin ? "ADMIN" : "USER"}
                 </span>
-              </>
+              </span>
             )}
             <LogoutButton onLogout={onLogout} />
           </div>
-          {/* Row 2: action buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {isAdmin && (
+          {/* Row 2: admin actions */}
+          {isAdmin && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button
                 onClick={onManageUsers}
-                style={{ background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, letterSpacing: 1 }}
+                style={{ background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 7, height: 30, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, letterSpacing: 1, whiteSpace: "nowrap" }}
               >🔑 Manage Users</button>
-            )}
-            {isAdmin && (
               <button
                 onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
-                style={{ background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
-              >🗑 Clear Data in Dashboard</button>
-            )}
-          </div>
+                style={{ background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, height: 30, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}
+              >🗑 Clear Data</button>
+            </div>
+          )}
         </div>
       </div>
 
