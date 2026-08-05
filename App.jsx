@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-k (beta · roles)";
+const APP_BUILD = "2026-08-01-l (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1978,7 +1978,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
           {/* Right column: user sits above Log out, both the same width */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
             {currentUser && (
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
                 <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
                 <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
                 <span style={{ fontSize: 9, fontWeight: 700, color: isAdmin ? "#ffd966" : "#4e9af1", background: isAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "1px 5px", letterSpacing: 1, flexShrink: 0 }}>
@@ -1987,7 +1987,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
               </span>
             )}
             <button onClick={onLogout}
-              style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, minHeight: 56, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+              style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
               onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
             >⏏ Log out</button>
@@ -2002,7 +2002,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
 
               <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
                 style={{ minHeight: 56, background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-              >🗑<br />Clear Data in Dashboard</button>
+              >🗑<br />Clear Data</button>
             </>
           )}
         </div>
