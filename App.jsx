@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-z (beta · roles)";
+const APP_BUILD = "2026-08-02-a (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1486,34 +1486,41 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     <div style={{ background: "#0d0f1a", minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
       {/* Grid so the right-hand column can never be pushed off screen */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", borderBottom: "1px solid #2a2d4a", gap: 10 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+      <div style={{ borderBottom: "1px solid #2a2d4a" }}>
+        {/* Title + who's signed in */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+            </div>
+            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
           </div>
-          {isAdmin && onManageUsers && (
-            <button
-              onClick={onManageUsers}
-              style={{ marginTop: 12, width: "100%", maxWidth: 220, minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-            >🔑<br />Manage Users</button>
-          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0, width: 170 }}>
+            {currentUser && (
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
+                <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
+                <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
+              </span>
+            )}
+            <button onClick={onLogout}
+              style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+            >⏏ Log out</button>
+          </div>
         </div>
 
-        {/* Top-right: user above Log out, same as the other screens */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0, width: 170 }}>
-          {currentUser && (
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
-              <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
-              <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
-            </span>
-          )}
-          <button onClick={onLogout}
-            style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-            onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
-          >⏏ Log out</button>
-        </div>
+        {/* Admin actions sit in their own band below the divider */}
+        {isAdmin && onManageUsers && (
+          <div style={{ borderTop: "1px solid #2a2d4a", padding: "12px 20px" }}>
+            <button
+              onClick={onManageUsers}
+              style={{ width: "100%", maxWidth: 220, minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+            >🔑<br />Manage Users</button>
+          </div>
+        )}
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px" }}>
