@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-m (beta · roles)";
+const APP_BUILD = "2026-08-01-n (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4307,18 +4307,25 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>BETA</span>
         </div>
-        {/* Right side: online + user + clock + logout */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Right side: clock + user on top, Log out underneath — same layout as Setup.
+            Capped width so rotating to landscape doesn't stretch the button. */}
+        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, maxWidth: 260, width: "100%", alignItems: "flex-end" }}>
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
-          {currentUser && (
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
-              <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700 }}>{currentUser}</span>
-            </div>
-          )}
-          <div style={{ fontSize: 13, color: "#8899cc" }}>⏱ {minToTime(now)}</div>
-          <LogoutButton onLogout={onLogout} />
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+            <span style={{ fontSize: 13, color: "#8899cc" }}>⏱ {minToTime(now)}</span>
+            {currentUser && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
+                <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
+              </span>
+            )}
+          </span>
+          <button onClick={onLogout}
+            style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+          >⏏ Log out</button>
         </div>
       </div>
 
