@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-j (beta · roles)";
+const APP_BUILD = "2026-08-02-k (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1248,14 +1248,45 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     return visible;
   };
 
+  // A referee belongs to exactly one competition, so this screen is a waiting
+  // room for them, not a chooser: as soon as their event is running they are
+  // taken in automatically, and until then we keep checking.
+  const autoEnterIfReferee = async (list) => {
+    if (isAdmin) return false;
+    // Only auto-enter when there is exactly one place they could go
+    const mine = list.filter(t => {
+      const pos = positionOf(rolesMap, t.id, currentUser);
+      return pos && !SETUP_EDIT_POSITIONS.includes(pos);
+    });
+    if (mine.length !== 1) return false;
+    const t = mine[0];
+    if (t.status === "closed" || t.run_state !== "started") return false;
+    const rs = await fetchRounds(t.id);
+    const active = rs.find(r => r.status === "live");
+    if (!active) return false;
+    onRoundSelected(t, active, "resume");
+    return true;
+  };
+
   useEffect(() => {
     (async () => {
       const visible = await reloadTournaments();
       if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
       if (!visible.length && isAdmin) setShowCreate(true);
       setLoading(false);
+      await autoEnterIfReferee(visible);
     })();
   }, []);
+
+  // Keep watching while a referee waits for their event to be started.
+  useEffect(() => {
+    if (isAdmin || loading) return;
+    const iv = setInterval(async () => {
+      const visible = await reloadTournaments();
+      await autoEnterIfReferee(visible);
+    }, 8000);
+    return () => clearInterval(iv);
+  }, [isAdmin, loading, rolesMap, currentUser]);
 
   useEffect(() => {
     if (!selectedTournamentId) { setRounds([]); return; }
@@ -1545,7 +1576,15 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px" }}>
         {/* Tournament picker */}
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 20 }}>
-          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 14 }}>Select tournament</div>
+          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 14 }}>
+            {isAdmin ? "Select tournament" : "Your competition"}
+          </div>
+          {!isAdmin && tournaments.length === 1 && tournaments[0].run_state !== "started" && tournaments[0].status !== "closed" && (
+            <div style={{ background: "#1a1a0a", border: "1px solid #ffd96644", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "#ffd966", lineHeight: 1.5 }}>
+              ⏳ Waiting for the TD / CR to start this competition.<br />
+              You will be taken in automatically.
+            </div>
+          )}
 
           {tournaments.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: showCreate ? 16 : 0 }}>
