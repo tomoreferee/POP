@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-w (beta · roles)";
+const APP_BUILD = "2026-08-01-x (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1845,7 +1845,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
     setTPickerList(
       all.filter(t =>
         t.status !== "closed" &&
-        (isAdmin || (t.run_state === "started" && positionOf(roles, t.id, currentUser)))
+        (isTrueAdmin || positionOf(roles, t.id, currentUser))
       ).map(t => ({ ...t, myRole: positionOf(roles, t.id, currentUser) }))
     );
     setTPickerLoading(false);
@@ -2045,7 +2045,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
           </div>
 
           {/* Admin actions fill the same two columns underneath */}
-          {isAdmin && (
+          {/* Account management and wiping the session are system-admin only —
+              TD/CR may edit this tournament's setup, not the whole system. */}
+          {isTrueAdmin && (
             <>
               <button onClick={onManageUsers}
                 style={{ minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
@@ -2555,7 +2557,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
             )}
 
             <div style={{ display: "flex", gap: 8 }}>
-              {isAdmin && onSwitchTournament && (
+              {isTrueAdmin && onSwitchTournament && (
                 <button onClick={() => { setShowTournamentPicker(false); onSwitchTournament(); }}
                   style={{ flex: 1, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
                   ⚙ Manage tournaments
