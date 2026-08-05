@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-m (beta · roles)";
+const APP_BUILD = "2026-08-02-n (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1211,6 +1211,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   const [managingRoles, setManagingRoles] = useState(null); // tournament whose positions are being assigned
   const [draftRoles, setDraftRoles] = useState({});        // working copy while the dialog is open
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
+  // Referees are routed automatically; hold the screen blank until we know where
+  // they belong, so the tournament chooser never flashes up for a moment.
+  const [enteringAuto, setEnteringAuto] = useState(!isAdmin);
 
   // Opening the picker also makes that tournament the selected one, so the round
   // list and access rules below all refer to it.
@@ -1277,7 +1280,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
       if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
       if (!visible.length && isAdmin) setShowCreate(true);
       setLoading(false);
-      await autoEnterIfReferee(visible, roles);
+      const entered = await autoEnterIfReferee(visible, roles);
+      // Only reveal this screen if they're actually staying on it
+      if (!entered) setEnteringAuto(false);
     })();
   }, []);
 
@@ -1539,7 +1544,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     setBusy(false);
   };
 
-  if (loading) {
+  if (loading || enteringAuto) {
     return (
       <div style={{ background: "#0d0f1a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#8890b8", fontFamily: "'IBM Plex Mono', monospace" }}>
         Loading…
