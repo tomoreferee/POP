@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-f (beta · roles)";
+const APP_BUILD = "2026-08-02-g (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -6523,7 +6523,19 @@ export default function App() {
           await loadRound(currentTournament, r, "resume");
         })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Belt and braces: realtime can be blocked by a flaky connection, so also
+    // check periodically. Without this a referee could sit on the wrong round.
+    const poll = setInterval(async () => {
+      try {
+        const rs = await fetchRounds(currentTournament.id);
+        const active = rs.find(r => r.status === "live");
+        if (active && active.id !== currentRound.id) {
+          await loadRound(currentTournament, active, "resume");
+        }
+      } catch {}
+    }, 20000);
+
+    return () => { supabase.removeChannel(channel); clearInterval(poll); };
   }, [currentUser, isAdmin, currentTournament?.id, currentRound?.id, rolesMap]);
 
   const handleLogout = () => {
