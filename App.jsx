@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-d (beta · roles)";
+const APP_BUILD = "2026-08-02-e (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1494,7 +1494,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
               <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
             </div>
-            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0, width: 170 }}>
@@ -2039,7 +2039,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
               <div style={{ fontSize: 28, fontFamily: "'Bebas Neue'", letterSpacing: 4, color: "#4e9af1" }}>⛳ SETUP</div>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
             </div>
-            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
           </div>
 
           {/* Right column: user sits above Log out. Capped width so rotating to
@@ -2065,23 +2065,23 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
               onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
             >⏏ Log out</button>
           </div>
-
-          {/* Admin actions fill the same two columns underneath */}
-          {/* Account management and wiping the session are system-admin only —
-              TD/CR may edit this tournament's setup, not the whole system. */}
-          {isTrueAdmin && (
-            <>
-              <button onClick={onManageUsers}
-                style={{ minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-              >🔑<br />Manage Users</button>
-
-              <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
-                style={{ minHeight: 56, background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-              >🗑<br />Clear Data in Dashboard</button>
-            </>
-          )}
         </div>
       </div>
+
+      {/* Admin actions get their own band below a divider.
+          Account management and wiping the session are system-admin only —
+          TD/CR may edit this tournament's setup, not the whole system. */}
+      {isTrueAdmin && (
+        <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <button onClick={onManageUsers}
+            style={{ minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+          >🔑<br />Manage Users</button>
+
+          <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
+            style={{ minHeight: 56, background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+          >🗑<br />Clear Data in Dashboard</button>
+        </div>
+      )}
 
       {/* Legend */}
       <div style={{ padding: "16px 24px 0" }}>
@@ -4430,13 +4430,14 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-          {/* Title, BETA and subtitle all share one left edge */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>⛳ DASHBOARD</div>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+          {/* BETA sits above the title, right edge flush with the final "D".
+              The subtitle wraps rather than truncating, so it always reads fully. */}
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end" }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, marginBottom: 2 }}>BETA</span>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1", whiteSpace: "nowrap" }}>⛳ DASHBOARD</div>
             </div>
-            <div style={{ fontSize: 10, color: "#8890b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ fontSize: 10, color: "#8890b8", lineHeight: 1.4, marginTop: 2 }}>Golf Referee · Pace of Play System</div>
           </div>
         </div>
         {/* Right side: clock + user on top, Log out underneath — same layout as Setup.
