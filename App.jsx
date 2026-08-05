@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-l (beta · roles)";
+const APP_BUILD = "2026-08-02-m (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1245,17 +1245,20 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     // Referees only see the tournament they hold a position in
     const visible = t.filter(x => canUserSeeTournament(x, roles, currentUser, isAdmin));
     setTournaments(visible);
-    return visible;
+    // Hand the freshly fetched roles back: setRolesMap hasn't been applied yet,
+    // so callers must not read the state to decide anything right now.
+    return { visible, roles };
   };
 
   // A referee belongs to exactly one competition, so this screen is a waiting
   // room for them, not a chooser: as soon as their event is running they are
   // taken in automatically, and until then we keep checking.
-  const autoEnterIfReferee = async (list) => {
+  const autoEnterIfReferee = async (list, roles) => {
     if (isAdmin) return false;
+    const rolesNow = roles || rolesMap;
     // Only auto-enter when there is exactly one place they could go
     const mine = list.filter(t => {
-      const pos = positionOf(rolesMap, t.id, currentUser);
+      const pos = positionOf(rolesNow, t.id, currentUser);
       return pos && !SETUP_EDIT_POSITIONS.includes(pos);
     });
     if (mine.length !== 1) return false;
@@ -1270,11 +1273,11 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
 
   useEffect(() => {
     (async () => {
-      const visible = await reloadTournaments();
+      const { visible, roles } = await reloadTournaments();
       if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
       if (!visible.length && isAdmin) setShowCreate(true);
       setLoading(false);
-      await autoEnterIfReferee(visible);
+      await autoEnterIfReferee(visible, roles);
     })();
   }, []);
 
@@ -1285,8 +1288,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     if (isAdmin || loading) return;
 
     const tryEnter = async () => {
-      const visible = await reloadTournaments();
-      await autoEnterIfReferee(visible);
+      const { visible, roles } = await reloadTournaments();
+      await autoEnterIfReferee(visible, roles);
     };
 
     const channel = supabase
