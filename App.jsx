@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-u (beta · roles)";
+const APP_BUILD = "2026-08-01-v (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1809,7 +1809,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, tournamentId, onPickRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1817,6 +1817,26 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
   const [parTimes, setParTimes] = useState(() => savedParTimes ?? loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
   const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? loadSetup()?.turnTime ?? 1);
+
+  // Quick tournament switcher popup — a simple list, so the common "jump to my
+  // other event" case never leaves the Setup page. Full management (create,
+  // roles, access, delete) still lives on the Tournament screen.
+  const [showTournamentPicker, setShowTournamentPicker] = useState(false);
+  const [tPickerList, setTPickerList] = useState([]);
+  const [tPickerLoading, setTPickerLoading] = useState(false);
+  const openTournamentPicker = async () => {
+    setShowTournamentPicker(true);
+    setTPickerLoading(true);
+    const [all, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+    // Only offer what this person may actually open
+    setTPickerList(
+      all.filter(t =>
+        t.status !== "closed" &&
+        (isAdmin || (t.run_state === "started" && positionOf(roles, t.id, currentUser)))
+      ).map(t => ({ ...t, myRole: positionOf(roles, t.id, currentUser) }))
+    );
+    setTPickerLoading(false);
+  };
 
   // Round switcher popup — loads this tournament's rounds on demand
   const [showRoundPicker, setShowRoundPicker] = useState(false);
@@ -2050,7 +2070,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
               <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
               {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
               {isAdmin && onSwitchTournament && (
-                <button onClick={onSwitchTournament}
+                <button onClick={openTournamentPicker}
                   style={{ marginTop: 10, width: "100%", fontSize: 12, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af166", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                   ⇄ Switch Tournament
                 </button>
@@ -2486,6 +2506,56 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
           build {APP_BUILD}
         </div>
       </div>
+
+      {/* Quick tournament switcher — list only; full management is on the Tournament screen */}
+      {showTournamentPicker && (
+        <div onClick={() => setShowTournamentPicker(false)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, padding: 16, overflowY: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 14 }}>⇄ Switch Tournament</div>
+
+            {tPickerLoading ? (
+              <div style={{ padding: 24, textAlign: "center", color: "#8890b8", fontSize: 13 }}>Loading…</div>
+            ) : tPickerList.length === 0 ? (
+              <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>ไม่มีการแข่งขันอื่นที่เข้าได้</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 340, overflowY: "auto" }}>
+                {tPickerList.map(t => {
+                  const isCurrent = t.id === tournamentId;
+                  return (
+                    <button key={t.id}
+                      onClick={() => { setShowTournamentPicker(false); if (!isCurrent) onPickTournament?.(t); }}
+                      style={{
+                        textAlign: "left", padding: "11px 13px", borderRadius: 9, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
+                        background: isCurrent ? "#1a4a8a" : "#0d0f1a",
+                        border: `1px solid ${isCurrent ? "#4e9af1" : "#2a2d4a"}`,
+                      }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled)"}</span>
+                        {isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>● CURRENT</span>}
+                        {t.myRole && !isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>YOU · {t.myRole}</span>}
+                      </div>
+                      {t.host_venue && <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              {isAdmin && onSwitchTournament && (
+                <button onClick={() => { setShowTournamentPicker(false); onSwitchTournament(); }}
+                  style={{ flex: 1, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                  ⚙ Manage tournaments
+                </button>
+              )}
+              <button onClick={() => setShowTournamentPicker(false)}
+                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Round switcher — pick another round of the SAME tournament */}
       {showRoundPicker && (
@@ -6540,6 +6610,21 @@ export default function App() {
 
   // Switch Round popup on the Setup screen: resolve (or create) the round for a
   // label within the CURRENT tournament, then load it.
+  // Quick switch from the Setup page: open the chosen tournament at its live
+  // round (or the most recent one) without going via the Tournament screen.
+  const handlePickTournamentFromSetup = async (t) => {
+    if (!t) return;
+    const rs = await fetchRounds(t.id);
+    const target = rs.find(r => r.status === "live") || rs[rs.length - 1];
+    if (!target) {
+      // Nothing set up yet — let them choose/create a round on the full screen
+      setCurrentTournament(t);
+      setScreen("tournament");
+      return;
+    }
+    await loadRound(t, target, target.status === "finished" ? "reopen" : "resume");
+  };
+
   const handlePickRoundFromSetup = async (label) => {
     if (!currentTournament) return;
     const rounds = await fetchRounds(currentTournament.id);
@@ -6643,6 +6728,7 @@ export default function App() {
       onSwitchTournament={() => setScreen("tournament")}
       tournamentId={currentTournament?.id || null}
       onPickRound={handlePickRoundFromSetup}
+      onPickTournament={handlePickTournamentFromSetup}
     />
   );
 
