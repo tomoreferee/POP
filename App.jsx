@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-t (beta · roles)";
+const APP_BUILD = "2026-08-01-u (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1483,8 +1483,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
           {isAdmin && onManageUsers && (
             <button
               onClick={onManageUsers}
-              style={{ marginTop: 10, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 8, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, letterSpacing: 1, whiteSpace: "nowrap" }}
-            >🔑 Manage Users</button>
+              style={{ marginTop: 12, width: "100%", maxWidth: 220, minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+            >🔑<br />Manage Users</button>
           )}
         </div>
 
