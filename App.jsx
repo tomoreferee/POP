@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-i (beta · roles)";
+const APP_BUILD = "2026-08-02-j (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1214,9 +1214,28 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
 
   // Opening the picker also makes that tournament the selected one, so the round
   // list and access rules below all refer to it.
-  const openRoundPicker = (t) => {
+  const openRoundPicker = async (t) => {
     setSelectedTournamentId(t.id);
     setShowCreate(false);
+    // Only the people running the event choose a round. Referees are taken
+    // straight to whichever round is active, so they can't land on the wrong one.
+    const runsEvent = isAdmin || SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, t.id, currentUser));
+    if (!runsEvent) {
+      if (t.status === "closed" || t.run_state !== "started") {
+        window.alert(`Competition "${t.name}" is not running.\n\nPlease wait for the TD / CR to start it.`);
+        return;
+      }
+      setBusy(true);
+      const rs = await fetchRounds(t.id);
+      setBusy(false);
+      const active = rs.find(r => r.status === "live");
+      if (!active) {
+        window.alert(`No round is active in "${t.name}" yet.\n\nPlease wait for the TD / CR to open one.`);
+        return;
+      }
+      onRoundSelected(t, active, "resume");
+      return;
+    }
     setRoundPickerFor(t);
   };
 
@@ -6484,7 +6503,7 @@ export default function App() {
       const rs = await fetchRounds(mine.id);
       // Prefer the round already running, otherwise the most recent one
       const target = rs.find(r => r.status === "live") || rs[rs.length - 1];
-      if (target) { await loadRound(mine, target, "resume"); return; }
+      if (target) { await loadRound(mine, target, "resume", roles); return; }
       setCurrentTournament(mine);
       setScreen("tournament");
       return;
@@ -6673,11 +6692,14 @@ export default function App() {
   // Loads a round (and its tournament) into the app. Shared by the Tournament
   // picker screen and the Switch Round popup on the Setup screen, so both paths
   // behave identically.
-  const loadRound = async (tournament, round, action) => {
+  const loadRound = async (tournament, round, action, rolesOverride) => {
       // Every round now owns its data, so switching is simply "load that round".
       // Nothing belonging to the round we're leaving is ever cleared.
       // TD/CR/admin decide which round the whole event is on; referees just follow.
-      const runsEvent = isAdmin || SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, tournament?.id, currentUser));
+      // rolesOverride lets callers pass a freshly fetched map — right after login
+      // the rolesMap state hasn't been applied yet.
+      const rolesNow = rolesOverride || rolesMap;
+      const runsEvent = isAdmin || SETUP_EDIT_POSITIONS.includes(positionOf(rolesNow, tournament?.id, currentUser));
       if (runsEvent) await setActiveRound(tournament?.id, round.id);
       const loadedRound = runsEvent ? { ...round, status: "live" } : round;
 
