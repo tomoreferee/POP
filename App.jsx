@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-c (beta · roles)";
+const APP_BUILD = "2026-08-01-e (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -2027,7 +2027,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
               {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
               {isAdmin && onSwitchTournament && (
                 <button onClick={onSwitchTournament}
-                  style={{ marginTop: 10, fontSize: 12, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af166", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                  style={{ marginTop: 10, width: "100%", fontSize: 12, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af166", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                   ⇄ Switch Tournament
                 </button>
               )}
@@ -2038,13 +2038,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
 
             {/* Round block — left-aligned with the tournament above it */}
             {roundLabel && (
-              <div style={{ padding: "12px 20px 14px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#6effa0", background: "#1a4a2a66", border: "1px solid #6effa044", borderRadius: 8, height: 34, padding: "0 16px", display: "inline-flex", alignItems: "center" }}>
+              <div style={{ padding: "12px 20px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ flex: 1, minWidth: 0, justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#6effa0", background: "#1a4a2a66", border: "1px solid #6effa044", borderRadius: 8, height: 34, padding: "0 12px", display: "inline-flex", alignItems: "center" }}>
                   {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}
                 </span>
                 {isAdmin && tournamentId && (
                   <button onClick={openRoundPicker}
-                    style={{ fontSize: 12, color: "#6effa0", background: "#0d0f1a", border: "1px solid #6effa066", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                    style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#6effa0", background: "#0d0f1a", border: "1px solid #6effa066", borderRadius: 8, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                     ⇄ Switch Round
                   </button>
                 )}
@@ -6083,11 +6083,26 @@ export default function App() {
         if (savedUser) {
           setCurrentUser(savedUser);
           setIsAdmin(savedIsAdmin);
-          // A closed competition is off-limits to non-admins — send them back to pick another
+
+          // Same rule as a fresh login: you only reopen straight into a tournament
+          // if you actually hold a position in it. Otherwise pick one — a tournament
+          // left over on this device must not decide it for you.
+          const roles = await fetchAllRoles();
+          setRolesMap(roles);
+          const holdsPosition = tournament && positionOf(roles, tournament.id, savedUser) !== null;
           const blocked = tournament?.status === "closed" && !savedIsAdmin;
-          if (tournament && round && !blocked) {
+
+          if (tournament && round && holdsPosition && !blocked) {
             setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
           } else {
+            if (!holdsPosition) {
+              setCurrentTournament(null);
+              setCurrentRound(null);
+              try {
+                localStorage.removeItem("pop_tournament_id");
+                localStorage.removeItem("pop_round_id");
+              } catch {}
+            }
             setScreen("tournament");
           }
         }
