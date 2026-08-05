@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-q (beta · roles)";
+const APP_BUILD = "2026-08-01-r (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1474,7 +1474,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     <div style={{ background: "#0d0f1a", minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #2a2d4a", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1" }}>🏆 TOURNAMENT</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1", whiteSpace: "nowrap" }}>🏆 TOURNAMENT</div>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>BETA</span>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isAdmin && onManageUsers && (
             <button
@@ -1518,7 +1521,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                         return (
                           <>
                             {mine && (
-                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "1px 5px" }}>คุณคือ {mine}</span>
+                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "1px 5px" }}>YOU · {mine}</span>
                             )}
                             {filled > 0 && (
                               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px" }}>👥 {filled}</span>
