@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-c (beta · roles)";
+const APP_BUILD = "2026-08-02-d (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4430,11 +4430,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-          {/* BETA sits above the title, its right edge flush with the final "D" */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 0 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px", marginBottom: 2 }}>BETA</span>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>⛳ DASHBOARD</div>
-            <div style={{ fontSize: 10, color: "#8890b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>Golf Referee · Pace of Play System</div>
+          {/* Title, BETA and subtitle all share one left edge */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>⛳ DASHBOARD</div>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+            </div>
+            <div style={{ fontSize: 10, color: "#8890b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
           </div>
         </div>
         {/* Right side: clock + user on top, Log out underneath — same layout as Setup.
