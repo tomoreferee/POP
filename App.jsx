@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-b (beta · roles)";
+const APP_BUILD = "2026-08-01-c (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -6267,20 +6267,30 @@ export default function App() {
 
     // Anyone holding a position in a started tournament goes straight there —
     // including admins, who are often the TD or CR of the event they're running.
-    // Admins with no position still land on the picker so they can see everything.
-    {
-      const [allT, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
-      setRolesMap(roles);
-      const mine = allT.find(t => t.status !== "closed" && t.run_state === "started" && positionOf(roles, t.id, username));
-      if (mine) {
-        const rs = await fetchRounds(mine.id);
-        // Prefer the round already running, otherwise the most recent one
-        const target = rs.find(r => r.status === "live") || rs[rs.length - 1];
-        if (target) { await loadRound(mine, target, "resume"); return; }
-        setCurrentTournament(mine);
-        setScreen("tournament");
-        return;
-      }
+    const [allT, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+    setRolesMap(roles);
+    const mine = allT.find(t => t.status !== "closed" && t.run_state === "started" && positionOf(roles, t.id, username));
+    if (mine) {
+      const rs = await fetchRounds(mine.id);
+      // Prefer the round already running, otherwise the most recent one
+      const target = rs.find(r => r.status === "live") || rs[rs.length - 1];
+      if (target) { await loadRound(mine, target, "resume"); return; }
+      setCurrentTournament(mine);
+      setScreen("tournament");
+      return;
+    }
+
+    // No position anywhere. Admins choose which tournament to look at; a stale
+    // tournament left on this device must not decide it for them.
+    if (admin === true) {
+      setCurrentTournament(null);
+      setCurrentRound(null);
+      try {
+        localStorage.removeItem("pop_tournament_id");
+        localStorage.removeItem("pop_round_id");
+      } catch {}
+      setScreen("tournament");
+      return;
     }
 
     if (currentTournament && currentRound) {
