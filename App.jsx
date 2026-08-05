@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-h (beta · roles)";
+const APP_BUILD = "2026-08-02-i (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -2118,7 +2118,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
               {isAdmin && onToggleStarted && (
                 <button onClick={onToggleStarted}
                   style={{
-                    marginTop: 10, width: "100%", height: 38, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    marginTop: 10, width: "100%", height: 34, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                     color: tournamentRunState === "started" ? "#ffd966" : "#6effa0",
                     background: tournamentRunState === "started" ? "#1a1a0a" : "#0a2a10",
                     border: `1px solid ${tournamentRunState === "started" ? "#ffd96666" : "#6effa066"}`,
