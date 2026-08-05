@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-n (beta · roles)";
+const APP_BUILD = "2026-08-01-p (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -4301,15 +4301,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
     <div style={{ minHeight: "100vh", background: "#0d0f1a", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
-      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 24px", display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1" }}>⛳ DASHBOARD</div>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>BETA</span>
+      {/* Grid, not flex: the left cell is allowed to shrink so the right cell can
+          never be pushed off the edge of the screen. */}
+      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
+          {/* BETA sits above the title, its right edge flush with the final "D" */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 0 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px", marginBottom: 2 }}>BETA</span>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>⛳ DASHBOARD</div>
+          </div>
         </div>
         {/* Right side: clock + user on top, Log out underneath — same layout as Setup.
             Capped width so rotating to landscape doesn't stretch the button. */}
-        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, maxWidth: 260, width: "100%", alignItems: "flex-end" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, width: 170, alignItems: "flex-end" }}>
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
           <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
