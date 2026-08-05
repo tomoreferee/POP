@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-r (beta · roles)";
+const APP_BUILD = "2026-08-01-s (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1506,14 +1506,14 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                   {/* Row 1 — name + venue, full width so long names don't wrap awkwardly */}
                   <button onClick={() => openRoundPicker(t)}
                     style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, rowGap: 5, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</span>
                       {t.status === "closed" ? (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ff7070", background: "#2a0a0a", border: "1px solid #ff707055", borderRadius: 4, padding: "1px 5px" }}>CLOSED</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ff7070", background: "#2a0a0a", border: "1px solid #ff707055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>CLOSED</span>
                       ) : t.run_state === "started" ? (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a10", border: "1px solid #6effa055", borderRadius: 4, padding: "1px 5px" }}>● STARTED</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a10", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>● STARTED</span>
                       ) : (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#8890b8", background: "#0d0f1a", border: "1px solid #8890b844", borderRadius: 4, padding: "1px 5px" }}>DRAFT</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#8890b8", background: "#0d0f1a", border: "1px solid #8890b844", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>DRAFT</span>
                       )}
                       {(() => {
                         const filled = Object.values(rolesMap[t.id] || {}).filter(Boolean).length;
@@ -1521,10 +1521,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                         return (
                           <>
                             {mine && (
-                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "1px 5px" }}>YOU · {mine}</span>
+                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>YOU · {mine}</span>
                             )}
                             {filled > 0 && (
-                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 5px" }}>👥 {filled}</span>
+                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>👥 {filled}</span>
                             )}
                           </>
                         );
