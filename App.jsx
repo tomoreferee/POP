@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-k (beta · roles)";
+const APP_BUILD = "2026-08-02-l (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1278,14 +1278,26 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     })();
   }, []);
 
-  // Keep watching while a referee waits for their event to be started.
+  // While a referee waits, listen for the start instead of asking repeatedly —
+  // they go in the instant the TD/CR presses Start. The slow poll is only a
+  // fallback for when realtime can't connect (patchy signal out on the course).
   useEffect(() => {
     if (isAdmin || loading) return;
-    const iv = setInterval(async () => {
+
+    const tryEnter = async () => {
       const visible = await reloadTournaments();
       await autoEnterIfReferee(visible);
-    }, 8000);
-    return () => clearInterval(iv);
+    };
+
+    const channel = supabase
+      .channel("referee_waiting_room")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "tournaments" }, tryEnter)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "tournament_rounds" }, tryEnter)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_roles" }, tryEnter)
+      .subscribe();
+
+    const iv = setInterval(tryEnter, 30000);
+    return () => { supabase.removeChannel(channel); clearInterval(iv); };
   }, [isAdmin, loading, rolesMap, currentUser]);
 
   useEffect(() => {
