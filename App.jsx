@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-v (beta · roles)";
+const APP_BUILD = "2026-08-01-w (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1416,8 +1416,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
       window.alert(`การแข่งขัน "${selectedTournament.name}" ปิดแล้ว\n\nกรุณาเลือกการแข่งขันอื่น`);
       return;
     }
-    if (selectedTournament?.run_state !== "started" && !isAdmin) {
-      window.alert(`การแข่งขัน "${selectedTournament.name}" ยังไม่เริ่ม\n\nกรุณารอ admin กดเริ่มการแข่งขันก่อน`);
+    // TD and CR set their event up before it starts, so they may enter early.
+    const canPrepare = isAdmin || SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, selectedTournament?.id, currentUser));
+    if (selectedTournament?.run_state !== "started" && !canPrepare) {
+      window.alert(`การแข่งขัน "${selectedTournament.name}" ยังไม่เริ่ม\n\nกรุณารอ TD / CR กดเริ่มการแข่งขันก่อน`);
       return;
     }
     setRoundPickerFor(null);
@@ -1553,6 +1555,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                       style={{ background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff", borderRadius: 7, height: 32, padding: "0 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
                       Select
                     </button>
+                    {/* TD and CR run their own event, so they get start/stop too.
+                        Everything else stays admin-only. */}
+                    {!isAdmin && SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, t.id, currentUser)) && (
+                      <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+                        <button onClick={() => handleToggleStarted(t)}
+                          title={t.run_state === "started" ? "หยุดการแข่งขันชั่วคราว" : "เริ่มการแข่งขัน"}
+                          style={{ background: "#0d0f1a", border: `1px solid ${t.run_state === "started" ? "#6effa066" : "#8890b844"}`, color: t.run_state === "started" ? "#6effa0" : "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          {t.run_state === "started" ? "⏸" : "▶"}
+                        </button>
+                      </div>
+                    )}
                     {isAdmin && (
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
                         <button onClick={() => handleToggleStarted(t)}
@@ -6390,7 +6403,13 @@ export default function App() {
     // including admins, who are often the TD or CR of the event they're running.
     const [allT, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
     setRolesMap(roles);
-    const mine = allT.find(t => t.status !== "closed" && t.run_state === "started" && positionOf(roles, t.id, username));
+    // TD/CR can go in before the start so they can prepare; everyone else waits.
+    const mine = allT.find(t => {
+      if (t.status === "closed") return false;
+      const role = positionOf(roles, t.id, username);
+      if (!role) return false;
+      return t.run_state === "started" || SETUP_EDIT_POSITIONS.includes(role);
+    });
     if (mine) {
       const rs = await fetchRounds(mine.id);
       // Prefer the round already running, otherwise the most recent one
