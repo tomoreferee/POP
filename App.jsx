@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-l (beta · roles)";
+const APP_BUILD = "2026-08-01-m (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1975,8 +1975,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
             <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
           </div>
 
-          {/* Right column: user sits above Log out, both the same width */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          {/* Right column: user sits above Log out. Capped width so rotating to
+              landscape doesn't stretch the Log out button across the screen. */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, maxWidth: 260, justifySelf: "end", width: "100%" }}>
             {currentUser && (
               <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
                 <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
