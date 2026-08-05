@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-y (beta · roles)";
+const APP_BUILD = "2026-08-01-z (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1369,13 +1369,20 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     const tid = managingRoles.id;
     const assigned = Object.values(draftRoles).filter(Boolean);
 
-    // A referee holds a position in only one tournament at a time, so nobody can
-    // end up recording against the wrong event.
+    // TD and CR often oversee several events at once, so they may hold a position
+    // in more than one tournament. R1-R6 are on the course recording times, so
+    // they stay limited to a single event to avoid logging against the wrong one.
+    const refereeAssigned = Object.entries(draftRoles)
+      .filter(([pos, user]) => user && !SETUP_EDIT_POSITIONS.includes(pos))
+      .map(([, user]) => user);
+
     const moving = [];
     Object.entries(rolesMap).forEach(([otherTid, roles]) => {
       if (otherTid === tid) return;
       Object.entries(roles).forEach(([pos, user]) => {
-        if (assigned.includes(user)) {
+        // Never displace someone from a TD/CR post elsewhere
+        if (SETUP_EDIT_POSITIONS.includes(pos)) return;
+        if (refereeAssigned.includes(user)) {
           const from = tournaments.find(t => t.id === otherTid);
           moving.push({ user, pos, otherTid, fromName: from?.name || "(unknown)" });
         }
@@ -1385,7 +1392,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     if (moving.length > 0) {
       const lines = moving.map(m => `• ${m.user} — ${m.pos} of "${m.fromName}"`).join("\n");
       if (!window.confirm(
-        `A referee can hold a position in only one competition at a time.\n\n${lines}\n\n` +
+        `R1-R6 referees can only be assigned to one competition at a time.\n\n${lines}\n\n` +
         `They will be removed from their previous position and moved to this competition.\n\nContinue?`
       )) return;
     }
@@ -1395,7 +1402,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     // Remove them from the other tournaments first
     for (const [otherTid, roles] of Object.entries(rolesMap)) {
       if (otherTid === tid) continue;
-      const pruned = Object.fromEntries(Object.entries(roles).filter(([, u]) => !assigned.includes(u)));
+      // Only strip referee posts; TD/CR appointments elsewhere are left alone
+      const pruned = Object.fromEntries(
+        Object.entries(roles).filter(([pos, u]) => SETUP_EDIT_POSITIONS.includes(pos) || !refereeAssigned.includes(u))
+      );
       if (Object.keys(pruned).length !== Object.keys(roles).length) {
         await setTournamentRoles(otherTid, pruned);
         nextMap[otherTid] = pruned;
@@ -1725,7 +1735,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
               <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 4 }}>{managingRoles.name}</div>
               <div style={{ fontSize: 11, color: "#666", marginBottom: 16, lineHeight: 1.6 }}>
                 TD / CR can edit Setup · R1-R6 record times only<br />
-                One position per person, and one competition at a time
+                One position per person here · R1-R6 also limited to one competition
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
@@ -2032,9 +2042,14 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
               <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
                 <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
                 <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, color: isAdmin ? "#ffd966" : "#4e9af1", background: isAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "1px 5px", letterSpacing: 1, flexShrink: 0 }}>
-                  {isAdmin ? "ADMIN" : "USER"}
+                <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#ffd966" : "#4e9af1", background: isTrueAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isTrueAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
+                  {isTrueAdmin ? "ADMIN" : "USER"}
                 </span>
+                {myPosition && (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
+                    {myPosition}
+                  </span>
+                )}
               </span>
             )}
             <button onClick={onLogout}
