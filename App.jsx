@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-e (beta · roles)";
+const APP_BUILD = "2026-08-02-f (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -6087,6 +6087,20 @@ async function archiveAndFinishRound(roundId, appStateSnapshot, groupDataSnapsho
     }).eq("id", roundId);
   } catch {}
 }
+// A tournament has exactly one active round at a time. Marking one live also
+// demotes the others, so every device — and every later login — agrees on which
+// round is being played.
+async function setActiveRound(tournamentId, roundId) {
+  if (!tournamentId || !roundId) return;
+  try {
+    await supabase.from("tournament_rounds")
+      .update({ status: "idle" })
+      .eq("tournament_id", tournamentId)
+      .eq("status", "live")
+      .neq("id", roundId);
+    await supabase.from("tournament_rounds").update({ status: "live" }).eq("id", roundId);
+  } catch {}
+}
 async function markRoundStatus(roundId, status) {
   try { await supabase.from("tournament_rounds").update({ status }).eq("id", roundId); } catch {}
 }
@@ -6189,6 +6203,13 @@ export default function App() {
         }
         // A round that was deleted, or belongs to another tournament, is ignored
         if (round && tournament && round.tournament_id !== tournament.id) round = null;
+        // If the TD/CR has since moved the event to a different round, follow it
+        // rather than reopening on the stale one this device remembered.
+        if (round && tournament && round.status !== "live") {
+          const rs = await fetchRounds(tournament.id);
+          const active = rs.find(r => r.status === "live");
+          if (active && active.id !== round.id) round = active;
+        }
         if (round) {
           state = await fetchAppState(round.id);
           let gd = await fetchAllGroupData(round.id);
@@ -6486,6 +6507,25 @@ export default function App() {
     return () => { supabase.removeChannel(channel); };
   }, [currentUser, isAdmin, currentTournament?.id]);
 
+  // Referees follow whichever round the TD/CR has made active, so a device that
+  // was left on an old round doesn't quietly record against the wrong one.
+  useEffect(() => {
+    if (!currentUser || !currentTournament?.id || !currentRound?.id) return;
+    const runsEvent = isAdmin || SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, currentTournament.id, currentUser));
+    if (runsEvent) return; // they're the ones choosing — don't yank them around
+    const channel = supabase
+      .channel(`active_round_${currentTournament.id}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "tournament_rounds", filter: `tournament_id=eq.${currentTournament.id}` },
+        async (payload) => {
+          const r = payload.new;
+          if (!r || r.status !== "live" || r.id === currentRound.id) return;
+          await loadRound(currentTournament, r, "resume");
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUser, isAdmin, currentTournament?.id, currentRound?.id, rolesMap]);
+
   const handleLogout = () => {
     setCurrentUser(null);
     setIsAdmin(false);
@@ -6603,8 +6643,10 @@ export default function App() {
   const loadRound = async (tournament, round, action) => {
       // Every round now owns its data, so switching is simply "load that round".
       // Nothing belonging to the round we're leaving is ever cleared.
-      if (action === "reopen") await markRoundStatus(round.id, "live");
-      const loadedRound = action === "reopen" ? { ...round, status: "live" } : round;
+      // TD/CR/admin decide which round the whole event is on; referees just follow.
+      const runsEvent = isAdmin || SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, tournament?.id, currentUser));
+      if (runsEvent) await setActiveRound(tournament?.id, round.id);
+      const loadedRound = runsEvent ? { ...round, status: "live" } : round;
 
       const state = await fetchAppState(round.id);
       const gd = await fetchAllGroupData(round.id);
