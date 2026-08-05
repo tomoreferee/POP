@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-g (beta · roles)";
+const APP_BUILD = "2026-08-02-h (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1839,7 +1839,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, tournamentRunState, onToggleStarted }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -2104,11 +2104,32 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
           <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
             {/* Tournament block */}
             <div style={{ padding: "14px 20px" }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
+                {tournamentRunState && (
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: tournamentRunState === "started" ? "#6effa0" : "#8890b8", background: tournamentRunState === "started" ? "#0a2a10" : "#0d0f1a", border: `1px solid ${tournamentRunState === "started" ? "#6effa055" : "#8890b844"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
+                    {tournamentRunState === "started" ? "● STARTED" : "DRAFT"}
+                  </span>
+                )}
+              </div>
               {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
+
+              {/* TD/CR and admins run the event, so they start and pause it here */}
+              {isAdmin && onToggleStarted && (
+                <button onClick={onToggleStarted}
+                  style={{
+                    marginTop: 10, width: "100%", height: 38, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    color: tournamentRunState === "started" ? "#ffd966" : "#6effa0",
+                    background: tournamentRunState === "started" ? "#1a1a0a" : "#0a2a10",
+                    border: `1px solid ${tournamentRunState === "started" ? "#ffd96666" : "#6effa066"}`,
+                  }}>
+                  {tournamentRunState === "started" ? "⏸ Pause competition" : "▶ Start competition"}
+                </button>
+              )}
+
               {isAdmin && onSwitchTournament && (
                 <button onClick={openTournamentPicker}
-                  style={{ marginTop: 10, width: "100%", fontSize: 12, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af166", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                  style={{ marginTop: 8, width: "100%", fontSize: 12, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af166", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                   ⇄ Switch Tournament
                 </button>
               )}
@@ -6713,6 +6734,19 @@ export default function App() {
   // label within the CURRENT tournament, then load it.
   // Quick switch from the Setup page: open the chosen tournament at its live
   // round (or the most recent one) without going via the Tournament screen.
+  // Start / pause the current competition straight from the Setup page.
+  const handleToggleStartedFromSetup = async () => {
+    const t = currentTournament;
+    if (!t) return;
+    const starting = t.run_state !== "started";
+    const msg = starting
+      ? `Start competition "${t.name}"?\n\nAssigned referees will be able to enter as soon as they log in.`
+      : `Pause competition "${t.name}"?\n\nReferees stay logged in, but anyone logging in again cannot enter until it is started once more.`;
+    if (!window.confirm(msg)) return;
+    await setTournamentRunState(t.id, starting ? "started" : "draft");
+    setCurrentTournament(prev => prev ? { ...prev, run_state: starting ? "started" : "draft" } : prev);
+  };
+
   const handlePickTournamentFromSetup = async (t) => {
     if (!t) return;
     const rs = await fetchRounds(t.id);
@@ -6830,6 +6864,8 @@ export default function App() {
       tournamentId={currentTournament?.id || null}
       onPickRound={handlePickRoundFromSetup}
       onPickTournament={handlePickTournamentFromSetup}
+      tournamentRunState={currentTournament?.run_state || "draft"}
+      onToggleStarted={handleToggleStartedFromSetup}
     />
   );
 
