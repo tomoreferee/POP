@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 
 // ─── Supabase Config ─────────────────────────────────────────────────────────
-// TODO: ใส่ URL และ anon key จาก Supabase Project Settings → API
+// TODO: set the URL and anon key from Supabase Project Settings → API
 const SUPABASE_URL = "https://qqzmpkpoanltxqzfeozf.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxem1wa3BvYW5sdHhxemZlb3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5ODg0MTYsImV4cCI6MjA5ODU2NDQxNn0.20p6PlzoAjy8GSTF0pbzeZt9r6t6AgrPLzjIH5sSeK8";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-x (beta · roles)";
+const APP_BUILD = "2026-08-01-y (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -463,7 +463,7 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
           : `${type} @H${r.startHole} → Off @H${r.lastHole + 1}${targetSuffix}${bySuffix}`;
       // Only offer a delete action when there's a specific "off" event to undo —
       // deleting it re-opens the run (fixes an accidental off-at-wrong-hole tap).
-      return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label, idx: r.offIdx ?? undefined, deleteTitle: r.offHole ? "ลบการปิดสถานะนี้ (กดปิดผิดหลุม)" : undefined };
+      return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label, idx: r.offIdx ?? undefined, deleteTitle: r.offHole ? "Delete this off marker (turned off on the wrong hole)" : undefined };
     });
   };
 
@@ -535,7 +535,7 @@ function OnlineUsers({ users, currentUser }) {
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setOpen(v => !v)}
-        title="ดูว่าใครออนไลน์อยู่"
+        title="See who is online"
         style={{
           display: "flex", alignItems: "center", gap: 5,
           background: "#0a2a10", border: "1px solid #6effa044", color: "#6effa0",
@@ -1311,7 +1311,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
 
   const handleDeleteTournament = async (t) => {
     if (busy) return;
-    const ok = window.confirm(`ลบ Tournament "${t.name}" ทิ้งถาวร?\n\nRound ทั้งหมดในทัวร์นาเมนต์นี้ (รวมข้อมูลที่เก็บสำรองไว้) จะถูกลบไปด้วย กู้คืนไม่ได้\n\nดำเนินการต่อหรือไม่?`);
+    const ok = window.confirm(`Delete tournament "${t.name}" permanently?\n\nEvery round in it — including archived data — will be deleted. This cannot be undone.\n\nContinue?`);
     if (!ok) return;
     setBusy(true);
     await deleteTournament(t.id);
@@ -1327,13 +1327,13 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     if (starting) {
       const roles = rolesMap[t.id] || {};
       if (Object.keys(roles).length === 0) {
-        window.alert(`ยังไม่ได้กำหนดตำแหน่งให้ใครใน "${t.name}"\n\nกดปุ่ม 👥 เพื่อกำหนด TD / CR / R1-R6 ก่อนเริ่มการแข่งขัน`);
+        window.alert(`No positions have been assigned in "${t.name}" yet.\n\nTap 👥 to assign TD / CR / R1-R6 before starting the competition.`);
         return;
       }
       const staff = Object.entries(roles).map(([p, u]) => `• ${p} — ${u}`).join("\n");
-      if (!window.confirm(`เริ่มการแข่งขัน "${t.name}"?\n\n${staff}\n\nกรรมการเหล่านี้จะเข้าทัวร์นี้ได้ทันทีเมื่อ login`)) return;
+      if (!window.confirm(`Start competition "${t.name}"?\n\n${staff}\n\nThese referees will enter this tournament as soon as they log in.`)) return;
     } else {
-      if (!window.confirm(`หยุดการแข่งขัน "${t.name}" ชั่วคราว?\n\nกรรมการจะยังไม่ถูกออกจากระบบ แต่คนที่ login ใหม่จะยังเข้าไม่ได้จนกว่าจะเริ่มอีกครั้ง`)) return;
+      if (!window.confirm(`Pause competition "${t.name}"?\n\nReferees stay logged in, but anyone logging in again cannot enter until it is started once more.`)) return;
     }
     setBusy(true);
     await setTournamentRunState(t.id, starting ? "started" : "draft");
@@ -1345,8 +1345,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     if (busy) return;
     const closing = t.status !== "closed";
     const msg = closing
-      ? `ปิดการแข่งขัน "${t.name}"?\n\n• กรรมการทุกคนจะถูกออกจากระบบทันที\n• ตำแหน่ง TD / CR / R1-R6 ทั้งหมดจะถูกล้าง\n• เปิดใหม่ต้องกำหนดตำแหน่งใหม่\n\n(admin ไม่ถูกออกจากระบบ และยังเข้าดู/แก้ไขได้)`
-      : `เปิดการแข่งขัน "${t.name}" อีกครั้ง?\n\nอย่าลืมกำหนดตำแหน่ง TD / CR / R1-R6 ใหม่ก่อนให้กรรมการเข้าใช้งาน`;
+      ? `Close competition "${t.name}"?\n\n• All referees are signed out immediately\n• Every TD / CR / R1-R6 position is cleared\n• Reopening requires assigning positions again\n\n(Admins stay signed in and can still view/edit.)`
+      : `Reopen competition "${t.name}"?\n\nRemember to assign TD / CR / R1-R6 again before referees can use it.`;
     if (!window.confirm(msg)) return;
     setBusy(true);
     await setTournamentStatus(t.id, closing ? "closed" : "open");
@@ -1383,10 +1383,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     });
 
     if (moving.length > 0) {
-      const lines = moving.map(m => `• ${m.user} — ${m.pos} ของ "${m.fromName}"`).join("\n");
+      const lines = moving.map(m => `• ${m.user} — ${m.pos} of "${m.fromName}"`).join("\n");
       if (!window.confirm(
-        `กรรมการรับตำแหน่งได้ครั้งละ 1 การแข่งขันเท่านั้น\n\n${lines}\n\n` +
-        `คนเหล่านี้จะถูกถอดจากตำแหน่งเดิม แล้วย้ายมาการแข่งขันนี้\n\nดำเนินการต่อหรือไม่?`
+        `A referee can hold a position in only one competition at a time.\n\n${lines}\n\n` +
+        `They will be removed from their previous position and moved to this competition.\n\nContinue?`
       )) return;
     }
 
@@ -1413,13 +1413,13 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
     if (busy) return;
     // A closed competition is read-only for everyone except admins
     if (selectedTournament?.status === "closed" && !isAdmin) {
-      window.alert(`การแข่งขัน "${selectedTournament.name}" ปิดแล้ว\n\nกรุณาเลือกการแข่งขันอื่น`);
+      window.alert(`Competition "${selectedTournament.name}" is closed.\n\nPlease choose another one.`);
       return;
     }
     // TD and CR set their event up before it starts, so they may enter early.
     const canPrepare = isAdmin || SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, selectedTournament?.id, currentUser));
     if (selectedTournament?.run_state !== "started" && !canPrepare) {
-      window.alert(`การแข่งขัน "${selectedTournament.name}" ยังไม่เริ่ม\n\nกรุณารอ TD / CR กดเริ่มการแข่งขันก่อน`);
+      window.alert(`Competition "${selectedTournament.name}" has not started.\n\nPlease wait for the TD / CR to start it.`);
       return;
     }
     setRoundPickerFor(null);
@@ -1455,7 +1455,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
 
   const handleDeleteRound = async () => {
     if (!viewingRound || busy) return;
-    const ok = window.confirm(`ลบรอบ "${viewingRound.label}" ทิ้งถาวร?\n\nข้อมูลที่เก็บสำรองไว้ทั้งหมดของรอบนี้จะหายไป กู้คืนไม่ได้\n\nดำเนินการต่อหรือไม่?`);
+    const ok = window.confirm(`Delete round "${viewingRound.label}" permanently?\n\nAll archived data for this round will be lost. This cannot be undone.\n\nContinue?`);
     if (!ok) return;
     setBusy(true);
     await deleteRound(viewingRound.id);
@@ -1560,7 +1560,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                     {!isAdmin && SETUP_EDIT_POSITIONS.includes(positionOf(rolesMap, t.id, currentUser)) && (
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
                         <button onClick={() => handleToggleStarted(t)}
-                          title={t.run_state === "started" ? "หยุดการแข่งขันชั่วคราว" : "เริ่มการแข่งขัน"}
+                          title={t.run_state === "started" ? "Pause competition" : "Start competition"}
                           style={{ background: "#0d0f1a", border: `1px solid ${t.run_state === "started" ? "#6effa066" : "#8890b844"}`, color: t.run_state === "started" ? "#6effa0" : "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           {t.run_state === "started" ? "⏸" : "▶"}
                         </button>
@@ -1569,27 +1569,27 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                     {isAdmin && (
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
                         <button onClick={() => handleToggleStarted(t)}
-                          title={t.run_state === "started" ? "หยุดการแข่งขันชั่วคราว" : "เริ่มการแข่งขัน"}
+                          title={t.run_state === "started" ? "Pause competition" : "Start competition"}
                           style={{ background: "#0d0f1a", border: `1px solid ${t.run_state === "started" ? "#6effa066" : "#8890b844"}`, color: t.run_state === "started" ? "#6effa0" : "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           {t.run_state === "started" ? "⏸" : "▶"}
                         </button>
                         <button onClick={() => handleToggleClosed(t)}
-                          title={t.status === "closed" ? "เปิดการแข่งขันอีกครั้ง" : "ปิดการแข่งขัน"}
+                          title={t.status === "closed" ? "Reopen competition" : "Close competition"}
                           style={{ background: "#0d0f1a", border: `1px solid ${t.status === "closed" ? "#6effa044" : "#ffd96644"}`, color: t.status === "closed" ? "#6effa0" : "#ffd966", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           {t.status === "closed" ? "🔓" : "🔒"}
                         </button>
                         <button onClick={() => openRolesDialog(t)}
-                          title="กำหนดตำแหน่ง TD / CR / R1-R6"
+                          title="Assign TD / CR / R1-R6"
                           style={{ background: "#0d0f1a", border: "1px solid #8890b844", color: "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           👥
                         </button>
                         <button onClick={() => handleStartEdit(t)}
-                          title="แก้ไขข้อมูลการแข่งขัน"
+                          title="Edit competition details"
                           style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           ✏️
                         </button>
                         <button onClick={() => handleDeleteTournament(t)}
-                          title="ลบการแข่งขัน"
+                          title="Delete competition"
                           style={{ background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           🗑
                         </button>
@@ -1724,8 +1724,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
               <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1" }}>👥 POSITIONS</div>
               <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 4 }}>{managingRoles.name}</div>
               <div style={{ fontSize: 11, color: "#666", marginBottom: 16, lineHeight: 1.6 }}>
-                TD / CR แก้หน้า Setup ได้ · R1-R6 บันทึกเวลาอย่างเดียว<br />
-                1 คนรับได้ 1 ตำแหน่ง และอยู่ได้ครั้งละ 1 การแข่งขัน
+                TD / CR can edit Setup · R1-R6 record times only<br />
+                One position per person, and one competition at a time
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
@@ -1745,13 +1745,13 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                         onChange={e => setPos(pos, e.target.value)}
                         style={{ flex: 1, background: "#0d0f1a", border: "1px solid #2a2d4a", color: draftRoles[pos] ? "#eee" : "#666", borderRadius: 7, padding: "8px 10px", fontFamily: "inherit", fontSize: 13, outline: "none" }}
                       >
-                        <option value="">— ว่าง —</option>
+                        <option value="">— vacant —</option>
                         {(allUsers || []).map(u => {
                           const held = takenBy(u.username);
                           const busyElsewhere = held && held !== pos;
                           return (
                             <option key={u.username} value={u.username} disabled={busyElsewhere}>
-                              {u.username}{busyElsewhere ? ` (เป็น ${held} อยู่)` : ""}
+                              {u.username}{busyElsewhere ? ` (currently ${held})` : ""}
                             </option>
                           );
                         })}
@@ -2531,7 +2531,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
             {tPickerLoading ? (
               <div style={{ padding: 24, textAlign: "center", color: "#8890b8", fontSize: 13 }}>Loading…</div>
             ) : tPickerList.length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>ไม่มีการแข่งขันอื่นที่เข้าได้</div>
+              <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>No other competitions available to you</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 340, overflowY: "auto" }}>
                 {tPickerList.map(t => {
@@ -2762,7 +2762,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     if (target) {
       onSwitchGroup(target, currentSlot);
     } else if (groupNumInput.trim() !== "") {
-      window.alert(`ไม่พบกลุ่มหมายเลข ${groupNumInput.trim()}`);
+      window.alert(`No group numbered ${groupNumInput.trim()}`);
     }
     setEditingGroupNum(false);
   };
@@ -2870,7 +2870,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // type "TM" + badTime:true at holeIdx = currentHole), then keeps following forward on
   // every hole after that too, without switching off the group's MN status (MN and TM
   // can run at the same time here). A player can be Bad-Timed more than once — every
-  // press logs a fresh occurrence (see badTimeOccurrence below for the "ครั้งที่ N" count,
+  // press logs a fresh occurrence (see badTimeOccurrence below for the "#N" count,
   // which is derived from the current log list so it re-numbers correctly if an entry
   // is later deleted).
   const triggerBadTimeFor = (playerNum) => {
@@ -3121,7 +3121,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     return m;
   }, {});
 
-  // "ครั้งที่ N" — which Bad Time occurrence this is for a given player, e.g. their 1st, 2nd,
+  // "#N" — which Bad Time occurrence this is for a given player, e.g. their 1st, 2nd,
   // 3rd time. Recomputed fresh from the current actionLogs on every render (in chronological/
   // creation order), so if an earlier Bad Time entry is deleted the remaining ones simply
   // shift down and renumber — there's no separately stored counter to get out of sync.
@@ -3164,7 +3164,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           <button
             onClick={() => prevGroup && onSwitchGroup(prevGroup, currentSlot)}
             disabled={!prevGroup}
-            title="กลุ่มก่อนหน้า"
+            title="Previous group"
             style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: prevGroup ? "#4e9af1" : "#333", cursor: prevGroup ? "pointer" : "not-allowed", fontSize: 20, fontWeight: 700, borderRadius: 8, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
           >‹</button>
         )}
@@ -3177,13 +3177,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             onChange={e => setGroupNumInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") confirmGroupNumberInput(); if (e.key === "Escape") setEditingGroupNum(false); }}
             onBlur={confirmGroupNumberInput}
-            placeholder="เลขกลุ่ม"
+            placeholder="Group no."
             style={{ width: 80, fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 2, background: "#0d0f1a", border: "1px solid #4e9af1", color: "#eee", borderRadius: 6, padding: "4px 8px", flexShrink: 0 }}
           />
         ) : (
           <div
             onClick={openGroupNumberInput}
-            title={onSwitchGroup ? "แตะเพื่อพิมพ์เลขกลุ่ม" : undefined}
+            title={onSwitchGroup ? "Tap to type a group number" : undefined}
             style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, flexShrink: 0, cursor: onSwitchGroup ? "pointer" : "default", borderBottom: onSwitchGroup ? "1px dashed #4e9af166" : "none" }}
           >{group.name}</div>
         )}
@@ -3192,7 +3192,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           <button
             onClick={() => nextGroup && onSwitchGroup(nextGroup, currentSlot)}
             disabled={!nextGroup}
-            title="กลุ่มถัดไป"
+            title="Next group"
             style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: nextGroup ? "#4e9af1" : "#333", cursor: nextGroup ? "pointer" : "not-allowed", fontSize: 20, fontWeight: 700, borderRadius: 8, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
           >›</button>
         )}
@@ -3286,7 +3286,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             <button
               onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
               disabled={currentSlot === 0}
-              title="หลุมก่อนหน้า"
+              title="Previous hole"
               style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#333" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >‹</button>
             <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 30 : 72, lineHeight: 1, color: group.color }}>
@@ -3295,7 +3295,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             <button
               onClick={() => setCurrentSlot(Math.min(17, currentSlot + 1))}
               disabled={currentSlot === 17}
-              title="หลุมถัดไป"
+              title="Next hole"
               style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >›</button>
             {compact && (
@@ -3316,9 +3316,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
           {holeData[currentHole]?.endTime && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "#2a1a0a", border: "1px solid #ffd96644", borderRadius: 10, padding: "8px 12px", marginBottom: compact ? 10 : 14 }}>
-              <span style={{ fontSize: 12, color: "#ffd966" }}>หลุมนี้บันทึกเวลาจบไว้แล้ว ({holeData[currentHole].endTime})</span>
+              <span style={{ fontSize: 12, color: "#ffd966" }}>Finish time already recorded for this hole ({holeData[currentHole].endTime})</span>
               <button
-                onClick={() => { if (window.confirm(`ลบเวลาจบที่บันทึกไว้ของ H${currentHole + 1}?\n\nสามารถบันทึกใหม่ได้หลังจากลบ`)) clearHoleRecord(currentHole); }}
+                onClick={() => { if (window.confirm(`Clear the recorded finish time for H${currentHole + 1}?\n\nYou can record it again afterwards.`)) clearHoleRecord(currentHole); }}
                 style={{ background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0 }}
               >🗑 Clear</button>
             </div>
@@ -3381,11 +3381,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 <>
                   <button onClick={() => !wnDisabled && openActionModal("WN", currentHole)}
                     disabled={wnDisabled}
-                    title={mnActive || tmActive ? "กำลัง MN/TM อยู่ กด WN ไม่ได้ในระหว่างนี้" : wnDisabled ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
+                    title={mnActive || tmActive ? "MN/TM is active — WN cannot be used right now" : wnDisabled ? "WN already logged on this hole" : undefined}
                     style={{ flex: 1, background: wnDisabled ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabled ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabled ? "#666" : "#ffd966", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: wnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                   <button onClick={() => !mnDisabled && openActionModal("MN", currentHole)}
                     disabled={mnDisabled}
-                    title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อนถึงจะเริ่มใหม่ได้" : mnDisabledHere ? "หลุมนี้ถูก MN ไปแล้ว" : mnAlreadyUsed ? "กลุ่มนี้เคยถูก MN และ off ไปแล้ว MN ได้แค่ครั้งเดียวต่อกลุ่ม" : undefined}
+                    title={mnActive ? "MN is already running — turn MN off before starting again" : mnDisabledHere ? "MN already logged on this hole" : mnAlreadyUsed ? "This group has already had MN turned on and off — MN can only be used once per group" : undefined}
                     style={{ flex: 1, background: mnDisabled ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabled ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabled ? "#666" : "#4e9af1", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: mnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                   <button onClick={() => openActionModal("TM", currentHole)}
                     style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
@@ -3546,7 +3546,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       key={n}
                       onClick={() => !usedUpInMN && triggerBadTimeFor(n)}
                       disabled={usedUpInMN}
-                      title={usedUpInMN ? `${label} เป็นเป้าหมาย TM แล้ว กด Bad Time ต่อได้ที่แถบ TIMING ด้านล่างแทน` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
+                      title={usedUpInMN ? `${label} is already a TM target — use the TIMING row below for further Bad Times` : `Bad Time — ${label} → flags TM on this hole immediately`}
                       style={{
                         background: usedUpInMN ? "#1a1a1a" : "#2a0020",
                         border: `1px solid ${usedUpInMN ? "#3a3a3a" : "#ff6ec788"}`,
@@ -3597,7 +3597,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       key={n}
                       onClick={() => !notYetTarget && triggerBadTimeFor(n)}
                       disabled={notYetTarget}
-                      title={notYetTarget ? `${label} ยังไม่ใช่เป้าหมาย TM — กด Bad Time ที่แถบ MONITORING ด้านบนก่อน` : isBadTimed ? `${label} already flagged Bad Time — tap to log it again` : `Bad Time — ${label} → ขึ้นสถานะ TM ที่หลุมนี้ทันที`}
+                      title={notYetTarget ? `${label} is not a TM target yet — use Bad Time in the MONITORING row above first` : isBadTimed ? `${label} already flagged Bad Time — tap to log it again` : `Bad Time — ${label} → flags TM on this hole immediately`}
                       style={{
                         background: notYetTarget ? "#1a1a1a" : isBadTimed ? "#ff3d3d" : "#ff6ec7",
                         border: `1px solid ${notYetTarget ? "#3a3a3a" : isBadTimed ? "#ff3d3d" : "#ff6ec7"}`,
@@ -3754,11 +3754,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                               <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>
                                 <button onClick={() => !wnDisabledRow && openActionModal("WN", i)}
                                   disabled={wnDisabledRow}
-                                  title={mnActive || tmActive ? "กำลัง MN/TM อยู่ กด WN ไม่ได้ในระหว่างนี้" : wnDisabledRow ? "หลุมนี้ถูก WN ไปแล้ว" : undefined}
+                                  title={mnActive || tmActive ? "MN/TM is active — WN cannot be used right now" : wnDisabledRow ? "WN already logged on this hole" : undefined}
                                   style={{ background: wnDisabledRow ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabledRow ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabledRow ? "#666" : "#ffd966", borderRadius: 5, padding: "3px 7px", cursor: wnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                                 <button onClick={() => !mnDisabledRow && openActionModal("MN", i)}
                                   disabled={mnDisabledRow}
-                                  title={mnActive ? "กลุ่มนี้กำลัง MN อยู่แล้ว ต้อง Off MN ก่อน" : mnDisabledHereRow ? "หลุมนี้ถูก MN ไปแล้ว" : mnAlreadyUsedRow ? "กลุ่มนี้เคยถูก MN และ off ไปแล้ว MN ได้แค่ครั้งเดียวต่อกลุ่ม" : undefined}
+                                  title={mnActive ? "MN is already running — turn MN off first" : mnDisabledHereRow ? "MN already logged on this hole" : mnAlreadyUsedRow ? "This group has already had MN turned on and off — MN can only be used once per group" : undefined}
                                   style={{ background: mnDisabledRow ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabledRow ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabledRow ? "#666" : "#4e9af1", borderRadius: 5, padding: "3px 7px", cursor: mnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                                 <button onClick={() => openActionModal("TM", i)}
                                   style={{ background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 5, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
@@ -3767,7 +3767,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                 <div key={li} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: logColor(l.type), background: `${logBg(l.type)}44`, borderRadius: 4, padding: "2px 4px", textAlign: "left", lineHeight: 1.4 }}>
                                   <span style={{ flex: 1 }}>
                                     {l.badTime ? (
-                                      <><span style={{ fontWeight: 700 }}>⚡ TM Bad Time</span> {l.target}{badTimeOccurrence.has(l) ? ` (ครั้งที่ ${badTimeOccurrence.get(l)})` : ""}{l.name ? ` - ${l.name}` : ""}</>
+                                      <><span style={{ fontWeight: 700 }}>⚡ TM Bad Time</span> {l.target}{badTimeOccurrence.has(l) ? ` (#${badTimeOccurrence.get(l)})` : ""}{l.name ? ` - ${l.name}` : ""}</>
                                     ) : l.off ? (
                                       <><span style={{ fontWeight: 700 }}>✕ Off {l.type}</span>{l.name ? ` - ${l.name}` : ""}</>
                                     ) : (
@@ -4490,7 +4490,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           {suspensions.map((s, i) => (
             <span key={i}
               onClick={() => onSuspendEdit && setEditSuspension({ idx: i, stopTime: s.stopTime, resumeTime: s.resumeTime })}
-              title={onSuspendEdit ? "แตะเพื่อแก้ไข / ลบ" : undefined}
+              title={onSuspendEdit ? "Tap to edit / delete" : undefined}
               style={{
                 display: "grid",
                 // Fixed columns keep every row's arrow, offset and pencil in line
@@ -4524,7 +4524,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
           </button>
           <button onClick={toggleFitAll}
-            title="ย่อคอลัมน์ให้เห็นครบ 18 หลุมในจอเดียว (สำหรับ TD / CR)"
+            title="Shrink columns to fit all 18 holes on one screen (for TD / CR)"
             style={{
               background: fitAllHoles ? "#1a4a8a" : "#0d0f1a",
               border: `1px solid ${fitAllHoles ? "#4e9af1" : "#2a2d4a"}`,
@@ -4643,8 +4643,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
           }}>▶ Resume play</button>
           {onSuspendCancel && (
-            <button onClick={() => { if (window.confirm("ยกเลิกการหยุดเล่นครั้งนี้?\n\nใช้กรณีกดผิด — จะไม่มีการบันทึกช่วงเวลาหยุด และตารางเวลาไม่ถูกเลื่อน")) onSuspendCancel(); }}
-              title="กดผิด? ยกเลิกโดยไม่บันทึก"
+            <button onClick={() => { if (window.confirm("Cancel this stoppage?\n\nUse this if it was pressed by mistake — nothing is recorded and the schedule is not shifted.")) onSuspendCancel(); }}
+              title="Pressed by mistake? Cancel without recording"
               style={{
                 background: "#2a0a0a", border: "1px solid #ff707088",
                 color: "#ff7070", borderRadius: 7, padding: "5px 12px",
@@ -4679,7 +4679,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 const [sh, sm] = (editSuspension.stopTime || "0:00").split(":").map(Number);
                 const [rh, rm] = (editSuspension.resumeTime || "0:00").split(":").map(Number);
                 const off = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
-                return <div style={{ fontSize: 12, color: "#ff9966" }}>ตารางเวลาจะเลื่อน <b>+{off} นาที</b></div>;
+                return <div style={{ fontSize: 12, color: "#ff9966" }}>Schedule shifts by <b>+{off} min</b></div>;
               })()}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -4687,7 +4687,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
                 ✓ Save
               </button>
-              <button onClick={() => { if (window.confirm(`ลบการหยุดเล่น #${editSuspension.idx + 1}?\n\nตารางเวลาจะถูกคำนวณใหม่โดยไม่รวมช่วงเวลานี้`)) { onSuspendDelete(editSuspension.idx); setEditSuspension(null); } }}
+              <button onClick={() => { if (window.confirm(`Delete stoppage #${editSuspension.idx + 1}?\n\nThe schedule will be recalculated without this period.`)) { onSuspendDelete(editSuspension.idx); setEditSuspension(null); } }}
                 style={{ background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 }}>
                 🗑
               </button>
@@ -4807,7 +4807,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                           ) : (it.type === "MN" || it.type === "TM") && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: it.type }); }}
-                              title={`ล้างสถานะ ${it.type} ทั้งหมด`}
+                              title={`Clear all ${it.type} status`}
                               style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
                             >🗑</button>
                           )}
@@ -4951,11 +4951,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   <span
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (window.confirm(`ยกเลิกสถานะ "จบรอบ" ของ ${g.name}?\n\nกลุ่มนี้จะกลับมาขึ้นในรายการแจ้งเตือนอีกครั้ง`)) {
+                                      if (window.confirm(`Undo "round finished" for ${g.name}?\n\nThis group will appear in the alert list again.`)) {
                                         onUpdateGroupData(g.id, { roundFinished: false });
                                       }
                                     }}
-                                    title="กดเพื่อยกเลิกสถานะจบรอบ"
+                                    title="Tap to undo the finished status"
                                     style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa044", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
                                   >{fitAllHoles ? "🏁" : "🏁 FINISHED"}</span>
                                 )}
@@ -6452,7 +6452,7 @@ export default function App() {
         { event: "UPDATE", schema: "public", table: "tournaments", filter: `id=eq.${currentTournament.id}` },
         (payload) => {
           if (payload.new?.status === "closed") {
-            window.alert(`การแข่งขัน "${payload.new.name || ""}" ปิดแล้ว\n\nระบบจะออกจากระบบให้อัตโนมัติ`);
+            window.alert(`Competition "${payload.new.name || ""}" has been closed.\n\nYou will be signed out automatically.`);
             handleLogout();
           }
         })
@@ -6484,7 +6484,7 @@ export default function App() {
     // used to silently wipe the schedule (and orphan every group's recorded times)
     // whenever the Setup screen was opened on a device with no local group draft.
     if (hadSessionBefore && (!grps || grps.length === 0)) {
-      window.alert("ไม่พบรายการกลุ่มในหน้านี้ จึงไม่อัปเดตตาราง\n\nเพื่อความปลอดภัย ระบบจะไม่ลบตารางและเวลาที่บันทึกไว้ของ session ที่กำลังทำงานอยู่\n\nลองรีเฟรชหน้าเพื่อโหลดรายการกลุ่มจากเซิร์ฟเวอร์ก่อน แล้วลองอีกครั้ง");
+      window.alert("No group list found on this page, so the schedule was not updated.\n\nFor safety, the running session's schedule and recorded times are kept.\n\nRefresh the page to load the group list from the server, then try again.");
       return;
     }
 
@@ -6652,7 +6652,7 @@ export default function App() {
     let round = rounds.find(r => r.label === label);
     if (!round) {
       round = await createRound({ tournamentId: currentTournament.id, label, isQualifying: label === "Q" });
-      if (!round) { window.alert("สร้างรอบไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+      if (!round) { window.alert("Could not create the round. Please try again."); return; }
     }
     await loadRound(currentTournament, round, round.status === "finished" ? "reopen" : "resume");
   };
