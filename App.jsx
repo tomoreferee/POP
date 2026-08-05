@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-01-g (beta · roles)";
+const APP_BUILD = "2026-08-01-h (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1963,38 +1963,42 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "14px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <div style={{ fontSize: 28, fontFamily: "'Bebas Neue'", letterSpacing: 4, color: "#4e9af1" }}>⛳ SETUP</div>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
-          <span style={{ fontSize: 11, color: "#8890b8", marginLeft: "auto", textAlign: "right" }}>Golf Referee · Pace of Play</span>
-        </div>
-
-        {/* Four equal tiles in a 2×2 grid — never overflows, always aligned */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, padding: "0 8px", background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, minWidth: 0 }}>
-            <span style={{ fontSize: 12, color: "#8890b8", flexShrink: 0 }}>👤</span>
-            <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: isAdmin ? "#ffd966" : "#4e9af1", background: isAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "1px 5px", letterSpacing: 1, flexShrink: 0 }}>
-              {isAdmin ? "ADMIN" : "USER"}
-            </span>
+        {/* Title on the left, who's signed in on the right */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 28, fontFamily: "'Bebas Neue'", letterSpacing: 4, color: "#4e9af1" }}>⛳ SETUP</div>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
+            </div>
+            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>Golf Referee · Pace of Play System</div>
           </div>
 
-          <button onClick={onLogout}
-            style={{ height: 34, background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", padding: "0 8px" }}
-          >⏏ Log out</button>
-
-          {isAdmin && (
-            <>
-              <button onClick={onManageUsers}
-                style={{ height: 34, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", padding: "0 8px" }}
-              >🔑 Manage Users</button>
-
-              <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
-                style={{ height: 34, background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", padding: "0 8px" }}
-              >🗑 Clear Data</button>
-            </>
-          )}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            {currentUser && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
+                <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700 }}>{currentUser}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: isAdmin ? "#ffd966" : "#4e9af1", background: isAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "1px 5px", letterSpacing: 1 }}>
+                  {isAdmin ? "ADMIN" : "USER"}
+                </span>
+              </span>
+            )}
+            <LogoutButton onLogout={onLogout} />
+          </div>
         </div>
+
+        {/* Admin actions — two large, equal tiles */}
+        {isAdmin && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 14 }}>
+            <button onClick={onManageUsers}
+              style={{ minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+            >🔑<br />Manage Users</button>
+
+            <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
+              style={{ minHeight: 56, background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+            >🗑<br />Clear Data in Dashboard</button>
+          </div>
+        )}
       </div>
 
       {/* Legend */}
