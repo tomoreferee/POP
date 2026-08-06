@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-n (beta · roles)";
+const APP_BUILD = "2026-08-02-o (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -5606,13 +5606,16 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
   const PRESET_USERS = ["AK","BH","CJ","CP","CS","EL","IS","JK","JT","KS","NP","PH","RL","SS","ST","TS","WM","WS","ZH"];
   const suggestions = newUsername.trim()
-    ? PRESET_USERS.filter(u => u.toLowerCase().startsWith(newUsername.trim().toLowerCase()) && !users.find(x => x.username === u))
-    : PRESET_USERS.filter(u => !users.find(x => x.username === u));
+    ? PRESET_USERS.filter(u => u.toLowerCase().startsWith(newUsername.trim().toLowerCase()) && !users.find(x => x.username.toLowerCase() === u.toLowerCase()))
+    : PRESET_USERS.filter(u => !users.find(x => x.username.toLowerCase() === u.toLowerCase()));
 
   const handleAdd = () => {
     const trimmed = newUsername.trim();
     if (!trimmed) { setAddError("Please enter a username"); return; }
-    if (users.find(u => u.username === trimmed)) { setAddError("This username already exists"); return; }
+    if (users.find(u => u.username.toLowerCase() === trimmed.toLowerCase())) {
+      setAddError("This username already exists");
+      return;
+    }
     if (!newPassword) { setAddError("Please enter a password"); return; }
     onUpdateUsers([...users, { username: trimmed, password: newPassword, isAdmin: newIsAdmin }]);
     setNewUsername("");
@@ -5621,6 +5624,17 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
     setAddError("");
     setAddSuccess(`Added "${trimmed}" (${newIsAdmin ? "Admin" : "User"}) successfully`);
     setTimeout(() => setAddSuccess(""), 3000);
+  };
+
+  const adminCount = users.filter(u => u.isAdmin).length;
+
+  const handleToggleRole = (u) => {
+    if (u.isAdmin && adminCount <= 1) return; // never leave the system without an admin
+    const demotingSelf = u.isAdmin && u.username === currentUser;
+    if (demotingSelf && !window.confirm(
+      `Change your own account "${u.username}" to User?\n\nYou will lose admin access immediately and will need another admin to restore it.`
+    )) return;
+    onUpdateUsers(users.map(x => x.username === u.username ? { ...x, isAdmin: !x.isAdmin } : x));
   };
 
   const handleReset = (username) => {
@@ -5794,19 +5808,26 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                  {/* Toggle role — cannot change own role */}
-                  {!isCurrentUser && (
-                    <button
-                      onClick={() => onUpdateUsers(users.map(x => x.username === u.username ? { ...x, isAdmin: !x.isAdmin } : x))}
-                      style={{
-                        background: u.isAdmin ? "#1a1000" : "#001020",
-                        border: `1px solid ${u.isAdmin ? "#ffd96644" : "#4e9af144"}`,
-                        color: u.isAdmin ? "#ffd966" : "#4e9af1",
-                        borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 700,
-                      }}
-                      title={u.isAdmin ? "Demote to User" : "Promote to Admin"}
-                    >{u.isAdmin ? "→ User" : "→ Admin"}</button>
-                  )}
+                  {/* Toggle role. Any account can be changed — including your own
+                      and the built-in admin — except the last remaining admin,
+                      which would lock everyone out of administration for good. */}
+                  <button
+                    onClick={() => handleToggleRole(u)}
+                    disabled={u.isAdmin && adminCount <= 1}
+                    style={{
+                      background: u.isAdmin ? "#1a1000" : "#001020",
+                      border: `1px solid ${u.isAdmin ? "#ffd96644" : "#4e9af144"}`,
+                      color: u.isAdmin && adminCount <= 1 ? "#555" : (u.isAdmin ? "#ffd966" : "#4e9af1"),
+                      borderRadius: 7, padding: "5px 10px",
+                      cursor: u.isAdmin && adminCount <= 1 ? "not-allowed" : "pointer",
+                      fontSize: 12, fontFamily: "inherit", fontWeight: 700,
+                    }}
+                    title={
+                      u.isAdmin && adminCount <= 1
+                        ? "This is the only admin left — promote someone else first"
+                        : u.isAdmin ? "Demote to User" : "Promote to Admin"
+                    }
+                  >{u.isAdmin ? "→ User" : "→ Admin"}</button>
                   {/* Reset password */}
                   {!isCurrentUser && (
                     <button
@@ -6260,11 +6281,28 @@ export default function App() {
 
   // ─── Update users list locally + push to Supabase (handles add/edit/delete) ───
   const handleUpdateUsers = useCallback((newUsers) => {
+    // Last line of defence: usernames identify people all through the app
+    // (roles, logs, "recorded by"), so duplicates would silently merge people.
+    const seen = new Set();
+    const deduped = newUsers.filter(u => {
+      const key = (u.username || "").trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    if (deduped.length !== newUsers.length) {
+      window.alert("Duplicate usernames were found and ignored. Each username must be unique.");
+    }
+    // And never save a list with no admin in it — that locks everyone out.
+    if (!deduped.some(u => u.isAdmin)) {
+      window.alert("There must be at least one admin. The change was not saved.");
+      return;
+    }
     setUsers(prevUsers => {
-      const removed = prevUsers.filter(u => !newUsers.some(n => n.username === u.username)).map(u => u.username);
+      const removed = prevUsers.filter(u => !deduped.some(n => n.username === u.username)).map(u => u.username);
       if (removed.length) removeUsers(removed);
-      if (newUsers.length) pushUsers(newUsers);
-      return newUsers;
+      if (deduped.length) pushUsers(deduped);
+      return deduped;
     });
   }, []);
 
