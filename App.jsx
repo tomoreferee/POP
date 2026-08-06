@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-u (beta · roles)";
+const APP_BUILD = "2026-08-02-v (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -2843,7 +2843,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                         {label === "Q" ? "Q" : `R${label}`}
                       </span>
                       <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#6effa0" : hasData ? "#4e9af1" : "#8890b8" }}>
-                        {isCurrent ? "● CURRENT" : hasData ? "HAS DATA" : r ? "SET UP" : "NEW"}
+                        {isCurrent ? "● LIVE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
                       </span>
                     </button>
                   );
