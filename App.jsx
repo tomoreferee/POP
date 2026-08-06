@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-q (beta · roles)";
+const APP_BUILD = "2026-08-02-r (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -654,6 +654,8 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
   const [afternoonStartBoth, setAfternoonStartBoth] = useState("11:20");
 
   const [generated, setGenerated] = useState(false);
+  // Add to the existing schedule, or rebuild it from scratch with these settings
+  const [replaceExisting, setReplaceExisting] = useState(false);
 
   // ── preview helpers ──────────────────────────────────────────────────────────
   const buildPreview = () => {
@@ -700,7 +702,8 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
   const handleGenerate = () => {
     if (totalNew === 0) return;
     const existingAll = [...existingGroups1, ...existingGroups10, ...(existingGroupsShotgun || [])];
-    const maxN = existingAll.reduce((acc, g) => {
+    // Appending continues the numbering; replacing starts again from Group 1.
+    const maxN = replaceExisting ? 0 : existingAll.reduce((acc, g) => {
       const m = g.name.match(/Group (\d+)/);
       return m ? Math.max(acc, Number(m[1])) : acc;
     }, 0);
@@ -758,7 +761,24 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
       }
     }
 
-    onGenerate(newG1, newG10);
+    // "Replace" rebuilds the whole schedule from these settings, so a mistake in
+    // any of them can be corrected in one go instead of editing group by group.
+    if (replaceExisting) {
+      const existingCount = existingAll.length;
+      if (existingCount > 0) {
+        const keep = window.confirm(
+          `Replace the current schedule?\n\n` +
+          `${existingCount} existing group(s) will be replaced by ${totalNew} new one(s).\n\n` +
+          `OK = keep recorded times for groups whose number still exists\n` +
+          `Cancel = start completely fresh (recorded times are cleared)`
+        );
+        onGenerate(newG1, newG10, { replace: true, keepData: keep });
+      } else {
+        onGenerate(newG1, newG10, { replace: true, keepData: false });
+      }
+    } else {
+      onGenerate(newG1, newG10);
+    }
     setGenerated(true);
     setTimeout(() => setGenerated(false), 2000);
   };
@@ -946,6 +966,31 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         />
       )}
 
+      {/* Add to what's there, or rebuild the schedule from these settings —
+          the latter is how a wrong start time / gap / count gets corrected. */}
+      {mode !== "shotgun" && (
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          {[
+            { val: false, label: "➕ Add to schedule" },
+            { val: true,  label: "↻ Replace schedule" },
+          ].map(opt => (
+            <button key={String(opt.val)} onClick={() => setReplaceExisting(opt.val)}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                background: replaceExisting === opt.val ? (opt.val ? "#2a1a0a" : "#1a4a8a") : "#0d0f1a",
+                border: `1px solid ${replaceExisting === opt.val ? (opt.val ? "#ff9966" : "#4e9af1") : "#2a2d4a"}`,
+                color: replaceExisting === opt.val ? (opt.val ? "#ff9966" : "#fff") : "#8890b8",
+              }}>{opt.label}</button>
+          ))}
+        </div>
+      )}
+      {mode !== "shotgun" && replaceExisting && (
+        <div style={{ fontSize: 11, color: "#ff9966", marginTop: 6, lineHeight: 1.5 }}>
+          Rebuilds the whole schedule and renumbers from Group 1. You'll be asked
+          whether to keep times already recorded.
+        </div>
+      )}
+
       {mode !== "shotgun" && (
       <button
         onClick={handleGenerate}
@@ -960,7 +1005,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
           transition:"all 0.2s",
         }}
       >
-        {generated ? "✓ Groups generated!" : `⚡ Generate ${totalNew} group(s)`}
+        {generated ? "✓ Groups generated!" : `⚡ ${replaceExisting ? "Replace with" : "Generate"} ${totalNew} group(s)`}
       </button>
       )}
     </div>
@@ -2064,7 +2109,29 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   const [clearModal, setClearModal] = useState(null); // "h1" | "h10" | "shotgun" | null
 
   // ─── Quick Generate: append new groups ───────────────────────────────────
-  const handleGenerate = (newG1, newG10) => {
+  const handleGenerate = (newG1, newG10, opts) => {
+    if (opts?.replace) {
+      // Rebuilding: reuse the old group ids where the group number matches, so
+      // times already recorded stay attached to the right group. Otherwise the
+      // new groups get fresh ids and start with an empty scorecard.
+      const numberOf = g => { const m = g.name.match(/Group (\d+)/); return m ? Number(m[1]) : null; };
+      const oldById = new Map();
+      [...groups1, ...groups10, ...groupsShotgun].forEach(g => {
+        const n = numberOf(g);
+        if (n !== null) oldById.set(n, g.id);
+      });
+      const remap = g => {
+        if (!opts.keepData) return g;
+        const n = numberOf(g);
+        const oldId = n !== null ? oldById.get(n) : undefined;
+        return oldId !== undefined ? { ...g, id: oldId } : g;
+      };
+      setGroups1(newG1.map(remap));
+      setGroups10(newG10.map(remap));
+      setGroupsShotgun([]);          // a rebuilt H1/H10 schedule replaces shotgun too
+      nextNum.current = newG1.length + newG10.length + 1;
+      return;
+    }
     setGroups1(prev => [...prev, ...newG1]);
     setGroups10(prev => [...prev, ...newG10]);
     const all = [...groups1, ...groups10, ...groupsShotgun, ...newG1, ...newG10];
