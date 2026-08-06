@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-o (beta · roles)";
+const APP_BUILD = "2026-08-02-p (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -5628,7 +5628,10 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
   const adminCount = users.filter(u => u.isAdmin).length;
 
+  const isBuiltInAdmin = (name) => (name || "").trim().toLowerCase() === "admin";
+
   const handleToggleRole = (u) => {
+    if (isBuiltInAdmin(u.username)) return;   // built-in admin is permanent
     if (u.isAdmin && adminCount <= 1) return; // never leave the system without an admin
     const demotingSelf = u.isAdmin && u.username === currentUser;
     if (demotingSelf && !window.confirm(
@@ -5811,23 +5814,30 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                   {/* Toggle role. Any account can be changed — including your own
                       and the built-in admin — except the last remaining admin,
                       which would lock everyone out of administration for good. */}
-                  <button
-                    onClick={() => handleToggleRole(u)}
-                    disabled={u.isAdmin && adminCount <= 1}
-                    style={{
-                      background: u.isAdmin ? "#1a1000" : "#001020",
-                      border: `1px solid ${u.isAdmin ? "#ffd96644" : "#4e9af144"}`,
-                      color: u.isAdmin && adminCount <= 1 ? "#555" : (u.isAdmin ? "#ffd966" : "#4e9af1"),
-                      borderRadius: 7, padding: "5px 10px",
-                      cursor: u.isAdmin && adminCount <= 1 ? "not-allowed" : "pointer",
-                      fontSize: 12, fontFamily: "inherit", fontWeight: 700,
-                    }}
-                    title={
-                      u.isAdmin && adminCount <= 1
-                        ? "This is the only admin left — promote someone else first"
-                        : u.isAdmin ? "Demote to User" : "Promote to Admin"
-                    }
-                  >{u.isAdmin ? "→ User" : "→ Admin"}</button>
+                  {isBuiltInAdmin(u.username) ? (
+                    <span
+                      title="The built-in admin account cannot be changed"
+                      style={{ background: "#1a1000", border: "1px solid #ffd96633", color: "#7a6a33", borderRadius: 7, padding: "5px 10px", fontSize: 12, fontFamily: "inherit", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}
+                    >🔒 Admin</span>
+                  ) : (
+                    <button
+                      onClick={() => handleToggleRole(u)}
+                      disabled={u.isAdmin && adminCount <= 1}
+                      style={{
+                        background: u.isAdmin ? "#1a1000" : "#001020",
+                        border: `1px solid ${u.isAdmin ? "#ffd96644" : "#4e9af144"}`,
+                        color: u.isAdmin && adminCount <= 1 ? "#555" : (u.isAdmin ? "#ffd966" : "#4e9af1"),
+                        borderRadius: 7, padding: "5px 10px",
+                        cursor: u.isAdmin && adminCount <= 1 ? "not-allowed" : "pointer",
+                        fontSize: 12, fontFamily: "inherit", fontWeight: 700,
+                      }}
+                      title={
+                        u.isAdmin && adminCount <= 1
+                          ? "This is the only admin left — promote someone else first"
+                          : u.isAdmin ? "Demote to User" : "Promote to Admin"
+                      }
+                    >{u.isAdmin ? "→ User" : "→ Admin"}</button>
+                  )}
                   {/* Reset password */}
                   {!isCurrentUser && (
                     <button
@@ -5836,14 +5846,14 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                       title={`Reset password → ${DEFAULT_RESET_PASSWORD}`}
                     >↺ Reset</button>
                   )}
-                  {/* Delete — cannot delete self */}
-                  {!isCurrentUser && (
+                  {/* Delete — never yourself, never the built-in admin */}
+                  {!isCurrentUser && !isBuiltInAdmin(u.username) && (
                     <button
                       onClick={() => setDeleteConfirm(u.username)}
                       style={{ background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 700 }}
                     >✕ Delete</button>
                   )}
-                  {isCurrentUser && (
+                  {(isCurrentUser || isBuiltInAdmin(u.username)) && (
                     <span style={{ fontSize: 11, color: "#666f99", padding: "5px 10px" }}>—</span>
                   )}
                 </div>
@@ -6298,6 +6308,14 @@ export default function App() {
       window.alert("There must be at least one admin. The change was not saved.");
       return;
     }
+    // The built-in "admin" account is the guaranteed way back in: it can't be
+    // demoted or removed, whatever path the change came from.
+    const builtIn = deduped.find(u => (u.username || "").trim().toLowerCase() === "admin");
+    if (!builtIn) {
+      window.alert("The built-in \"admin\" account cannot be removed. The change was not saved.");
+      return;
+    }
+    if (!builtIn.isAdmin) builtIn.isAdmin = true;
     setUsers(prevUsers => {
       const removed = prevUsers.filter(u => !deduped.some(n => n.username === u.username)).map(u => u.username);
       if (removed.length) removeUsers(removed);
