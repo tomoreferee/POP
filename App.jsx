@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-r (beta · roles)";
+const APP_BUILD = "2026-08-02-s (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -5791,6 +5791,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
   };
 
   const handleReset = (username) => {
+    if (isBuiltInAdmin(username) && username !== currentUser) { setResetConfirm(null); return; }
     onUpdateUsers(users.map(u => u.username === username ? { ...u, password: DEFAULT_RESET_PASSWORD } : u));
     setResetConfirm(null);
   };
@@ -5946,16 +5947,26 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                       <span style={{ fontSize: 11, color: "#4e9af1", background: "#001a2a66", border: "1px solid #4e9af144", borderRadius: 4, padding: "1px 6px" }}>You</span>
                     )}
                   </div>
-                  {/* Password display (admin-only peek) */}
+                  {/* Password peek. The built-in admin is the system's master
+                      account, so its password stays hidden from other admins —
+                      only the person signed in as it may reveal it. */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                    <span style={{ fontSize: 12, color: "#8890b8", letterSpacing: 1 }}>
-                      {isShowingPass ? u.password : "••••••"}
-                    </span>
-                    <button
-                      onClick={() => setShowPassFor(s => ({ ...s, [u.username]: !s[u.username] }))}
-                      style={{ background: "none", border: "none", color: "#767fa8", cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}
-                      title="Show/hide password"
-                    >{isShowingPass ? "🙈" : "👁"}</button>
+                    {isBuiltInAdmin(u.username) && !isCurrentUser ? (
+                      <span style={{ fontSize: 12, color: "#5a6180", letterSpacing: 1 }} title="Hidden — sign in as this account to view">
+                        •••••• 🔒
+                      </span>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 12, color: "#8890b8", letterSpacing: 1 }}>
+                          {isShowingPass ? u.password : "••••••"}
+                        </span>
+                        <button
+                          onClick={() => setShowPassFor(s => ({ ...s, [u.username]: !s[u.username] }))}
+                          style={{ background: "none", border: "none", color: "#767fa8", cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}
+                          title="Show/hide password"
+                        >{isShowingPass ? "🙈" : "👁"}</button>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -5988,8 +5999,9 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                       }
                     >{u.isAdmin ? "→ User" : "→ Admin"}</button>
                   )}
-                  {/* Reset password */}
-                  {!isCurrentUser && (
+                  {/* Reset password — not for the built-in admin, or another
+                      admin could set a known password and sign in as it. */}
+                  {!isCurrentUser && !isBuiltInAdmin(u.username) && (
                     <button
                       onClick={() => setResetConfirm(u.username)}
                       style={{ background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 700 }}
