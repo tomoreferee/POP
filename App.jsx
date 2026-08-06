@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-p (beta · roles)";
+const APP_BUILD = "2026-08-02-q (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1193,7 +1193,7 @@ function saveSetup(data) {
 // data first, then starts the new one fresh.
 const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
 
-function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups, allUsers }) {
+function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePassword, onManageUsers, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups, allUsers }) {
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournamentId, setSelectedTournamentId] = useState(liveTournamentId || null);
   const [rounds, setRounds] = useState([]);
@@ -1574,11 +1574,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
                 <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
               </span>
             )}
-            <button onClick={onLogout}
-              style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
-            >⏏ Log out</button>
+            <div style={{ display: "flex", gap: 8, width: "100%" }}>
+              <button onClick={onChangePassword}
+                title="Change your password"
+                style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
+              >🔑</button>
+              <button onClick={onLogout}
+                style={{ flex: 1, background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+              >⏏ Log out</button>
+            </div>
           </div>
         </div>
 
@@ -1917,7 +1923,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onManageUsers, 
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, tournamentRunState, onToggleStarted }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, tournamentRunState, onToggleStarted }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -2137,11 +2143,17 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, myPosition, o
                 )}
               </span>
             )}
-            <button onClick={onLogout}
-              style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
-            >⏏ Log out</button>
+            <div style={{ display: "flex", gap: 8, width: "100%" }}>
+              <button onClick={onChangePassword}
+                title="Change your password"
+                style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
+              >🔑</button>
+              <button onClick={onLogout}
+                style={{ flex: 1, background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+              >⏏ Log out</button>
+            </div>
           </div>
         </div>
       </div>
@@ -4401,7 +4413,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, tournamentName, hostVenue, roundLabel, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4553,11 +4565,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               </span>
             )}
           </span>
-          <button onClick={onLogout}
-            style={{ width: "100%", background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-            onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
-          >⏏ Log out</button>
+          <div style={{ display: "flex", gap: 8, width: "100%" }}>
+            <button onClick={onChangePassword}
+              title="Change your password"
+              style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
+            >🔑</button>
+            <button onClick={onLogout}
+              style={{ flex: 1, background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+            >⏏ Log out</button>
+          </div>
         </div>
       </div>
 
@@ -5472,6 +5490,71 @@ const DEFAULT_USERS = [
 ];
 const DEFAULT_RESET_PASSWORD = "1234";
 
+// Lets anyone change their own password. Asks for the current one first so a
+// borrowed, unlocked phone can't be used to take over someone's account.
+function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [show, setShow] = useState(false);
+
+  const submit = () => {
+    const me = users.find(u => u.username === currentUser);
+    if (!me) { setError("Account not found"); return; }
+    if (current !== me.password) { setError("Current password is incorrect"); return; }
+    if (!next) { setError("Please enter a new password"); return; }
+    if (next.length < 4) { setError("New password must be at least 4 characters"); return; }
+    if (next === current) { setError("New password must be different from the current one"); return; }
+    if (next !== confirm) { setError("The two new passwords do not match"); return; }
+    onSave(next);
+  };
+
+  const field = {
+    width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee",
+    borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none",
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 2 }}>🔑 Change Password</div>
+        <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>{currentUser}</div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
+          <input type={show ? "text" : "password"} value={current} placeholder="Current password"
+            onChange={e => { setCurrent(e.target.value); setError(""); }} style={field} />
+          <input type={show ? "text" : "password"} value={next} placeholder="New password"
+            onChange={e => { setNext(e.target.value); setError(""); }} style={field} />
+          <input type={show ? "text" : "password"} value={confirm} placeholder="Confirm new password"
+            onChange={e => { setConfirm(e.target.value); setError(""); }}
+            onKeyDown={e => { if (e.key === "Enter") submit(); }} style={field} />
+        </div>
+
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8890b8", margin: "8px 0 14px", cursor: "pointer" }}>
+          <input type="checkbox" checked={show} onChange={e => setShow(e.target.checked)} />
+          Show passwords
+        </label>
+
+        {error && (
+          <div style={{ background: "#2a0a0a", border: "1px solid #ff707055", color: "#ff7070", borderRadius: 8, padding: "8px 10px", fontSize: 12, marginBottom: 12 }}>{error}</div>
+        )}
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={submit}
+            style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+            ✓ Save
+          </button>
+          <button onClick={onClose}
+            style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoginScreen({ onLogin, users, hasSession }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -6290,6 +6373,16 @@ export default function App() {
   const [pendingStopTime, setPendingStopTime] = useState(""); // holds the stop time while waiting to resume
 
   // ─── Update users list locally + push to Supabase (handles add/edit/delete) ───
+  // Self-service password change, reachable from every signed-in screen.
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const handleChangeOwnPassword = (newPassword) => {
+    const next = users.map(u => u.username === currentUser ? { ...u, password: newPassword } : u);
+    setUsers(next);
+    pushUsers(next);
+    setShowChangePassword(false);
+    window.alert("Your password has been changed.");
+  };
+
   const handleUpdateUsers = useCallback((newUsers) => {
     // Last line of defence: usernames identify people all through the app
     // (roles, logs, "recorded by"), so duplicates would silently merge people.
@@ -6947,11 +7040,24 @@ export default function App() {
 
   if (screen === "login") return <LoginScreen onLogin={handleLogin} users={users} hasSession={groups.length > 0} />;
 
+  // Available on every signed-in screen, so it renders above whatever follows
+  const passwordModal = showChangePassword ? (
+    <ChangePasswordModal
+      currentUser={currentUser}
+      users={users}
+      onSave={handleChangeOwnPassword}
+      onClose={() => setShowChangePassword(false)}
+    />
+  ) : null;
+
   if (screen === "tournament") return (
+    <>
+    {passwordModal}
     <TournamentRoundScreen
       currentUser={currentUser}
       isAdmin={isAdmin}
       onLogout={handleLogout}
+      onChangePassword={() => setShowChangePassword(true)}
       liveTournamentId={currentTournament?.id || null}
       liveRoundId={currentRound?.id || null}
       hasLiveGroups={groups.length > 0}
@@ -6959,6 +7065,7 @@ export default function App() {
       onManageUsers={() => { setUsersReturnTo("tournament"); setScreen("users"); }}
       onRoundSelected={loadRound}
     />
+  </>
   );
 
   if (screen === "users" && isAdmin) return (
@@ -6972,6 +7079,8 @@ export default function App() {
   );
 
   if (screen === "setup") return (
+    <>
+    {passwordModal}
     <SetupScreen
       onStart={handleStart}
       currentUser={currentUser}
@@ -6983,6 +7092,7 @@ export default function App() {
       myPosition={positionOf(rolesMap, currentTournament?.id, currentUser)}
       onManageUsers={() => { setUsersReturnTo("setup"); setScreen("users"); }}
       onLogout={handleLogout}
+      onChangePassword={() => setShowChangePassword(true)}
       onClearSession={handleClearSession}
       hasLiveSession={groups.length > 0}
       onGoToDashboard={() => setScreen("dashboard")}
@@ -7004,9 +7114,12 @@ export default function App() {
       tournamentRunState={currentTournament?.run_state || "draft"}
       onToggleStarted={handleToggleStartedFromSetup}
     />
+  </>
   );
 
   if (screen === "dashboard") return (
+    <>
+    {passwordModal}
     <Dashboard
       groups={groups}
       groupData={groupData}
@@ -7018,6 +7131,7 @@ export default function App() {
       hostVenue={currentTournament?.host_venue || ""}
       roundLabel={currentRound?.label || ""}
       onlineUsers={onlineUsers}
+      onChangePassword={() => setShowChangePassword(true)}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
       currentUser={currentUser}
@@ -7034,6 +7148,7 @@ export default function App() {
       onNavigateSummary={() => setScreen("summary")}
       onUpdateGroupData={handleUpdateGroup}
     />
+  </>
   );
 
   if (screen === "summary") return (
