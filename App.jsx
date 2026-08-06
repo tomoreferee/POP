@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-t (beta · roles)";
+const APP_BUILD = "2026-08-02-u (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -2477,14 +2477,35 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             </div>
           </div>
           <div style={{ background: "#0a1a0a", border: "1px solid #2a4a2a", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1 }}>
-              TOTAL (Included Transit Time)
-              <div style={{ fontSize: 10, color: "#8890b8", letterSpacing: 0, marginTop: 2 }}>from H1 / from H10</div>
-            </div>
-            <div style={{ fontSize: 16, color: "#6effa0", fontWeight: 700, whiteSpace: "nowrap", textAlign: "right" }}>
-              {minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTime || 0))}
-              <div style={{ fontSize: 13, color: "#8899cc" }}>{minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTimeBack || 0))}</div>
-            </div>
+            {(() => {
+              const holes = parTimes.reduce((a, b) => a + b, 0);
+              const fromH1 = holes + (turnTime || 0);
+              const fromH10 = holes + (turnTimeBack || 0);
+              // Only split the total when the two transit walks actually differ
+              if (fromH1 === fromH10) {
+                return (
+                  <>
+                    <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
+                    <div style={{ fontSize: 16, color: "#6effa0", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(fromH1)}</div>
+                  </>
+                );
+              }
+              return (
+                <>
+                  <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 10, color: "#8890b8" }}>from H1</span>
+                      <span style={{ fontSize: 16, color: "#6effa0", fontWeight: 700 }}>{minToHM(fromH1)}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 10, color: "#8890b8" }}>from H10</span>
+                      <span style={{ fontSize: 16, color: "#6effa0", fontWeight: 700 }}>{minToHM(fromH10)}</span>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
         </div>
