@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-s (beta · roles)";
+const APP_BUILD = "2026-08-02-t (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -92,7 +92,7 @@ function getStartHoleMeta(startHole) {
   return START_HOLE_META[startHole] || { color: "#aaaaaa", label: `H${startHole} → ...`, shortLabel: `Start hole ${startHole}` };
 }
 
-function buildScheduleOrdered(startTimeStr, parTimes, startHole, turnTime = 1) {
+function buildScheduleOrdered(startTimeStr, parTimes, startHole, turnTime = 1, turnTimeBack = null) {
   const order = getHoleOrder(startHole);
   const [h, m] = startTimeStr.split(":").map(Number);
   let t = h * 60 + m;
@@ -102,7 +102,12 @@ function buildScheduleOrdered(startTimeStr, parTimes, startHole, turnTime = 1) {
     // walking time added once they reach the 10th hole of their round (H10 for a
     // H1 start, H1 for a H10 start) — this shifts that hole and every hole after
     // it, covering the walk between the front and back nine.
-    if (i === 9 && (startHole === 1 || startHole === 10)) t += (turnTime ?? 0);
+    // The walk at the turn differs by direction: a H1 start crosses H9→H10,
+    // a H10 start crosses H18→H1, and those two walks are rarely the same length.
+    if (i === 9) {
+      if (startHole === 1) t += (turnTime ?? 0);
+      else if (startHole === 10) t += (turnTimeBack ?? turnTime ?? 0);
+    }
     sch[hi] = t;
     t += parTimes[hi];
   });
@@ -1968,7 +1973,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, tournamentRunState, onToggleStarted }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, tournamentRunState, onToggleStarted }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1976,6 +1981,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   const [parTimes, setParTimes] = useState(() => savedParTimes ?? loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
   const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? loadSetup()?.turnTime ?? 1);
+  const [turnTimeBack, setTurnTimeBack] = useState(() => savedTurnTimeBack ?? loadSetup()?.turnTimeBack ?? 1);
 
   // Quick tournament switcher popup — a simple list, so the common "jump to my
   // other event" case never leaves the Setup page. Full management (create,
@@ -2045,7 +2051,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     if (p) setPars(p);
     if (pt) setParTimes(pt);
     if (tt !== null && tt !== undefined) setTurnTime(tt);
-  }, [savedPars, savedParTimes, savedTurnTime, livePars, liveParTimes, liveTurnTime]);
+  }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime]);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
@@ -2064,8 +2070,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
   // ─── Save to memoryStorage every time the data changes ───────────────────────
   useEffect(() => {
-    saveSetup({ groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime });
-  }, [groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime]);
+    saveSetup({ groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime, turnTimeBack });
+  }, [groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime, turnTimeBack]);
 
   const addGroup1 = () => {
     const n = nextNum.current++;
@@ -2161,7 +2167,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   // it never fires for an empty list (which would wipe the live session).
   const liveEditKey = JSON.stringify({
     g: allGroups.map(g => [g.id, g.name, g.startTime, g.startHole, g.section || ""]),
-    pars, parTimes, turnTime,
+    pars, parTimes, turnTime, turnTimeBack,
   });
   const skipFirstApply = useRef(true);
   useEffect(() => {
@@ -2170,7 +2176,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     // Don't fire on the initial mount / on the sync-down from the live session
     if (skipFirstApply.current) { skipFirstApply.current = false; return; }
     const t = setTimeout(() => {
-      onApplyLiveEdits(allGroups, pars, parTimes, playersPerGroup, turnTime);
+      onApplyLiveEdits(allGroups, pars, parTimes, playersPerGroup, turnTime, turnTimeBack);
     }, 700);
     return () => clearTimeout(t);
   }, [liveEditKey, hasLiveSession, isAdmin]);
@@ -2432,22 +2438,31 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
           <div style={{ borderTop: "1px dashed #2a2d4a", marginBottom: 12 }} />
 
-          {/* Transit time — walking time between the 9th and 10th hole of the round */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: 180 }}>
-              <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700 }}>🚶 Transit Time</div>
-              <div style={{ fontSize: 10, color: "#8890b8" }}>H9→H10 (starting hole 1) / H18→H1 (starting hole 10)</div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-              <button onClick={() => isAdmin && setTurnTime(t => Math.max(0, t - 1))} disabled={!isAdmin}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>−</button>
-              <input type="number" min="0" value={turnTime} disabled={!isAdmin}
-                onChange={e => setTurnTime(Math.max(0, Number(e.target.value) || 0))}
-                style={{ width: 54, background: "#0d0f1a", border: `1px solid ${turnTime > 0 ? "#ffd96666" : "#2a2d4a"}`, color: "#ffd966", fontFamily: "'Bebas Neue'", fontSize: 20, textAlign: "center", borderRadius: 6, padding: "3px 0", outline: "none" }} />
-              <button onClick={() => isAdmin && setTurnTime(t => t + 1)} disabled={!isAdmin}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>+</button>
-              <span style={{ fontSize: 12, color: "#8890b8", marginLeft: 2 }}>min</span>
-            </div>
+          {/* Transit time — the two turn walks are different distances on most
+              courses, so each direction gets its own value. */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700, marginBottom: 8 }}>🚶 Transit Time</div>
+            {[
+              { label: "H9 → H10", sub: "starting hole 1", val: turnTime, set: setTurnTime },
+              { label: "H18 → H1", sub: "starting hole 10", val: turnTimeBack, set: setTurnTimeBack },
+            ].map(row => (
+              <div key={row.label} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <div style={{ fontSize: 12, color: "#eee", fontWeight: 700 }}>{row.label}</div>
+                  <div style={{ fontSize: 10, color: "#8890b8" }}>{row.sub}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => isAdmin && row.set(t => Math.max(0, t - 1))} disabled={!isAdmin}
+                    style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>−</button>
+                  <input type="number" min="0" value={row.val} disabled={!isAdmin}
+                    onChange={e => row.set(Math.max(0, Number(e.target.value) || 0))}
+                    style={{ width: 54, background: "#0d0f1a", border: `1px solid ${row.val > 0 ? "#ffd96666" : "#2a2d4a"}`, color: "#ffd966", fontFamily: "'Bebas Neue'", fontSize: 20, textAlign: "center", borderRadius: 6, padding: "3px 0", outline: "none" }} />
+                  <button onClick={() => isAdmin && row.set(t => t + 1)} disabled={!isAdmin}
+                    style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>+</button>
+                  <span style={{ fontSize: 12, color: "#8890b8", marginLeft: 2 }}>min</span>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Summary: front/back nine on one row, grand total on its own row below */}
@@ -2462,8 +2477,14 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             </div>
           </div>
           <div style={{ background: "#0a1a0a", border: "1px solid #2a4a2a", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
-            <div style={{ fontSize: 16, color: "#6effa0", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTime || 0))}</div>
+            <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1 }}>
+              TOTAL (Included Transit Time)
+              <div style={{ fontSize: 10, color: "#8890b8", letterSpacing: 0, marginTop: 2 }}>from H1 / from H10</div>
+            </div>
+            <div style={{ fontSize: 16, color: "#6effa0", fontWeight: 700, whiteSpace: "nowrap", textAlign: "right" }}>
+              {minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTime || 0))}
+              <div style={{ fontSize: 13, color: "#8899cc" }}>{minToHM(parTimes.reduce((a, b) => a + b, 0) + (turnTimeBack || 0))}</div>
+            </div>
           </div>
 
         </div>
@@ -2690,7 +2711,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         <button
           onClick={() => {
             if (!isAdmin && allGroups.length === 0) return;
-            onStart(allGroups, pars, parTimes, playersPerGroup, turnTime);
+            onStart(allGroups, pars, parTimes, playersPerGroup, turnTime, turnTimeBack);
           }}
           disabled={!isAdmin && allGroups.length === 0}
           style={{
@@ -6109,9 +6130,10 @@ async function fetchAppState(roundId) {
     pendingStopTime: data.pending_stop_time ?? "",
     playersPerGroup: data.players_per_group ?? 3,
     turnTime: data.turn_time ?? 1,
+    turnTimeBack: data.turn_time_back ?? data.turn_time ?? 1,
   };
 }
-async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime }) {
+async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack }) {
   if (!roundId) return;
   try {
     await supabase.from("round_state").upsert({
@@ -6125,6 +6147,7 @@ async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, sc
       pending_stop_time: pendingStopTime,
       ...(playersPerGroup !== undefined ? { players_per_group: playersPerGroup } : {}),
       ...(turnTime !== undefined ? { turn_time: turnTime } : {}),
+      ...(turnTimeBack !== undefined ? { turn_time_back: turnTimeBack } : {}),
       updated_at: new Date().toISOString(),
     });
   } catch {}
@@ -6273,6 +6296,7 @@ async function fetchLegacyAppState() {
       pendingStopTime: data.pending_stop_time ?? "",
       playersPerGroup: 3,
       turnTime: 1,
+      turnTimeBack: 1,
     };
   } catch { return null; }
 }
@@ -6326,11 +6350,11 @@ async function deleteTournament(id) {
 }
 // Course setup (pars, par times, turn time) belongs to the TOURNAMENT, not a single
 // round — set it once on Round Q / Round 1 and every later round inherits it.
-async function saveTournamentCourseSetup(id, { pars, parTimes, turnTime }) {
+async function saveTournamentCourseSetup(id, { pars, parTimes, turnTime, turnTimeBack }) {
   if (!id) return;
   try {
     await supabase.from("tournaments").update({
-      pars, par_times: parTimes, turn_time: turnTime ?? 1,
+      pars, par_times: parTimes, turn_time: turnTime ?? 1, turn_time_back: turnTimeBack ?? turnTime ?? 1,
     }).eq("id", id);
   } catch {}
 }
@@ -6351,7 +6375,7 @@ async function fetchCourseSetupFromPreviousRounds(tournamentId, excludeRoundId) 
     for (const r of candidates) {
       const s = r.archived_app_state;
       if (s?.pars?.length === 18 && s?.parTimes?.length === 18) {
-        return { pars: s.pars, parTimes: s.parTimes, turnTime: s.turnTime ?? 1 };
+        return { pars: s.pars, parTimes: s.parTimes, turnTime: s.turnTime ?? 1, turnTimeBack: s.turnTimeBack ?? s.turnTime ?? 1 };
       }
     }
   } catch {}
@@ -6435,6 +6459,7 @@ export default function App() {
   const [parTimes, setParTimes] = useState([]);
   const [playersPerGroup, setPlayersPerGroup] = useState(3);
   const [turnTime, setTurnTime] = useState(1);
+  const [turnTimeBack, setTurnTimeBack] = useState(1);
   const [rolesMap, setRolesMap] = useState({});   // { tournamentId: { TD: "NP", ... } } — App-level copy
   const [usersReturnTo, setUsersReturnTo] = useState("setup"); // where Manage Users should go Back to
   const [onlineUsers, setOnlineUsers] = useState([]); // [{ username, isAdmin, since }] — live presence
@@ -6562,6 +6587,7 @@ export default function App() {
             setPendingStopTime(state.pendingStopTime);
             setPlayersPerGroup(state.playersPerGroup ?? 3);
             setTurnTime(state.turnTime ?? 1);
+            setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
           }
         }
       } catch {}
@@ -6877,7 +6903,7 @@ export default function App() {
     } catch {}
   };
 
-  const handleStart = (grps, ps, pt, pxg, tt) => {
+  const handleStart = (grps, ps, pt, pxg, tt, ttb) => {
     // Was a session already running before this "Start tracking" press?
     // If so, this is just the admin/user coming back through the Pace
     // Monitor (setup) page, not a brand-new round — so we must NOT wipe
@@ -6896,7 +6922,7 @@ export default function App() {
     const sch = {};
     const data = {};
     grps.forEach(g => {
-      sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1);
+      sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1, ttb ?? tt ?? 1);
       const existingData = groupData[g.id];
       const existedBefore = previousGroups.some(pg => pg.id === g.id);
       // Keep previously recorded times/logs for any group that already
@@ -6913,9 +6939,10 @@ export default function App() {
     setParTimes(pt);
     setPlayersPerGroup(pxg ?? 3);
     setTurnTime(tt ?? 1);
+    setTurnTimeBack(ttb ?? tt ?? 1);
     // Remember this course setup on the tournament so the next round starts with it
-    saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1 });
-    setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1 } : prev);
+    saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1 });
+    setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1, turn_time_back: ttb ?? tt ?? 1 } : prev);
     setBaseSchedules(sch);
     setSchedules(sch);
     setGroupData(data);
@@ -6940,25 +6967,26 @@ export default function App() {
   // Applies Setup edits to the running round without navigating away and without
   // ever touching recorded times — used for live editing of group names/start
   // times/pars/par times/transit time.
-  const handleApplyLiveEdits = (grps, ps, pt, pxg, tt) => {
+  const handleApplyLiveEdits = (grps, ps, pt, pxg, tt, ttb) => {
     if (!grps || grps.length === 0) return;      // never wipe a live session
     if (groups.length === 0) return;             // nothing live to update
     const sch = {};
-    grps.forEach(g => { sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1); });
+    grps.forEach(g => { sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1, ttb ?? tt ?? 1); });
 
     setGroups(grps);
     setPars(ps);
     setParTimes(pt);
     setPlayersPerGroup(pxg ?? 3);
     setTurnTime(tt ?? 1);
+    setTurnTimeBack(ttb ?? tt ?? 1);
     setBaseSchedules(sch);
     setSchedules(sch);
-    saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1 });
-    setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1 } : prev);
+    saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1 });
+    setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1, turn_time_back: ttb ?? tt ?? 1 } : prev);
     saveAppState({
       groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch,
       suspensions, isSuspended, pendingStopTime,
-      roundId: currentRound?.id, playersPerGroup: pxg ?? 3, turnTime: tt ?? 1,
+      roundId: currentRound?.id, playersPerGroup: pxg ?? 3, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1,
     });
     // Give brand-new groups a blank scorecard; existing groups keep their data untouched.
     const newOnes = grps.filter(g => !groupData[g.id]);
@@ -7181,6 +7209,7 @@ export default function App() {
       savedPars={currentTournament?.pars || null}
       savedParTimes={currentTournament?.par_times || null}
       savedTurnTime={currentTournament?.turn_time ?? null}
+      savedTurnTimeBack={currentTournament?.turn_time_back ?? currentTournament?.turn_time ?? null}
       livePars={groups.length > 0 ? pars : null}
       liveParTimes={groups.length > 0 ? parTimes : null}
       liveTurnTime={groups.length > 0 ? turnTime : null}
