@@ -2,10 +2,16 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f4f6fb" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>POP App</title>
     <style>
       html, body {
+        /* Light theme: the page itself must be light too, or the browser paints
+           a dark strip behind the app when it bounces at the top/bottom. */
+        background: #f4f6fb;
+        color: #1b1f30;
         overscroll-behavior-y: none;
         overscroll-behavior-x: none;
         height: 100%;

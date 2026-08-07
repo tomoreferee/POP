@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-h (beta)";
+const APP_BUILD = "2026-08-03-i (beta · light)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -42,8 +42,8 @@ const PAR_TIMES = PAR_TIMES_BY_PLAYERS[3];
 
 const DEFAULT_PARS = [4,4,3,4,5,4,3,4,4, 4,4,3,4,5,4,3,4,4];
 
-const thStyle = { padding: "8px 6px", color: "#8890b8", fontWeight: 600, textAlign: "center", borderBottom: "1px solid #2a2d4a", minWidth: 38 };
-const tdStyle = { padding: "8px 6px", textAlign: "center", borderBottom: "1px solid #1a1d2e" };
+const thStyle = { padding: "8px 6px", color: "#666d8a", fontWeight: 600, textAlign: "center", borderBottom: "1px solid #d5dbe9", minWidth: 38 };
+const tdStyle = { padding: "8px 6px", textAlign: "center", borderBottom: "1px solid #e9edf6" };
 
 function buildSchedule(startTimeStr, parTimes) {
   const [h, m] = startTimeStr.split(":").map(Number);
@@ -81,15 +81,15 @@ function resolveShotgunStartHoles(pars) {
 
 // Color and label for each start point (supports the 4 shotgun points + any other start points)
 const START_HOLE_META = {
-  1:  { color: "#6effa0", label: "🟢 H1 → 18",          shortLabel: "🟢 Start hole 1 → 18" },
-  5:  { color: "#ffd966", label: "🟡 H5 → 18 → 1 → 4",  shortLabel: "🟡 Start hole 5 → 18 → 1 → 4" },
-  6:  { color: "#ffd966", label: "🟡 H6 → 18 → 1 → 5",  shortLabel: "🟡 Start hole 6 → 18 → 1 → 5" },
-  10: { color: "#4e9af1", label: "🔵 H10 → 18 → 1 → 9", shortLabel: "🔵 Start hole 10 → 18 → 1 → 9" },
+  1:  { color: "#0e8a43", label: "🟢 H1 → 18",          shortLabel: "🟢 Start hole 1 → 18" },
+  5:  { color: "#a67c00", label: "🟡 H5 → 18 → 1 → 4",  shortLabel: "🟡 Start hole 5 → 18 → 1 → 4" },
+  6:  { color: "#a67c00", label: "🟡 H6 → 18 → 1 → 5",  shortLabel: "🟡 Start hole 6 → 18 → 1 → 5" },
+  10: { color: "#1565c0", label: "🔵 H10 → 18 → 1 → 9", shortLabel: "🔵 Start hole 10 → 18 → 1 → 9" },
   14: { color: "#c084fc", label: "🟣 H14 → 18 → 1 → 13",shortLabel: "🟣 Start hole 14 → 18 → 1 → 13" },
   15: { color: "#c084fc", label: "🟣 H15 → 18 → 1 → 14",shortLabel: "🟣 Start hole 15 → 18 → 1 → 14" },
 };
 function getStartHoleMeta(startHole) {
-  return START_HOLE_META[startHole] || { color: "#aaaaaa", label: `H${startHole} → ...`, shortLabel: `Start hole ${startHole}` };
+  return START_HOLE_META[startHole] || { color: "#666666", label: `H${startHole} → ...`, shortLabel: `Start hole ${startHole}` };
 }
 
 function buildScheduleOrdered(startTimeStr, parTimes, startHole, turnTime = 1, turnTimeBack = null) {
@@ -407,11 +407,11 @@ function fmtDiff(diff) {
   return diff > 0 ? `+${diff} min` : `${diff} min`;
 }
 function diffColor(diff) {
-  if (diff === null || diff === undefined) return "#666f99";
+  if (diff === null || diff === undefined) return "#7a8099";
   if (diff < -10) return "#1560a8";              // < -10   → dark blue
-  if (diff <= -1) return "#4e9af1";               // -9..-1  → light blue
-  if (diff === 0) return "#6effa0";               // 0       → green
-  if (diff <= 2) return "#ffd966";                // +1..+2  → yellow
+  if (diff <= -1) return "#1565c0";               // -9..-1  → light blue
+  if (diff === 0) return "#0e8a43";               // 0       → green
+  if (diff <= 2) return "#a67c00";                // +1..+2  → yellow
   if (diff <= 5) return "#ff8a80";                // +3..+5  → light red
   return "#b3261e";                                // 6+      → dark red
 }
@@ -419,9 +419,9 @@ function diffColor(diff) {
 // ─── WN / MN / TM log-type styling (reused everywhere logs are shown) ─────────────────
 // WN = Warning, MN = Monitor (watch), TM = Timing (time a specific player)
 const LOG_TYPE_META = {
-  WN: { color: "#ffd966", darkBg: "#2a1a00" },
-  MN: { color: "#4e9af1", darkBg: "#001a2a" },
-  TM: { color: "#ff6ec7", darkBg: "#2a0020" },
+  WN: { color: "#a67c00", darkBg: "#fff4d9" },
+  MN: { color: "#1565c0", darkBg: "#e3effa" },
+  TM: { color: "#ad1457", darkBg: "#fce7f1" },
 };
 function logColor(type) { return (LOG_TYPE_META[type] || LOG_TYPE_META.MN).color; }
 function logBg(type) { return (LOG_TYPE_META[type] || LOG_TYPE_META.MN).darkBg; }
@@ -484,13 +484,13 @@ function LogoutButton({ onLogout }) {
     <button
       onClick={onLogout}
       style={{
-        background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070",
+        background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828",
         borderRadius: 7, height: 30, padding: "0 12px", cursor: "pointer",
         fontFamily: "inherit", fontSize: 12, fontWeight: 700, letterSpacing: 0.5,
         whiteSpace: "nowrap", flexShrink: 0,
       }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-      onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+      onMouseEnter={e => e.currentTarget.style.borderColor = "#c62828aa"}
+      onMouseLeave={e => e.currentTarget.style.borderColor = "#c6282844"}
     >⏏ Log out</button>
   );
 }
@@ -543,10 +543,10 @@ function OnlineUsers({ users, currentUser }) {
         title="See who is online"
         style={{
           display: "flex", alignItems: "center", gap: 5,
-          background: "#0a2a10", border: "1px solid #6effa044", color: "#6effa0",
+          background: "#e4f6ea", border: "1px solid #0e8a4344", color: "#0e8a43",
           borderRadius: 99, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
         }}>
-        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#6effa0", boxShadow: "0 0 6px #6effa0", flexShrink: 0 }} />
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#0e8a43", boxShadow: "0 0 6px #0e8a43", flexShrink: 0 }} />
         {users.length} online
       </button>
       {open && (
@@ -554,17 +554,17 @@ function OnlineUsers({ users, currentUser }) {
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 900 }} />
           <div style={{
             position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 901,
-            background: "#141626", border: "1px solid #2a2d4a", borderRadius: 10,
+            background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 10,
             padding: 8, minWidth: 170, boxShadow: "0 12px 40px #000a",
           }}>
-            <div style={{ fontSize: 10, color: "#8890b8", letterSpacing: 1, padding: "2px 8px 6px" }}>ONLINE NOW</div>
+            <div style={{ fontSize: 10, color: "#666d8a", letterSpacing: 1, padding: "2px 8px 6px" }}>ONLINE NOW</div>
             {users.map(u => (
-              <div key={u.username} style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 8px", borderRadius: 6, background: u.username === currentUser ? "#1a4a8a33" : "transparent" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6effa0", flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: "#eee", fontWeight: u.username === currentUser ? 700 : 400 }}>
+              <div key={u.username} style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 8px", borderRadius: 6, background: u.username === currentUser ? "#1565c022" : "transparent" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0e8a43", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: "#1b1f30", fontWeight: u.username === currentUser ? 700 : 400 }}>
                   {u.username}{u.username === currentUser ? " (you)" : ""}
                 </span>
-                {u.isAdmin && <span style={{ fontSize: 9, color: "#ffd966", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 4px", marginLeft: "auto" }}>admin</span>}
+                {u.isAdmin && <span style={{ fontSize: 9, color: "#a67c00", border: "1px solid #a67c0044", borderRadius: 4, padding: "1px 4px", marginLeft: "auto" }}>admin</span>}
               </div>
             ))}
           </div>
@@ -576,10 +576,10 @@ function OnlineUsers({ users, currentUser }) {
 
 function StatusBadge({ status, small }) {
   const cfg = {
-    ok:   { bg: "#1a6b3a", text: "#6effa0", label: "✓ On time" },
-    warn: { bg: "#7a5a00", text: "#ffd966", label: "⚠ Less OOP" },
-    late: { bg: "#7a1a1a", text: "#ff7070", label: "✗ OOP" },
-    idle: { bg: "#2a2a3a", text: "#8888aa", label: "— Waiting" },
+    ok:   { bg: "#0e8a43", text: "#0e8a43", label: "✓ On time" },
+    warn: { bg: "#7a5a00", text: "#a67c00", label: "⚠ Less OOP" },
+    late: { bg: "#c62828", text: "#c62828", label: "✗ OOP" },
+    idle: { bg: "#e4e8f2", text: "#8888aa", label: "— Waiting" },
   };
   const c = cfg[status] || cfg.idle;
   return (
@@ -610,13 +610,13 @@ function HoleRow({ hole, par, scheduled, actual, diff, onClick }) {
     >
       <td style={{ padding: "6px 8px", textAlign: "center", color: "#8888aa", fontWeight: 600 }}>{hole}</td>
       <td style={{ padding: "6px 8px", textAlign: "center", color: "#ccc" }}>Par {par}</td>
-      <td style={{ padding: "6px 8px", textAlign: "center", color: "#8899cc" }}>{minToTime(scheduled)}</td>
-      <td style={{ padding: "6px 8px", textAlign: "center", color: hasData ? "#eee" : "#555" }}>
+      <td style={{ padding: "6px 8px", textAlign: "center", color: "#3f4763" }}>{minToTime(scheduled)}</td>
+      <td style={{ padding: "6px 8px", textAlign: "center", color: hasData ? "#1b1f30" : "#8a8a8a" }}>
         {hasData ? actual : "—"}
       </td>
       <td style={{ padding: "6px 8px", textAlign: "center" }}>
         {hasData ? (
-          <span style={{ color: diff >= 3 ? "#ff7070" : diff >= 1 ? "#ffd966" : "#6effa0", fontWeight: 700 }}>
+          <span style={{ color: diff >= 3 ? "#c62828" : diff >= 1 ? "#a67c00" : "#0e8a43", fontWeight: 700 }}>
             {diff > 0 ? `+${diff}` : diff} min
           </span>
         ) : "—"}
@@ -791,18 +791,18 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
   const numInput = (val, setVal, min=1, max=30) => (
     <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
       <button onClick={() => setVal(v => Math.max(min, v-1))}
-        style={{ width:36, height:36, background:"#1e2135", border:"1px solid #2a2d4a", color:"#aaa", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>−</button>
+        style={{ width:36, height:36, background:"#eef1f8", border:"1px solid #d5dbe9", color:"#555555", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>−</button>
       <input type="number" min={min} max={max} value={val}
         onChange={e => setVal(Math.min(max, Math.max(min, Number(e.target.value)||min)))}
-        style={{ width:46, background:"#1e2135", border:"1px solid #4e9af155", color:"#ffd966", borderRadius:7, padding:"4px 0", fontFamily:"inherit", fontSize:15, fontWeight:700, textAlign:"center" }} />
+        style={{ width:46, background:"#eef1f8", border:"1px solid #1565c055", color:"#a67c00", borderRadius:7, padding:"4px 0", fontFamily:"inherit", fontSize:15, fontWeight:700, textAlign:"center" }} />
       <button onClick={() => setVal(v => Math.min(max, v+1))}
-        style={{ width:36, height:36, background:"#1e2135", border:"1px solid #2a2d4a", color:"#aaa", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>+</button>
+        style={{ width:36, height:36, background:"#eef1f8", border:"1px solid #d5dbe9", color:"#555555", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>+</button>
     </div>
   );
 
-  const timeInput = (val, setVal, accentColor="#4e9af1") => (
+  const timeInput = (val, setVal, accentColor="#1565c0") => (
     <input type="time" value={val} onChange={e => setVal(e.target.value)}
-      style={{ background:"#1e2135", border:`1px solid ${accentColor}55`, color:accentColor, borderRadius:7, padding:"5px 10px", fontFamily:"inherit", fontSize:14, fontWeight:700 }} />
+      style={{ background:"#eef1f8", border:`1px solid ${accentColor}55`, color:accentColor, borderRadius:7, padding:"5px 10px", fontFamily:"inherit", fontSize:14, fontWeight:700 }} />
   );
 
   const sectionLabel = (text, color) => (
@@ -811,24 +811,24 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
 
   const row = (label, children) => (
     <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
-      <span style={{ fontSize:12, color:"#9aa2c7", minWidth:110, whiteSpace:"nowrap" }}>{label}</span>
+      <span style={{ fontSize:12, color:"#5c6480", minWidth:110, whiteSpace:"nowrap" }}>{label}</span>
       {children}
     </div>
   );
 
   return (
-    <div style={{ background:"#141626", border:"1px solid #4e9af133", borderRadius:12, padding:"18px 20px", marginBottom:16 }}>
+    <div style={{ background:"#ffffff", border:"1px solid #1565c033", borderRadius:12, padding:"18px 20px", marginBottom:16 }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-        <div style={{ fontSize:12, color:"#4e9af1", letterSpacing:2, fontWeight:700 }}>⚡ Auto Generate Groups</div>
+        <div style={{ fontSize:12, color:"#1565c0", letterSpacing:2, fontWeight:700 }}>⚡ Auto Generate Groups</div>
         {/* Mode toggle */}
         <div style={{ display:"flex", gap:6 }}>
           {[["h1only","🟢 H1 only"],["h10only","🔵 H10 only"],["both","🟢 H1 + 🔵 H10"],["shotgun","🔫 Shotgun 4 Holes"]].map(([m,label]) => (
             <button key={m} onClick={() => setMode(m)} style={{
               padding:"5px 12px", borderRadius:7, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
-              background: mode===m ? "#1a3a6a" : "#0d0f1a",
-              border: `1px solid ${mode===m ? "#4e9af1" : "#2a2d4a"}`,
-              color: mode===m ? "#4e9af1" : "#555",
+              background: mode===m ? "#1565c0" : "#f4f6fb",
+              border: `1px solid ${mode===m ? "#1565c0" : "#d5dbe9"}`,
+              color: mode===m ? "#1565c0" : "#8a8a8a",
               transition:"all 0.15s",
             }}>{label}</button>
           ))}
@@ -839,12 +839,12 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
       {mode === "h1only" && (
         <div>
           {/* Morning section */}
-          <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("🌅 Morning Section", "#6effa0")}
+          <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
+            {sectionLabel("🌅 Morning Section", "#0e8a43")}
             {row("Number of H1 groups", numInput(countH1Only, setCountH1Only))}
-            {row("First group start time", timeInput(startH1Only, setStartH1Only, "#6effa0"))}
+            {row("First group start time", timeInput(startH1Only, setStartH1Only, "#0e8a43"))}
             {row("Gap between groups",
-              <>{numInput(gapH1Only, setGapH1Only, 1, 60)}<span style={{fontSize:12,color:"#8890b8"}}>min</span></>
+              <>{numInput(gapH1Only, setGapH1Only, 1, 60)}<span style={{fontSize:12,color:"#666d8a"}}>min</span></>
             )}
           </div>
 
@@ -852,20 +852,20 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
           <button onClick={() => setUseAfternoonH1(v => !v)} style={{
             width:"100%", padding:"9px 0", borderRadius:8, cursor:"pointer", fontFamily:"inherit",
             fontSize:13, fontWeight:700, marginBottom: useAfternoonH1 ? 10 : 0,
-            background: useAfternoonH1 ? "#1a1a00" : "#0d0f1a",
-            border: `1px solid ${useAfternoonH1 ? "#ffd966" : "#2a2d4a"}`,
-            color: useAfternoonH1 ? "#ffd966" : "#555",
+            background: useAfternoonH1 ? "#fff4d9" : "#f4f6fb",
+            border: `1px solid ${useAfternoonH1 ? "#a67c00" : "#d5dbe9"}`,
+            color: useAfternoonH1 ? "#a67c00" : "#8a8a8a",
             transition:"all 0.15s",
           }}>
             {useAfternoonH1 ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
           </button>
 
           {useAfternoonH1 && (
-            <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", border:"1px solid #ffd96633" }}>
-              {sectionLabel("☀️ Afternoon Section", "#ffd966")}
+            <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", border:"1px solid #a67c0033" }}>
+              {sectionLabel("☀️ Afternoon Section", "#a67c00")}
               {row("Number of H1 groups", numInput(afternoonCountH1, setAfternoonCountH1))}
-              {row("First group start time", timeInput(afternoonStartH1, setAfternoonStartH1, "#ffd966"))}
-              <div style={{ fontSize:11, color:"#8890b8", marginTop:2 }}>Gap uses the same value as the morning section ({gapH1Only} min)</div>
+              {row("First group start time", timeInput(afternoonStartH1, setAfternoonStartH1, "#a67c00"))}
+              <div style={{ fontSize:11, color:"#666d8a", marginTop:2 }}>Gap uses the same value as the morning section ({gapH1Only} min)</div>
             </div>
           )}
         </div>
@@ -875,12 +875,12 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
       {mode === "h10only" && (
         <div>
           {/* Morning section */}
-          <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("🌅 Morning Section", "#4e9af1")}
+          <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
+            {sectionLabel("🌅 Morning Section", "#1565c0")}
             {row("Number of H10 groups", numInput(countH10Only, setCountH10Only))}
-            {row("First group start time", timeInput(startH10Only, setStartH10Only, "#4e9af1"))}
+            {row("First group start time", timeInput(startH10Only, setStartH10Only, "#1565c0"))}
             {row("Gap between groups",
-              <>{numInput(gapH10Only, setGapH10Only, 1, 60)}<span style={{fontSize:12,color:"#8890b8"}}>min</span></>
+              <>{numInput(gapH10Only, setGapH10Only, 1, 60)}<span style={{fontSize:12,color:"#666d8a"}}>min</span></>
             )}
           </div>
 
@@ -888,20 +888,20 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
           <button onClick={() => setUseAfternoonH10(v => !v)} style={{
             width:"100%", padding:"9px 0", borderRadius:8, cursor:"pointer", fontFamily:"inherit",
             fontSize:13, fontWeight:700, marginBottom: useAfternoonH10 ? 10 : 0,
-            background: useAfternoonH10 ? "#1a1a00" : "#0d0f1a",
-            border: `1px solid ${useAfternoonH10 ? "#ffd966" : "#2a2d4a"}`,
-            color: useAfternoonH10 ? "#ffd966" : "#555",
+            background: useAfternoonH10 ? "#fff4d9" : "#f4f6fb",
+            border: `1px solid ${useAfternoonH10 ? "#a67c00" : "#d5dbe9"}`,
+            color: useAfternoonH10 ? "#a67c00" : "#8a8a8a",
             transition:"all 0.15s",
           }}>
             {useAfternoonH10 ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
           </button>
 
           {useAfternoonH10 && (
-            <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", border:"1px solid #ffd96633" }}>
-              {sectionLabel("☀️ Afternoon Section", "#ffd966")}
+            <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", border:"1px solid #a67c0033" }}>
+              {sectionLabel("☀️ Afternoon Section", "#a67c00")}
               {row("Number of H10 groups", numInput(afternoonCountH10, setAfternoonCountH10))}
-              {row("First group start time", timeInput(afternoonStartH10, setAfternoonStartH10, "#ffd966"))}
-              <div style={{ fontSize:11, color:"#8890b8", marginTop:2 }}>Gap uses the same value as the morning section ({gapH10Only} min)</div>
+              {row("First group start time", timeInput(afternoonStartH10, setAfternoonStartH10, "#a67c00"))}
+              <div style={{ fontSize:11, color:"#666d8a", marginTop:2 }}>Gap uses the same value as the morning section ({gapH10Only} min)</div>
             </div>
           )}
         </div>
@@ -911,52 +911,52 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
       {mode === "both" && (
         <div>
           {/* Morning section */}
-          <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("🌅 Morning Section", "#6effa0")}
+          <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
+            {sectionLabel("🌅 Morning Section", "#0e8a43")}
             <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
               <div>
-                <div style={{ fontSize:11, color:"#6effa0", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
+                <div style={{ fontSize:11, color:"#0e8a43", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
                 {numInput(countH1, setCountH1)}
               </div>
               <div>
-                <div style={{ fontSize:11, color:"#4e9af1", marginBottom:6, fontWeight:700 }}>🔵 H10 group</div>
+                <div style={{ fontSize:11, color:"#1565c0", marginBottom:6, fontWeight:700 }}>🔵 H10 group</div>
                 {numInput(countH10, setCountH10)}
               </div>
             </div>
-            {row("First group start time", timeInput(startBoth, setStartBoth, "#4e9af1"))}
+            {row("First group start time", timeInput(startBoth, setStartBoth, "#1565c0"))}
             {row("Gap between groups",
-              <>{numInput(gapBoth, setGapBoth, 1, 60)}<span style={{fontSize:12,color:"#8890b8"}}>min</span></>
+              <>{numInput(gapBoth, setGapBoth, 1, 60)}<span style={{fontSize:12,color:"#666d8a"}}>min</span></>
             )}
-            <div style={{ fontSize:11, color:"#8890b8", marginTop:2 }}>H1 and H10 start at the same time, but the gap is counted separately within each hole</div>
+            <div style={{ fontSize:11, color:"#666d8a", marginTop:2 }}>H1 and H10 start at the same time, but the gap is counted separately within each hole</div>
           </div>
 
           {/* Afternoon toggle */}
           <button onClick={() => setUseAfternoonBoth(v => !v)} style={{
             width:"100%", padding:"9px 0", borderRadius:8, cursor:"pointer", fontFamily:"inherit",
             fontSize:13, fontWeight:700, marginBottom: useAfternoonBoth ? 10 : 0,
-            background: useAfternoonBoth ? "#1a1a00" : "#0d0f1a",
-            border: `1px solid ${useAfternoonBoth ? "#ffd966" : "#2a2d4a"}`,
-            color: useAfternoonBoth ? "#ffd966" : "#555",
+            background: useAfternoonBoth ? "#fff4d9" : "#f4f6fb",
+            border: `1px solid ${useAfternoonBoth ? "#a67c00" : "#d5dbe9"}`,
+            color: useAfternoonBoth ? "#a67c00" : "#8a8a8a",
             transition:"all 0.15s",
           }}>
             {useAfternoonBoth ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
           </button>
 
           {useAfternoonBoth && (
-            <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", border:"1px solid #ffd96633" }}>
-              {sectionLabel("☀️ Afternoon Section", "#ffd966")}
+            <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", border:"1px solid #a67c0033" }}>
+              {sectionLabel("☀️ Afternoon Section", "#a67c00")}
               <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
                 <div>
-                  <div style={{ fontSize:11, color:"#6effa0", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
+                  <div style={{ fontSize:11, color:"#0e8a43", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
                   {numInput(afternoonCountH1B, setAfternoonCountH1B, 0)}
                 </div>
                 <div>
-                  <div style={{ fontSize:11, color:"#4e9af1", marginBottom:6, fontWeight:700 }}>🔵 H10 group</div>
+                  <div style={{ fontSize:11, color:"#1565c0", marginBottom:6, fontWeight:700 }}>🔵 H10 group</div>
                   {numInput(afternoonCountH10B, setAfternoonCountH10B, 0)}
                 </div>
               </div>
-              {row("First group start time", timeInput(afternoonStartBoth, setAfternoonStartBoth, "#ffd966"))}
-              <div style={{ fontSize:11, color:"#8890b8", marginTop:2 }}>Gap uses the same value as the morning section ({gapBoth} min)</div>
+              {row("First group start time", timeInput(afternoonStartBoth, setAfternoonStartBoth, "#a67c00"))}
+              <div style={{ fontSize:11, color:"#666d8a", marginTop:2 }}>Gap uses the same value as the morning section ({gapBoth} min)</div>
             </div>
           )}
         </div>
@@ -982,15 +982,15 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
             <button key={String(opt.val)} onClick={() => setReplaceExisting(opt.val)}
               style={{
                 flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                background: replaceExisting === opt.val ? (opt.val ? "#2a1a0a" : "#1a4a8a") : "#0d0f1a",
-                border: `1px solid ${replaceExisting === opt.val ? (opt.val ? "#ff9966" : "#4e9af1") : "#2a2d4a"}`,
-                color: replaceExisting === opt.val ? (opt.val ? "#ff9966" : "#fff") : "#8890b8",
+                background: replaceExisting === opt.val ? (opt.val ? "#fdeaea" : "#1565c0") : "#f4f6fb",
+                border: `1px solid ${replaceExisting === opt.val ? (opt.val ? "#d84315" : "#1565c0") : "#d5dbe9"}`,
+                color: replaceExisting === opt.val ? (opt.val ? "#d84315" : "#ffffff") : "#666d8a",
               }}>{opt.label}</button>
           ))}
         </div>
       )}
       {mode !== "shotgun" && replaceExisting && (
-        <div style={{ fontSize: 11, color: "#ff9966", marginTop: 6, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: "#d84315", marginTop: 6, lineHeight: 1.5 }}>
           Rebuilds the whole schedule and renumbers from Group 1. You'll be asked
           whether to keep times already recorded.
         </div>
@@ -1002,9 +1002,9 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         disabled={totalNew === 0}
         style={{
           width:"100%", marginTop:14, padding:"11px 0",
-          background: generated ? "#0a2a10" : totalNew === 0 ? "#1a1d2e" : "linear-gradient(135deg, #1a3a6a, #4e9af1)",
-          border: `1px solid ${generated ? "#6effa088" : totalNew === 0 ? "#2a2d4a" : "#4e9af188"}`,
-          color: generated ? "#6effa0" : totalNew === 0 ? "#444" : "#fff",
+          background: generated ? "#e4f6ea" : totalNew === 0 ? "#e9edf6" : "linear-gradient(135deg, #1565c0, #1565c0)",
+          border: `1px solid ${generated ? "#0e8a4388" : totalNew === 0 ? "#d5dbe9" : "#1565c088"}`,
+          color: generated ? "#0e8a43" : totalNew === 0 ? "#444" : "#ffffff",
           borderRadius:9, cursor: totalNew===0 ? "not-allowed" : "pointer",
           fontFamily:"'Bebas Neue'", fontSize:18, letterSpacing:3,
           transition:"all 0.2s",
@@ -1102,21 +1102,21 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
   const numInput = (val, setVal, min=1, max=Infinity) => (
     <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
       <button onClick={() => setVal(v => Math.max(min, v-1))}
-        style={{ width:36, height:36, background:"#1e2135", border:"1px solid #2a2d4a", color:"#aaa", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>−</button>
+        style={{ width:36, height:36, background:"#eef1f8", border:"1px solid #d5dbe9", color:"#555555", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>−</button>
       <input type="number" min={min} {...(Number.isFinite(max) ? { max } : {})} value={val}
         onChange={e => setVal(Math.min(max, Math.max(min, Number(e.target.value)||min)))}
-        style={{ width:46, background:"#1e2135", border:"1px solid #f1734e55", color:"#ffd966", borderRadius:7, padding:"4px 0", fontFamily:"inherit", fontSize:15, fontWeight:700, textAlign:"center" }} />
+        style={{ width:46, background:"#eef1f8", border:"1px solid #f1734e55", color:"#a67c00", borderRadius:7, padding:"4px 0", fontFamily:"inherit", fontSize:15, fontWeight:700, textAlign:"center" }} />
       <button onClick={() => setVal(v => Math.min(max, v+1))}
-        style={{ width:36, height:36, background:"#1e2135", border:"1px solid #2a2d4a", color:"#aaa", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>+</button>
+        style={{ width:36, height:36, background:"#eef1f8", border:"1px solid #d5dbe9", color:"#555555", borderRadius:6, cursor:"pointer", fontSize:15, fontFamily:"inherit" }}>+</button>
     </div>
   );
 
   return (
-    <div style={{ background:"#1a1410", border:"1px solid #f1734e44", borderRadius:12, padding:"18px 20px", marginBottom:16 }}>
+    <div style={{ background:"#fff4d9", border:"1px solid #d8431544", borderRadius:12, padding:"18px 20px", marginBottom:16 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
         <div style={{ fontSize:12, color:"#f1734e", letterSpacing:2, fontWeight:700 }}>🔫 SHOTGUN START — Tee off together on 4 holes</div>
       </div>
-      <div style={{ fontSize:11, color:"#888", marginBottom:14 }}>Use only when necessary (rare) — all groups tee off at the same time from different start points</div>
+      <div style={{ fontSize:11, color:"#6e6e6e", marginBottom:14 }}>Use only when necessary (rare) — all groups tee off at the same time from different start points</div>
 
       {/* Show the computed start points */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:8, marginBottom:14 }}>
@@ -1124,39 +1124,39 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
           const meta = getStartHoleMeta(hole);
           return (
             <div key={hole} style={{
-              background:"#0d0f1a", border:`1px solid ${meta.color}55`,
+              background:"#f4f6fb", border:`1px solid ${meta.color}55`,
               borderRadius:8, padding:"8px 10px", textAlign:"center", minWidth:0,
             }}>
               <div style={{ fontSize:16, fontWeight:700, color: meta.color, fontFamily:"'Bebas Neue'", letterSpacing:2 }}>H{hole}</div>
-              <div style={{ fontSize:11, color:"#9aa2c7" }}>Par {pars?.[hole-1] ?? "?"}</div>
+              <div style={{ fontSize:11, color:"#5c6480" }}>Par {pars?.[hole-1] ?? "?"}</div>
             </div>
           );
         })}
       </div>
 
       {adjustedNote.length > 0 && (
-        <div style={{ background:"#1a1a00", border:"1px solid #ffd96644", borderRadius:8, padding:"8px 12px", marginBottom:14 }}>
+        <div style={{ background:"#fff4d9", border:"1px solid #a67c0044", borderRadius:8, padding:"8px 12px", marginBottom:14 }}>
           {adjustedNote.map((n, i) => (
-            <div key={i} style={{ fontSize:11, color:"#ffd966" }}>⚠ {n}</div>
+            <div key={i} style={{ fontSize:11, color:"#a67c00" }}>⚠ {n}</div>
           ))}
         </div>
       )}
 
-      <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
-        <div style={{ fontSize:11, color:"#6effa0", fontWeight:700, letterSpacing:1, marginBottom:10 }}>🌅 Morning Section</div>
+      <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
+        <div style={{ fontSize:11, color:"#0e8a43", fontWeight:700, letterSpacing:1, marginBottom:10 }}>🌅 Morning Section</div>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
-          <span style={{ fontSize:12, color:"#9aa2c7", minWidth:110 }}>Tee-off time</span>
+          <span style={{ fontSize:12, color:"#5c6480", minWidth:110 }}>Tee-off time</span>
           <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-            style={{ background:"#1e2135", border:"1px solid #f1734e55", color:"#f1734e", borderRadius:7, padding:"5px 10px", fontFamily:"inherit", fontSize:14, fontWeight:700 }} />
+            style={{ background:"#eef1f8", border:"1px solid #f1734e55", color:"#f1734e", borderRadius:7, padding:"5px 10px", fontFamily:"inherit", fontSize:14, fontWeight:700 }} />
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
-          <span style={{ fontSize:12, color:"#9aa2c7", minWidth:110 }}>Groups per hole</span>
+          <span style={{ fontSize:12, color:"#5c6480", minWidth:110 }}>Groups per hole</span>
           {numInput(groupsPerHole, setGroupsPerHole)}
         </div>
         {groupsPerHole > 1 && (
           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, color:"#9aa2c7", minWidth:110 }}>Gap between groups</span>
-            {numInput(gap, setGap, 1, 60)}<span style={{fontSize:12,color:"#8890b8"}}>min (within the same hole)</span>
+            <span style={{ fontSize:12, color:"#5c6480", minWidth:110 }}>Gap between groups</span>
+            {numInput(gap, setGap, 1, 60)}<span style={{fontSize:12,color:"#666d8a"}}>min (within the same hole)</span>
           </div>
         )}
       </div>
@@ -1165,27 +1165,27 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
       <button onClick={() => setUseAfternoon(v => !v)} style={{
         width:"100%", padding:"9px 0", borderRadius:8, cursor:"pointer", fontFamily:"inherit",
         fontSize:13, fontWeight:700, marginBottom: useAfternoon ? 10 : 14,
-        background: useAfternoon ? "#1a1a00" : "#0d0f1a",
-        border: `1px solid ${useAfternoon ? "#ffd966" : "#2a2d4a"}`,
-        color: useAfternoon ? "#ffd966" : "#555",
+        background: useAfternoon ? "#fff4d9" : "#f4f6fb",
+        border: `1px solid ${useAfternoon ? "#a67c00" : "#d5dbe9"}`,
+        color: useAfternoon ? "#a67c00" : "#8a8a8a",
         transition:"all 0.15s",
       }}>
         {useAfternoon ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
       </button>
 
       {useAfternoon && (
-        <div style={{ background:"#0d0f1a", borderRadius:10, padding:"14px 16px", marginBottom:14, border:"1px solid #ffd96633" }}>
-          <div style={{ fontSize:11, color:"#ffd966", fontWeight:700, letterSpacing:1, marginBottom:10 }}>☀️ Afternoon Section</div>
+        <div style={{ background:"#f4f6fb", borderRadius:10, padding:"14px 16px", marginBottom:14, border:"1px solid #a67c0033" }}>
+          <div style={{ fontSize:11, color:"#a67c00", fontWeight:700, letterSpacing:1, marginBottom:10 }}>☀️ Afternoon Section</div>
           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
-            <span style={{ fontSize:12, color:"#9aa2c7", minWidth:110 }}>Tee-off time</span>
+            <span style={{ fontSize:12, color:"#5c6480", minWidth:110 }}>Tee-off time</span>
             <input type="time" value={afternoonStartTime} onChange={e => setAfternoonStartTime(e.target.value)}
-              style={{ background:"#1e2135", border:"1px solid #ffd96655", color:"#ffd966", borderRadius:7, padding:"5px 10px", fontFamily:"inherit", fontSize:14, fontWeight:700 }} />
+              style={{ background:"#eef1f8", border:"1px solid #a67c0055", color:"#a67c00", borderRadius:7, padding:"5px 10px", fontFamily:"inherit", fontSize:14, fontWeight:700 }} />
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, color:"#9aa2c7", minWidth:110 }}>Groups per hole</span>
+            <span style={{ fontSize:12, color:"#5c6480", minWidth:110 }}>Groups per hole</span>
             {numInput(afternoonGroupsPerHole, setAfternoonGroupsPerHole)}
           </div>
-          <div style={{ fontSize:11, color:"#8890b8", marginTop:8 }}>Gap uses the same value as the morning section ({gap} min)</div>
+          <div style={{ fontSize:11, color:"#666d8a", marginTop:8 }}>Gap uses the same value as the morning section ({gap} min)</div>
         </div>
       )}
 
@@ -1194,9 +1194,9 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
         disabled={totalNew === 0}
         style={{
           width:"100%", padding:"11px 0",
-          background: generated ? "#0a2a10" : "linear-gradient(135deg, #6a1a1a, #f1734e)",
-          border: `1px solid ${generated ? "#6effa088" : "#f1734e88"}`,
-          color: generated ? "#6effa0" : "#fff",
+          background: generated ? "#e4f6ea" : "linear-gradient(135deg, #c62828, #f1734e)",
+          border: `1px solid ${generated ? "#0e8a4388" : "#d8431588"}`,
+          color: generated ? "#0e8a43" : "#ffffff",
           borderRadius:9, cursor:"pointer",
           fontFamily:"'Bebas Neue'", fontSize:18, letterSpacing:3,
           transition:"all 0.2s",
@@ -1211,8 +1211,8 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
 }
 
 // ─── Setup Screen ─────────────────────────────────────────────────────────────
-const GROUP_COLORS_H1  = ["#4e9af1","#f16b4e","#a06bf1","#f1c34e","#f14e9a","#4ef1a0","#f18c4e","#9af14e"];
-const GROUP_COLORS_H10 = ["#6effa0","#ff7070","#ffd966","#c084fc","#fb923c","#38bdf8","#f472b6","#a3e635"];
+const GROUP_COLORS_H1  = ["#1565c0","#f16b4e","#6d28d9","#a67c00","#ad1457","#0e8a43","#d84315","#4d9a00"];
+const GROUP_COLORS_H10 = ["#0e8a43","#c62828","#a67c00","#c084fc","#ea580c","#0284c7","#db2777","#65a30d"];
 
 function makeNextTime(groups) {
   if (!groups.length) return "06:40";
@@ -1433,16 +1433,16 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
   if (loading) {
     return (
-      <div style={{ background: "#0d0f1a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, color: "#8890b8", fontFamily: "'IBM Plex Mono', monospace" }}>
+      <div style={{ background: "#f4f6fb", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, color: "#666d8a", fontFamily: "'IBM Plex Mono', monospace" }}>
         <div>Loading tournaments…</div>
-        <div style={{ fontSize: 11, color: "#4a5170" }}>build {APP_BUILD}</div>
+        <div style={{ fontSize: 11, color: "#8a90a8" }}>build {APP_BUILD}</div>
         {loadError && (
-          <div style={{ background: "#2a0a0a", border: "1px solid #ff707055", color: "#ff9999", borderRadius: 8, padding: "10px 12px", fontSize: 11, maxWidth: 420, lineHeight: 1.6, wordBreak: "break-word" }}>
+          <div style={{ background: "#fdeaea", border: "1px solid #c6282855", color: "#b71c1c", borderRadius: 8, padding: "10px 12px", fontSize: 11, maxWidth: 420, lineHeight: 1.6, wordBreak: "break-word" }}>
             {loadError}
           </div>
         )}
         <button onClick={() => { setLoadError(null); setLoading(false); }}
-          style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+          style={{ background: "#e9edf6", border: "1px solid #1565c044", color: "#1565c0", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
           Continue anyway
         </button>
       </div>
@@ -1450,36 +1450,36 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   }
 
   return (
-    <div style={{ background: "#0d0f1a", minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
+    <div style={{ background: "#f4f6fb", minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#1b1f30" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
       {/* Grid so the right-hand column can never be pushed off screen */}
-      <div style={{ borderBottom: "1px solid #2a2d4a" }}>
+      <div style={{ borderBottom: "1px solid #d5dbe9" }}>
         {/* Title + who's signed in */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", gap: 10 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#4e9af1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#1565c0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
             </div>
-            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ fontSize: 11, color: "#666d8a", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0, width: 170 }}>
             {currentUser && (
               <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
-                <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
-                <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
+                <span style={{ fontSize: 12, color: "#666d8a" }}>👤</span>
+                <span style={{ fontSize: 13, color: "#3f4763", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
               </span>
             )}
             <div style={{ display: "flex", gap: 8, width: "100%" }}>
               <button onClick={onChangePassword}
                 title="Change your password"
-                style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
+                style={{ background: "#f4f6fb", border: "1px solid #1565c044", color: "#1565c0", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
               >🔑</button>
               <button onClick={onLogout}
-                style={{ flex: 1, background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-                onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+                style={{ flex: 1, background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#c62828aa"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "#c6282844"}
               >⏏ Log out</button>
             </div>
           </div>
@@ -1487,10 +1487,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
         {/* Admin actions sit in their own band below the divider */}
         {isAdmin && onManageUsers && (
-          <div style={{ borderTop: "1px solid #2a2d4a", padding: "12px 20px" }}>
+          <div style={{ borderTop: "1px solid #d5dbe9", padding: "12px 20px" }}>
             <button
               onClick={onManageUsers}
-              style={{ width: "100%", minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+              style={{ width: "100%", minHeight: 56, background: "#fff4d9", border: "1px solid #a67c0044", color: "#a67c00", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
             >🔑<br />Manage Users</button>
           </div>
         )}
@@ -1498,14 +1498,14 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px" }}>
         {/* Tournament picker */}
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: 20, marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700 }}>
+            <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 1, fontWeight: 700 }}>
               {isAdmin ? "Manage tournaments" : "Your competition"}
             </div>
             {isAdmin && (
               <button onClick={() => { resetForm(); setShowCreate(true); }}
-                style={{ marginLeft: "auto", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1" }}>
+                style={{ marginLeft: "auto", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#f4f6fb", border: "1px dashed #1565c066", color: "#1565c0" }}>
                 + New tournament
               </button>
             )}
@@ -1516,37 +1516,37 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               {tournaments.map(t => (
                 <div key={t.id} style={{
                   padding: "12px 14px", borderRadius: 8, fontFamily: "inherit",
-                  background: selectedTournamentId === t.id && !showCreate ? "#1a4a8a" : "#0d0f1a",
-                  border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#4e9af1" : "#2a2d4a"}`,
+                  background: selectedTournamentId === t.id && !showCreate ? "#1565c0" : "#f4f6fb",
+                  border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#1565c0" : "#d5dbe9"}`,
                 }}>
                   {/* Row 1 — name + venue, full width so long names don't wrap awkwardly */}
                   <button onClick={() => openRoundPicker(t)}
                     style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, rowGap: 5, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#1b1f30" }}>{t.name || "(untitled tournament)"}</span>
                       {t.year && (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#8890b8", background: "#0d0f1a", border: "1px solid #8890b844", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>{t.year}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#666d8a", background: "#f4f6fb", border: "1px solid #6b729033", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>{t.year}</span>
                       )}
                     </div>
-                    {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
+                    {t.host_venue && <div style={{ fontSize: 12, color: "#666d8a", marginTop: 2 }}>{t.host_venue}</div>}
                   </button>
 
                   {/* Row 2 — Select on the left, admin tools on the right, all same height */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
                     <button onClick={() => openRoundPicker(t)}
-                      style={{ background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff", borderRadius: 7, height: 32, padding: "0 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                      style={{ background: "#1565c0", border: "1px solid #1565c0", color: "#ffffff", borderRadius: 7, height: 32, padding: "0 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
                       Select
                     </button>
                     {isAdmin && (
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
                         <button onClick={() => handleStartEdit(t)}
                           title="Edit competition details"
-                          style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          style={{ background: "#f4f6fb", border: "1px solid #1565c044", color: "#1565c0", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           ✏️
                         </button>
                         <button onClick={() => handleDeleteTournament(t)}
                           title="Delete competition"
-                          style={{ background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                          style={{ background: "#f4f6fb", border: "1px solid #c6282844", color: "#c62828", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                           🗑
                         </button>
                       </div>
@@ -1563,69 +1563,69 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
       {/* Create / edit a tournament */}
       {showCreate && isAdmin && (
-        <div onClick={() => { setShowCreate(false); resetForm(); }} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1100, padding: 16, overflowY: "auto" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #000", marginTop: 24 }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 16 }}>
+        <div onClick={() => { setShowCreate(false); resetForm(); }} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1100, padding: 16, overflowY: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #0b1020", marginTop: 24 }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 16 }}>
               {editingTournamentId ? "✏️ Edit tournament" : "+ New tournament"}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Tournament name"
-                style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
+                style={{ background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
               <input value={newVenue} onChange={e => setNewVenue(e.target.value)} placeholder="Host venue"
-                style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
+                style={{ background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
 
               {/* Year drives the Year dropdown people search by */}
               <div>
-                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Year</label>
+                <label style={{ fontSize: 11, color: "#666d8a", letterSpacing: 1 }}>Year</label>
                 <input value={newYear} onChange={e => setNewYear(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
                   inputMode="numeric" placeholder={String(new Date().getFullYear())}
-                  style={{ width: "100%", marginTop: 6, background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
+                  style={{ width: "100%", marginTop: 6, background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
               </div>
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setNewFormat("stroke")}
                   style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                    background: newFormat === "stroke" ? "#1a4a8a" : "#0d0f1a", border: `1px solid ${newFormat === "stroke" ? "#4e9af1" : "#2a2d4a"}`, color: newFormat === "stroke" ? "#fff" : "#8890b8" }}>
+                    background: newFormat === "stroke" ? "#1565c0" : "#f4f6fb", border: `1px solid ${newFormat === "stroke" ? "#1565c0" : "#d5dbe9"}`, color: newFormat === "stroke" ? "#ffffff" : "#666d8a" }}>
                   Stroke Play
                 </button>
                 <button disabled title="Match Play — coming soon"
-                  style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#444" }}>
+                  style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#444" }}>
                   Match Play 🔒
                 </button>
               </div>
 
               <div>
-                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Rounds in this tournament</label>
+                <label style={{ fontSize: 11, color: "#666d8a", letterSpacing: 1 }}>Rounds in this tournament</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
                   <button onClick={() => setNewHasQualifying(q => !q)}
                     style={{
                       padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                      background: newHasQualifying ? "#7a5a00" : "#0d0f1a",
-                      border: `1px solid ${newHasQualifying ? "#ffd966" : "#2a2d4a"}`,
-                      color: newHasQualifying ? "#ffd966" : "#8890b8",
+                      background: newHasQualifying ? "#7a5a00" : "#f4f6fb",
+                      border: `1px solid ${newHasQualifying ? "#a67c00" : "#d5dbe9"}`,
+                      color: newHasQualifying ? "#a67c00" : "#666d8a",
                     }}>Q{newHasQualifying ? " ✓" : ""}</button>
-                  <span style={{ fontSize: 12, color: "#666" }}>+</span>
+                  <span style={{ fontSize: 12, color: "#7a7a7a" }}>+</span>
                   {[1, 2, 3, 4].map(n => (
                     <button key={n} onClick={() => setNewNumRounds(n)}
                       style={{
                         width: 34, height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15,
-                        background: newNumRounds === n ? "#1a4a8a" : "#0d0f1a",
-                        border: `1px solid ${newNumRounds === n ? "#4e9af1" : "#2a2d4a"}`,
-                        color: newNumRounds === n ? "#fff" : "#8890b8",
+                        background: newNumRounds === n ? "#1565c0" : "#f4f6fb",
+                        border: `1px solid ${newNumRounds === n ? "#1565c0" : "#d5dbe9"}`,
+                        color: newNumRounds === n ? "#ffffff" : "#666d8a",
                       }}>{n}</button>
                   ))}
-                  <span style={{ fontSize: 11, color: "#8890b8" }}>rounds</span>
+                  <span style={{ fontSize: 11, color: "#666d8a" }}>rounds</span>
                 </div>
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <button onClick={handleSaveTournament} disabled={!newName.trim() || busy}
-                  style={{ flex: 1, padding: "11px 0", borderRadius: 8, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a2a", border: "1px solid #6effa066", color: "#6effa0" }}>
+                  style={{ flex: 1, padding: "11px 0", borderRadius: 8, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#dff3e6", border: "1px solid #0e8a4366", color: "#0e8a43" }}>
                   {editingTournamentId ? "✓ Save changes" : "✓ Create tournament"}
                 </button>
                 <button onClick={() => { setShowCreate(false); resetForm(); }}
-                  style={{ padding: "11px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7" }}>
+                  style={{ padding: "11px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480" }}>
                   Cancel
                 </button>
               </div>
@@ -1636,10 +1636,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
       {/* Round picker — opened by the Select button on a tournament row */}
       {roundPickerFor && (
-        <div onClick={() => setRoundPickerFor(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #000" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 2 }}>Select round</div>
-            <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>
+        <div onClick={() => setRoundPickerFor(null)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #0b1020" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 2 }}>Select round</div>
+            <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 16 }}>
               {roundPickerFor.name}{roundPickerFor.host_venue ? ` · ${roundPickerFor.host_venue}` : ""}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
@@ -1653,14 +1653,14 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                   <button key={label} onClick={() => handlePickRound(label)} disabled={busy}
                     style={{
                       padding: "16px 0", borderRadius: 10, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
-                      background: isLive ? "#1a4a2a" : hasData ? "#141a2a" : "#0d0f1a",
-                      border: `1px solid ${isLive ? "#6effa0" : hasData ? "#4e9af155" : "#2a2d4a"}`,
+                      background: isLive ? "#dff3e6" : hasData ? "#eef1f8" : "#f4f6fb",
+                      border: `1px solid ${isLive ? "#0e8a43" : hasData ? "#1565c055" : "#d5dbe9"}`,
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}>
-                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 26, letterSpacing: 2, color: isLive ? "#6effa0" : "#eee" }}>
+                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 26, letterSpacing: 2, color: isLive ? "#0e8a43" : "#1b1f30" }}>
                       {label === "Q" ? "Q" : `R${label}`}
                     </div>
-                    <div style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#6effa0" : hasData ? "#4e9af1" : "#8890b8" }}>
+                    <div style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#0e8a43" : hasData ? "#1565c0" : "#666d8a" }}>
                       {isLive ? "● LIVE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
                     </div>
                   </button>
@@ -1668,7 +1668,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               })}
             </div>
             <button onClick={() => setRoundPickerFor(null)}
-              style={{ width: "100%", background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+              style={{ width: "100%", background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
               Cancel
             </button>
           </div>
@@ -1679,19 +1679,19 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       {viewingRound && (() => {
         const snapshot = viewingRound.archived_app_state || {};
         return (
-          <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#0d0f1a", overflowY: "auto" }}>
-            <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#141626ee", backdropFilter: "blur(6px)", borderBottom: "1px solid #2a2d4a", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 2, color: "#eee" }}>
-                {viewingRound.label === "Q" ? "Round Q" : `Round ${viewingRound.label}`} <span style={{ fontSize: 12, color: "#666", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED{viewingRound.finished_at ? ` ${new Date(viewingRound.finished_at).toLocaleDateString("th-TH")}` : ""}</span>
+          <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#f4f6fb", overflowY: "auto" }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#ffffffee", backdropFilter: "blur(6px)", borderBottom: "1px solid #d5dbe9", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 2, color: "#1b1f30" }}>
+                {viewingRound.label === "Q" ? "Round Q" : `Round ${viewingRound.label}`} <span style={{ fontSize: 12, color: "#7a7a7a", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED{viewingRound.finished_at ? ` ${new Date(viewingRound.finished_at).toLocaleDateString("th-TH")}` : ""}</span>
               </span>
               {isAdmin && (
                 <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
                   <button onClick={handleReopenRound} disabled={busy}
-                    style={{ padding: "6px 12px", borderRadius: 7, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#1a4a8a", border: "1px solid #4e9af1", color: "#fff" }}>
+                    style={{ padding: "6px 12px", borderRadius: 7, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#1565c0", border: "1px solid #1565c0", color: "#ffffff" }}>
                     ↩️ Reopen
                   </button>
                   <button onClick={handleDeleteRound} disabled={busy}
-                    style={{ padding: "6px 12px", borderRadius: 7, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070" }}>
+                    style={{ padding: "6px 12px", borderRadius: 7, cursor: busy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#fdeaea", border: "1px solid #c62828", color: "#c62828" }}>
                     🗑 Delete
                   </button>
                 </div>
@@ -1928,20 +1928,20 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0d0f1a", color: "#eee", fontFamily: "'IBM Plex Mono', monospace" }}>
+    <div style={{ minHeight: "100vh", background: "#f4f6fb", color: "#1b1f30", fontFamily: "'IBM Plex Mono', monospace" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
-      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "14px 20px" }}>
+      <div style={{ background: "#ffffff", borderBottom: "1px solid #d5dbe9", padding: "14px 20px" }}>
         {/* One 2-column grid for the whole header, so the right-hand column —
             user, Log out and Clear Data — shares a single edge all the way down. */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
           {/* Left column: title */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 28, fontFamily: "'Bebas Neue'", letterSpacing: 4, color: "#4e9af1" }}>⛳ SETUP</div>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
+              <div style={{ fontSize: 28, fontFamily: "'Bebas Neue'", letterSpacing: 4, color: "#1565c0" }}>⛳ SETUP</div>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
             </div>
-            <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ fontSize: 11, color: "#666d8a", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
           </div>
 
           {/* Right column: user sits above Log out. Capped width so rotating to
@@ -1949,13 +1949,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, maxWidth: 260, justifySelf: "end", width: "100%" }}>
             {currentUser && (
               <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
-                <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
-                <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#ffd966" : "#4e9af1", background: isTrueAdmin ? "#2a1a0066" : "#001a2a66", border: `1px solid ${isTrueAdmin ? "#ffd96644" : "#4e9af144"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
+                <span style={{ fontSize: 12, color: "#666d8a" }}>👤</span>
+                <span style={{ fontSize: 13, color: "#3f4763", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#a67c00" : "#1565c0", background: isTrueAdmin ? "#fff4d9" : "#e3effa", border: `1px solid ${isTrueAdmin ? "#a67c0044" : "#1565c044"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
                   {isTrueAdmin ? "ADMIN" : "USER"}
                 </span>
                 {myPosition && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#0e8a43", background: "#e4f6ea", border: "1px solid #0e8a4355", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
                     {myPosition}
                   </span>
                 )}
@@ -1964,12 +1964,12 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             <div style={{ display: "flex", gap: 8, width: "100%" }}>
               <button onClick={onChangePassword}
                 title="Change your password"
-                style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
+                style={{ background: "#f4f6fb", border: "1px solid #1565c044", color: "#1565c0", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
               >🔑</button>
               <button onClick={onLogout}
-                style={{ flex: 1, background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-                onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+                style={{ flex: 1, background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#c62828aa"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "#c6282844"}
               >⏏ Log out</button>
             </div>
           </div>
@@ -1980,25 +1980,25 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           Account management and wiping the session are system-admin only —
           TD/CR may edit this tournament's setup, not the whole system. */}
       {isTrueAdmin && (
-        <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ background: "#ffffff", borderBottom: "1px solid #d5dbe9", padding: "12px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <button onClick={onManageUsers}
-            style={{ minHeight: 56, background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+            style={{ minHeight: 56, background: "#fff4d9", border: "1px solid #a67c0044", color: "#a67c00", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
           >🔑<br />Manage Users</button>
 
           <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
-            style={{ minHeight: 56, background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
+            style={{ minHeight: 56, background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
           >🗑<br />Clear Data in Dashboard</button>
         </div>
       )}
 
       {/* Legend */}
       <div style={{ padding: "16px 24px 0" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#9aa2c7" }}>
-          <span style={{ color: "#4e9af1", fontWeight: 700, letterSpacing: 1 }}>Status criteria:</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#5c6480" }}>
+          <span style={{ color: "#1565c0", fontWeight: 700, letterSpacing: 1 }}>Status criteria:</span>
           <span style={{ color: "#1560a8" }}>● In Position (Fast) (&lt; -10 min)</span>
-          <span style={{ color: "#4e9af1" }}>● In Position (-9 to -1 min)</span>
-          <span style={{ color: "#6effa0" }}>● On Time (0 min)</span>
-          <span style={{ color: "#ffd966" }}>● Less Out of Position (+1 to +2 min)</span>
+          <span style={{ color: "#1565c0" }}>● In Position (-9 to -1 min)</span>
+          <span style={{ color: "#0e8a43" }}>● On Time (0 min)</span>
+          <span style={{ color: "#a67c00" }}>● Less Out of Position (+1 to +2 min)</span>
           <span style={{ color: "#ff8a80" }}>● Out of Position (+3 to +5 min)</span>
           <span style={{ color: "#b3261e" }}>● Out of Position (Slow) (+6 min and above)</span>
         </div>
@@ -2009,34 +2009,34 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             Two clearly separate actions: change the whole tournament (goes back
             to the picker screen), or just change the round within it (popup). */}
         {(tournamentName || roundLabel) && (
-          <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
             {/* Tournament block */}
             <div style={{ padding: "14px 20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1b1f30" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
               </div>
-              {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
+              {hostVenue && <div style={{ fontSize: 12, color: "#666d8a", marginTop: 2 }}>{hostVenue}</div>}
 
               {isAdmin && onSwitchTournament && (
                 <button onClick={openTournamentPicker}
-                  style={{ marginTop: 8, width: "100%", fontSize: 12, color: "#4e9af1", background: "#0d0f1a", border: "1px solid #4e9af166", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                  style={{ marginTop: 8, width: "100%", fontSize: 12, color: "#1565c0", background: "#f4f6fb", border: "1px solid #1565c066", borderRadius: 8, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                   ⇄ Switch Tournament
                 </button>
               )}
             </div>
 
             {/* Divider between the two levels */}
-            {roundLabel && <div style={{ borderTop: "1px solid #2a2d4a" }} />}
+            {roundLabel && <div style={{ borderTop: "1px solid #d5dbe9" }} />}
 
             {/* Round block — left-aligned with the tournament above it */}
             {roundLabel && (
               <div style={{ padding: "12px 20px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ flex: 1, minWidth: 0, justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#6effa0", background: "#1a4a2a66", border: "1px solid #6effa044", borderRadius: 8, height: 34, padding: "0 12px", display: "inline-flex", alignItems: "center" }}>
+                <span style={{ flex: 1, minWidth: 0, justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#0e8a43", background: "#dff3e6", border: "1px solid #0e8a4344", borderRadius: 8, height: 34, padding: "0 12px", display: "inline-flex", alignItems: "center" }}>
                   {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}
                 </span>
                 {isAdmin && tournamentId && (
                   <button onClick={openRoundPicker}
-                    style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#6effa0", background: "#0d0f1a", border: "1px solid #6effa066", borderRadius: 8, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                    style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#0e8a43", background: "#f4f6fb", border: "1px solid #0e8a4366", borderRadius: 8, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                     ⇄ Switch Round
                   </button>
                 )}
@@ -2046,8 +2046,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         )}
 
         {/* ─── Players per group ─────────────────────────────────────────────── */}
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
-          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>👥 PLAYERS PER GROUP</div>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
+          <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>👥 PLAYERS PER GROUP</div>
           {isAdmin ? (
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
               {[2, 3, 4].map(n => (
@@ -2061,41 +2061,41 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 }}
                   style={{
                     width: 36, height: 36, borderRadius: 8, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, flexShrink: 0,
-                    background: playersPerGroup === n ? "#1a4a8a" : "#0d0f1a",
-                    border: `1px solid ${playersPerGroup === n ? "#4e9af1" : "#2a2d4a"}`,
-                    color: playersPerGroup === n ? "#fff" : "#8890b8",
+                    background: playersPerGroup === n ? "#1565c0" : "#f4f6fb",
+                    border: `1px solid ${playersPerGroup === n ? "#1565c0" : "#d5dbe9"}`,
+                    color: playersPerGroup === n ? "#ffffff" : "#666d8a",
                   }}>{n}</button>
               ))}
             </div>
           ) : (
-            <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>🔒 {playersPerGroup} players</span>
+            <span style={{ fontSize: 11, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0044", borderRadius: 5, padding: "3px 10px", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>🔒 {playersPerGroup} players</span>
           )}
         </div>
 
         {/* Par Setup */}
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, gap: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12, color: "#4e9af1", letterSpacing: 1, fontWeight: 700 }}>📋 HOLE SETUP — PAR & TIME</div>
+            <div style={{ fontSize: 12, color: "#1565c0", letterSpacing: 1, fontWeight: 700 }}>📋 HOLE SETUP — PAR & TIME</div>
             {isAdmin && (
               <button
                 onClick={() => setParTimes(pars.map(p => parTimeTable(playersPerGroup)[p]))}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#888", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}
+                style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#6e6e6e", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}
               >↺ reset ({playersPerGroup}-ball)</button>
             )}
             {!isAdmin && (
-              <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 5, padding: "3px 10px", letterSpacing: 1 }}>🔒 View only</span>
+              <span style={{ fontSize: 11, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0044", borderRadius: 5, padding: "3px 10px", letterSpacing: 1 }}>🔒 View only</span>
             )}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 6 }}>
             <div />
             {Array.from({ length: 9 }, (_, i) => (
-              <div key={i} style={{ fontSize: 11, color: "#8890b8", textAlign: "center" }}>H{i + 1}</div>
+              <div key={i} style={{ fontSize: 11, color: "#666d8a", textAlign: "center" }}>H{i + 1}</div>
             ))}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 6, alignItems: "center" }}>
-            <div style={{ fontSize: 12, color: "#9aa2c7", textAlign: "right", paddingRight: 8 }}>Par</div>
+            <div style={{ fontSize: 12, color: "#5c6480", textAlign: "right", paddingRight: 8 }}>Par</div>
             {pars.slice(0, 9).map((p, i) => (
               <select key={i} value={p}
                 disabled={!isAdmin}
@@ -2104,7 +2104,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                   setPars(nxt);
                   setParTimes(pt => { const n = [...pt]; const tbl = parTimeTable(playersPerGroup); if (n[i] === tbl[p]) n[i] = tbl[Number(e.target.value)]; return n; });
                 }}
-                style={{ width: "100%", background: isAdmin ? "#1e2135" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a2d4a" : "#1a1d2e"}`, color: isAdmin ? "#eee" : "#666", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
+                style={{ width: "100%", background: isAdmin ? "#eef1f8" : "#f4f6fb", border: `1px solid ${isAdmin ? "#d5dbe9" : "#e9edf6"}`, color: isAdmin ? "#1b1f30" : "#7a7a7a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 <option value={3}>3</option><option value={4}>4</option><option value={5}>5</option>
               </select>
@@ -2112,29 +2112,29 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 12, alignItems: "center" }}>
-            <div style={{ fontSize: 12, color: "#9aa2c7", textAlign: "right", paddingRight: 8 }}>min</div>
+            <div style={{ fontSize: 12, color: "#5c6480", textAlign: "right", paddingRight: 8 }}>min</div>
             {parTimes.slice(0, 9).map((t, i) => (
               <select key={i} value={t}
                 disabled={!isAdmin}
                 onChange={e => { if (!isAdmin) return; const n = [...parTimes]; n[i] = Number(e.target.value); setParTimes(n); }}
-                style={{ width: "100%", background: isAdmin ? "#1a2a1a" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a4a2a" : "#1a2a1a"}`, color: isAdmin ? "#6effa0" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
+                style={{ width: "100%", background: isAdmin ? "#e4f6ea" : "#f4f6fb", border: `1px solid ${isAdmin ? "#2a4a2a" : "#e4f6ea"}`, color: isAdmin ? "#0e8a43" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 {PAR_TIME_CHOICES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             ))}
           </div>
 
-          <div style={{ borderTop: "1px dashed #2a2d4a", marginBottom: 12 }} />
+          <div style={{ borderTop: "1px dashed #d5dbe9", marginBottom: 12 }} />
 
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 6 }}>
             <div />
             {Array.from({ length: 9 }, (_, i) => (
-              <div key={i} style={{ fontSize: 11, color: "#8890b8", textAlign: "center" }}>H{i + 10}</div>
+              <div key={i} style={{ fontSize: 11, color: "#666d8a", textAlign: "center" }}>H{i + 10}</div>
             ))}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 6, alignItems: "center" }}>
-            <div style={{ fontSize: 12, color: "#9aa2c7", textAlign: "right", paddingRight: 8 }}>Par</div>
+            <div style={{ fontSize: 12, color: "#5c6480", textAlign: "right", paddingRight: 8 }}>Par</div>
             {pars.slice(9).map((p, i) => (
               <select key={i} value={p}
                 disabled={!isAdmin}
@@ -2143,7 +2143,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                   setPars(nxt);
                   setParTimes(pt => { const n = [...pt]; const tbl = parTimeTable(playersPerGroup); if (n[i+9] === tbl[p]) n[i+9] = tbl[Number(e.target.value)]; return n; });
                 }}
-                style={{ width: "100%", background: isAdmin ? "#1e2135" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a2d4a" : "#1a1d2e"}`, color: isAdmin ? "#eee" : "#666", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
+                style={{ width: "100%", background: isAdmin ? "#eef1f8" : "#f4f6fb", border: `1px solid ${isAdmin ? "#d5dbe9" : "#e9edf6"}`, color: isAdmin ? "#1b1f30" : "#7a7a7a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 <option value={3}>3</option><option value={4}>4</option><option value={5}>5</option>
               </select>
@@ -2151,42 +2151,42 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 16, alignItems: "center" }}>
-            <div style={{ fontSize: 12, color: "#9aa2c7", textAlign: "right", paddingRight: 8 }}>min</div>
+            <div style={{ fontSize: 12, color: "#5c6480", textAlign: "right", paddingRight: 8 }}>min</div>
             {parTimes.slice(9).map((t, i) => (
               <select key={i} value={t}
                 disabled={!isAdmin}
                 onChange={e => { if (!isAdmin) return; const n = [...parTimes]; n[i + 9] = Number(e.target.value); setParTimes(n); }}
-                style={{ width: "100%", background: isAdmin ? "#1a2a1a" : "#0d0f1a", border: `1px solid ${isAdmin ? "#2a4a2a" : "#1a2a1a"}`, color: isAdmin ? "#6effa0" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
+                style={{ width: "100%", background: isAdmin ? "#e4f6ea" : "#f4f6fb", border: `1px solid ${isAdmin ? "#2a4a2a" : "#e4f6ea"}`, color: isAdmin ? "#0e8a43" : "#3a5a3a", borderRadius: 6, padding: "4px 0", textAlign: "center", textAlignLast: "center", fontSize: 14, fontFamily: "inherit", cursor: isAdmin ? "pointer" : "default", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" }}
               >
                 {PAR_TIME_CHOICES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             ))}
           </div>
 
-          <div style={{ borderTop: "1px dashed #2a2d4a", marginBottom: 12 }} />
+          <div style={{ borderTop: "1px dashed #d5dbe9", marginBottom: 12 }} />
 
           {/* Transit time — the two turn walks are different distances on most
               courses, so each direction gets its own value. */}
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700, marginBottom: 8 }}>🚶 Transit Time</div>
+            <div style={{ fontSize: 12, color: "#a67c00", fontWeight: 700, marginBottom: 8 }}>🚶 Transit Time</div>
             {[
               { label: "H9 → H10", sub: "starting hole 1", val: turnTime, set: setTurnTime },
               { label: "H18 → H1", sub: "starting hole 10", val: turnTimeBack, set: setTurnTimeBack },
             ].map(row => (
               <div key={row.label} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 150 }}>
-                  <div style={{ fontSize: 12, color: "#eee", fontWeight: 700 }}>{row.label}</div>
-                  <div style={{ fontSize: 10, color: "#8890b8" }}>{row.sub}</div>
+                  <div style={{ fontSize: 12, color: "#1b1f30", fontWeight: 700 }}>{row.label}</div>
+                  <div style={{ fontSize: 10, color: "#666d8a" }}>{row.sub}</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                   <button onClick={() => isAdmin && row.set(t => Math.max(0, t - 1))} disabled={!isAdmin}
-                    style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>−</button>
+                    style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#555555", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>−</button>
                   <input type="number" min="0" value={row.val} disabled={!isAdmin}
                     onChange={e => row.set(Math.max(0, Number(e.target.value) || 0))}
-                    style={{ width: 54, background: "#0d0f1a", border: `1px solid ${row.val > 0 ? "#ffd96666" : "#2a2d4a"}`, color: "#ffd966", fontFamily: "'Bebas Neue'", fontSize: 20, textAlign: "center", borderRadius: 6, padding: "3px 0", outline: "none" }} />
+                    style={{ width: 54, background: "#f4f6fb", border: `1px solid ${row.val > 0 ? "#a67c0066" : "#d5dbe9"}`, color: "#a67c00", fontFamily: "'Bebas Neue'", fontSize: 20, textAlign: "center", borderRadius: 6, padding: "3px 0", outline: "none" }} />
                   <button onClick={() => isAdmin && row.set(t => t + 1)} disabled={!isAdmin}
-                    style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>+</button>
-                  <span style={{ fontSize: 12, color: "#8890b8", marginLeft: 2 }}>min</span>
+                    style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#555555", borderRadius: 6, width: 34, height: 34, cursor: isAdmin ? "pointer" : "default", fontSize: 16, fontFamily: "inherit" }}>+</button>
+                  <span style={{ fontSize: 12, color: "#666d8a", marginLeft: 2 }}>min</span>
                 </div>
               </div>
             ))}
@@ -2194,16 +2194,16 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
           {/* Summary: front/back nine on one row, grand total on its own row below */}
           <div style={{ display: "flex", alignItems: "stretch", gap: 8, flexWrap: "nowrap", marginBottom: 8 }}>
-            <div style={{ flex: 1, background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, padding: "8px 10px", textAlign: "center", minWidth: 0 }}>
-              <div style={{ fontSize: 10, color: "#9aa2c7", letterSpacing: 1, marginBottom: 2, whiteSpace: "nowrap" }}>H1–H9</div>
-              <div style={{ fontSize: 14, color: "#8899cc", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.slice(0, 9).reduce((a, b) => a + b, 0))}</div>
+            <div style={{ flex: 1, background: "#f4f6fb", border: "1px solid #d5dbe9", borderRadius: 8, padding: "8px 10px", textAlign: "center", minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: "#5c6480", letterSpacing: 1, marginBottom: 2, whiteSpace: "nowrap" }}>H1–H9</div>
+              <div style={{ fontSize: 14, color: "#3f4763", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.slice(0, 9).reduce((a, b) => a + b, 0))}</div>
             </div>
-            <div style={{ flex: 1, background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 8, padding: "8px 10px", textAlign: "center", minWidth: 0 }}>
-              <div style={{ fontSize: 10, color: "#9aa2c7", letterSpacing: 1, marginBottom: 2, whiteSpace: "nowrap" }}>H10–H18</div>
-              <div style={{ fontSize: 14, color: "#8899cc", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.slice(9).reduce((a, b) => a + b, 0))}</div>
+            <div style={{ flex: 1, background: "#f4f6fb", border: "1px solid #d5dbe9", borderRadius: 8, padding: "8px 10px", textAlign: "center", minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: "#5c6480", letterSpacing: 1, marginBottom: 2, whiteSpace: "nowrap" }}>H10–H18</div>
+              <div style={{ fontSize: 14, color: "#3f4763", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(parTimes.slice(9).reduce((a, b) => a + b, 0))}</div>
             </div>
           </div>
-          <div style={{ background: "#0a1a0a", border: "1px solid #2a4a2a", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ background: "#e8f7ee", border: "1px solid #2a4a2a", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             {(() => {
               const holes = parTimes.reduce((a, b) => a + b, 0);
               const fromH1 = holes + (turnTime || 0);
@@ -2212,22 +2212,22 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               if (fromH1 === fromH10) {
                 return (
                   <>
-                    <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
-                    <div style={{ fontSize: 16, color: "#6effa0", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(fromH1)}</div>
+                    <div style={{ fontSize: 11, color: "#0e8a43", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
+                    <div style={{ fontSize: 16, color: "#0e8a43", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(fromH1)}</div>
                   </>
                 );
               }
               return (
                 <>
-                  <div style={{ fontSize: 11, color: "#6effa0", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
+                  <div style={{ fontSize: 11, color: "#0e8a43", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8, whiteSpace: "nowrap" }}>
-                      <span style={{ fontSize: 10, color: "#8890b8" }}>from H1</span>
-                      <span style={{ fontSize: 16, color: "#6effa0", fontWeight: 700 }}>{minToHM(fromH1)}</span>
+                      <span style={{ fontSize: 10, color: "#666d8a" }}>from H1</span>
+                      <span style={{ fontSize: 16, color: "#0e8a43", fontWeight: 700 }}>{minToHM(fromH1)}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8, whiteSpace: "nowrap" }}>
-                      <span style={{ fontSize: 10, color: "#8890b8" }}>from H10</span>
-                      <span style={{ fontSize: 16, color: "#6effa0", fontWeight: 700 }}>{minToHM(fromH10)}</span>
+                      <span style={{ fontSize: 10, color: "#666d8a" }}>from H10</span>
+                      <span style={{ fontSize: 16, color: "#0e8a43", fontWeight: 700 }}>{minToHM(fromH10)}</span>
                     </div>
                   </div>
                 </>
@@ -2255,33 +2255,33 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
 
           {!isAdmin && (
-            <div style={{ background: "#141626", border: "1px solid #ffd96633", borderRadius: 12, padding: "16px 20px" }}>
+            <div style={{ background: "#ffffff", border: "1px solid #a67c0033", borderRadius: 12, padding: "16px 20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <span style={{ fontSize: 20 }}>🔒</span>
-                <div style={{ fontSize: 14, color: "#ffd966", fontWeight: 700, letterSpacing: 1 }}>View-only mode (User)</div>
+                <div style={{ fontSize: 14, color: "#a67c00", fontWeight: 700, letterSpacing: 1 }}>View-only mode (User)</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 30 }}>
-                <div style={{ fontSize: 12, color: "#888" }}>✗ Cannot edit Par / time per hole</div>
-                <div style={{ fontSize: 12, color: "#888" }}>✗ Cannot add or edit player groups</div>
-                <div style={{ fontSize: 12, color: "#6effa0", marginTop: 2 }}>✓ Can view the Schedule table and track Pace</div>
+                <div style={{ fontSize: 12, color: "#6e6e6e" }}>✗ Cannot edit Par / time per hole</div>
+                <div style={{ fontSize: 12, color: "#6e6e6e" }}>✗ Cannot add or edit player groups</div>
+                <div style={{ fontSize: 12, color: "#0e8a43", marginTop: 2 }}>✓ Can view the Schedule table and track Pace</div>
               </div>
             </div>
           )}
 
           {/* H1 Column */}
           {isAdmin && genMode !== "shotgun" && (
-          <div style={{ background: "#141626", border: "1px solid #6effa033", borderRadius: 12, padding: 20 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #0e8a4333", borderRadius: 12, padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ fontSize: 13, color: "#6effa0", letterSpacing: 2, fontWeight: 700 }}>🟢 Start hole 1 → 18</div>
+              <div style={{ fontSize: 13, color: "#0e8a43", letterSpacing: 2, fontWeight: 700 }}>🟢 Start hole 1 → 18</div>
               {groups1.length > 0 && (
                 <button
                   onClick={() => setClearModal("h1")}
-                  style={{ background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
+                  style={{ background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
                 >🗑 Clear all</button>
               )}
             </div>
             {groups1.length === 0 && (
-              <div style={{ color: "#666f99", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No groups yet</div>
+              <div style={{ color: "#7a8099", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No groups yet</div>
             )}
             {groups1.map(g => (
               <div key={g.id} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
@@ -2289,7 +2289,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 <input
                   value={g.name}
                   onChange={e => updateGroup1(g.id, "name", e.target.value)}
-                  style={{ flex: 1, minWidth: 0, background: "#1e2135", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
+                  style={{ flex: 1, minWidth: 0, background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
                 />
                 <input
                   type="color"
@@ -2301,12 +2301,12 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                   type="time"
                   value={g.startTime}
                   onChange={e => updateGroup1(g.id, "startTime", e.target.value)}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
+                  style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
                 />
-                <button onClick={() => removeGroup1(g.id)} style={{ background: "#3a1a1a", border: "none", color: "#ff7070", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
+                <button onClick={() => removeGroup1(g.id)} style={{ background: "#fdeaea", border: "none", color: "#c62828", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
               </div>
             ))}
-            <button onClick={addGroup1} style={{ marginTop: 6, background: "#0d1a0d", border: "1px dashed #6effa044", color: "#6effa0", borderRadius: 6, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, width: "100%" }}>
+            <button onClick={addGroup1} style={{ marginTop: 6, background: "#e8f7ee", border: "1px dashed #0e8a4344", color: "#0e8a43", borderRadius: 6, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, width: "100%" }}>
               + Add H1 group
             </button>
           </div>
@@ -2314,18 +2314,18 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
           {/* H10 Column */}
           {isAdmin && genMode !== "shotgun" && (
-          <div style={{ background: "#141626", border: "1px solid #4e9af133", borderRadius: 12, padding: 20 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #1565c033", borderRadius: 12, padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 2, fontWeight: 700 }}>🔵 Start hole 10 → 18 → 1 → 9</div>
+              <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 2, fontWeight: 700 }}>🔵 Start hole 10 → 18 → 1 → 9</div>
               {groups10.length > 0 && (
                 <button
                   onClick={() => setClearModal("h10")}
-                  style={{ background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
+                  style={{ background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
                 >🗑 Clear all</button>
               )}
             </div>
             {groups10.length === 0 && (
-              <div style={{ color: "#666f99", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No groups yet</div>
+              <div style={{ color: "#7a8099", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No groups yet</div>
             )}
             {groups10.map(g => (
               <div key={g.id} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
@@ -2333,7 +2333,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 <input
                   value={g.name}
                   onChange={e => updateGroup10(g.id, "name", e.target.value)}
-                  style={{ flex: 1, minWidth: 0, background: "#1e2135", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
+                  style={{ flex: 1, minWidth: 0, background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
                 />
                 <input
                   type="color"
@@ -2345,12 +2345,12 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                   type="time"
                   value={g.startTime}
                   onChange={e => updateGroup10(g.id, "startTime", e.target.value)}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
+                  style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
                 />
-                <button onClick={() => removeGroup10(g.id)} style={{ background: "#3a1a1a", border: "none", color: "#ff7070", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
+                <button onClick={() => removeGroup10(g.id)} style={{ background: "#fdeaea", border: "none", color: "#c62828", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
               </div>
             ))}
-            <button onClick={addGroup10} style={{ marginTop: 6, background: "#0d0f1a", border: "1px dashed #4e9af144", color: "#4e9af1", borderRadius: 6, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, width: "100%" }}>
+            <button onClick={addGroup10} style={{ marginTop: 6, background: "#f4f6fb", border: "1px dashed #1565c044", color: "#1565c0", borderRadius: 6, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, width: "100%" }}>
               + Add H10 group
             </button>
           </div>
@@ -2369,12 +2369,12 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             });
 
             return (
-              <div style={{ background: "#1a1410", border: "1px solid #f1734e33", borderRadius: 12, padding: 20 }}>
+              <div style={{ background: "#fff4d9", border: "1px solid #d8431533", borderRadius: 12, padding: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                   <div style={{ fontSize: 13, color: "#f1734e", letterSpacing: 2, fontWeight: 700 }}>🔫 SHOTGUN (4 holes)</div>
                   <button
                     onClick={() => setClearModal("shotgun")}
-                    style={{ background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
+                    style={{ background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
                   >🗑 Clear all</button>
                 </div>
 
@@ -2388,13 +2388,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                       {/* Set header: group names in the set + toggle to switch the start point for the whole set */}
                       <div style={{
                         display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
-                        background: "#0d0f1a", border: `1px solid ${meta.color}44`, borderRadius: 8,
+                        background: "#f4f6fb", border: `1px solid ${meta.color}44`, borderRadius: 8,
                         padding: "8px 10px", marginBottom: 8,
                       }}>
-                        <span style={{ fontSize: 12, color: "#888" }}>
+                        <span style={{ fontSize: 12, color: "#6e6e6e" }}>
                           Set {setGroups.length > 1 ? `${firstName} – ${lastName}` : firstName}
                         </span>
-                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#9aa2c7" }}>Switch start point for whole set →</span>
+                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#5c6480" }}>Switch start point for whole set →</span>
                         <div style={{ display: "flex", gap: 4 }}>
                           {shotgunHoles.map(h => {
                             const hMeta = getStartHoleMeta(h);
@@ -2407,9 +2407,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                                 style={{
                                   minWidth: 34, padding: "5px 8px", borderRadius: 6, cursor: active ? "default" : "pointer",
                                   fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                                  background: active ? `${hMeta.color}33` : "#1e2135",
-                                  border: `1px solid ${active ? hMeta.color : "#2a2d4a"}`,
-                                  color: active ? hMeta.color : "#888",
+                                  background: active ? `${hMeta.color}33` : "#eef1f8",
+                                  border: `1px solid ${active ? hMeta.color : "#d5dbe9"}`,
+                                  color: active ? hMeta.color : "#6e6e6e",
                                 }}
                               >H{h}</button>
                             );
@@ -2429,7 +2429,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                             <input
                               value={g.name}
                               onChange={e => updateGroupShotgun(g.id, "name", e.target.value)}
-                              style={{ flex: 1, minWidth: 0, background: "#1e2135", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
+                              style={{ flex: 1, minWidth: 0, background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
                             />
                             <input
                               type="color"
@@ -2441,9 +2441,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                               type="time"
                               value={g.startTime}
                               onChange={e => updateGroupShotgun(g.id, "startTime", e.target.value)}
-                              style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
+                              style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
                             />
-                            <button onClick={() => removeGroupShotgun(g.id)} style={{ background: "#3a1a1a", border: "none", color: "#ff7070", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
+                            <button onClick={() => removeGroupShotgun(g.id)} style={{ background: "#fdeaea", border: "none", color: "#c62828", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
                           </div>
                         );
                       })}
@@ -2463,8 +2463,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           }}
           disabled={!isAdmin && allGroups.length === 0}
           style={{
-            width: "100%", background: (!isAdmin && allGroups.length === 0) ? "#1a1d2e" : "linear-gradient(135deg, #1a4a8a, #4e9af1)", border: "none",
-            color: (!isAdmin && allGroups.length === 0) ? "#444" : "#fff", borderRadius: 10, padding: "16px",
+            width: "100%", background: (!isAdmin && allGroups.length === 0) ? "#e9edf6" : "linear-gradient(135deg, #1565c0, #1565c0)", border: "none",
+            color: (!isAdmin && allGroups.length === 0) ? "#444" : "#ffffff", borderRadius: 10, padding: "16px",
             cursor: (!isAdmin && allGroups.length === 0) ? "not-allowed" : "pointer",
             fontFamily: "'Bebas Neue'", letterSpacing: 3, fontSize: 20,
           }}
@@ -2477,8 +2477,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           <button
             onClick={onGoToDashboard}
             style={{
-              width: "100%", marginTop: 12, background: "linear-gradient(135deg, #0a3a5a, #4e9af1)", border: "none",
-              color: "#fff", borderRadius: 10, padding: "16px", cursor: "pointer",
+              width: "100%", marginTop: 12, background: "linear-gradient(135deg, #d0e4f6, #1565c0)", border: "none",
+              color: "#ffffff", borderRadius: 10, padding: "16px", cursor: "pointer",
               fontFamily: "'Bebas Neue'", letterSpacing: 3, fontSize: 20,
             }}
           >📊 Back to Dashboard</button>
@@ -2486,21 +2486,21 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
         {/* Build marker — bump this string whenever the file changes so it's obvious
             at a glance whether the browser is running the latest deploy. */}
-        <div style={{ textAlign: "center", fontSize: 10, color: "#3a3f5a", marginTop: 20, letterSpacing: 1 }}>
+        <div style={{ textAlign: "center", fontSize: 10, color: "#c2c9dc", marginTop: 20, letterSpacing: 1 }}>
           build {APP_BUILD}
         </div>
       </div>
 
       {/* Quick tournament switcher — list only; full management is on the Tournament screen */}
       {showTournamentPicker && (
-        <div onClick={() => setShowTournamentPicker(false)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, padding: 16, overflowY: "auto" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 14 }}>⇄ Switch Tournament</div>
+        <div onClick={() => setShowTournamentPicker(false)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, padding: 16, overflowY: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 14 }}>⇄ Switch Tournament</div>
 
             {tPickerLoading ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#8890b8", fontSize: 13 }}>Loading…</div>
+              <div style={{ padding: 24, textAlign: "center", color: "#666d8a", fontSize: 13 }}>Loading…</div>
             ) : tPickerList.length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#666", fontSize: 13 }}>No other competitions available to you</div>
+              <div style={{ padding: 20, textAlign: "center", color: "#7a7a7a", fontSize: 13 }}>No other competitions available to you</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 340, overflowY: "auto" }}>
                 {tPickerList.map(t => {
@@ -2510,14 +2510,14 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                       onClick={() => { setShowTournamentPicker(false); if (!isCurrent) onPickTournament?.(t); }}
                       style={{
                         textAlign: "left", padding: "11px 13px", borderRadius: 9, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
-                        background: isCurrent ? "#1a4a8a" : "#0d0f1a",
-                        border: `1px solid ${isCurrent ? "#4e9af1" : "#2a2d4a"}`,
+                        background: isCurrent ? "#1565c0" : "#f4f6fb",
+                        border: `1px solid ${isCurrent ? "#1565c0" : "#d5dbe9"}`,
                       }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled)"}</span>
-                        {isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>● CURRENT</span>}
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#1b1f30" }}>{t.name || "(untitled)"}</span>
+                        {isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#0e8a43", background: "#e4f6ea", border: "1px solid #0e8a4355", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>● CURRENT</span>}
                       </div>
-                      {t.host_venue && <div style={{ fontSize: 11, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
+                      {t.host_venue && <div style={{ fontSize: 11, color: "#666d8a", marginTop: 2 }}>{t.host_venue}</div>}
                     </button>
                   );
                 })}
@@ -2527,12 +2527,12 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             <div style={{ display: "flex", gap: 8 }}>
               {isTrueAdmin && onSwitchTournament && (
                 <button onClick={() => { setShowTournamentPicker(false); onSwitchTournament(); }}
-                  style={{ flex: 1, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                  style={{ flex: 1, background: "#f4f6fb", border: "1px dashed #1565c066", color: "#1565c0", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
                   ⚙ Manage tournaments
                 </button>
               )}
               <button onClick={() => setShowTournamentPicker(false)}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
                 Cancel
               </button>
             </div>
@@ -2542,13 +2542,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
       {/* Round switcher — pick another round of the SAME tournament */}
       {showRoundPicker && (
-        <div onClick={() => setShowRoundPicker(false)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #6effa066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#6effa0", marginBottom: 2 }}>⇄ Switch Round</div>
-            <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>{tournamentName}</div>
+        <div onClick={() => setShowRoundPicker(false)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0e8a4366", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#0e8a43", marginBottom: 2 }}>⇄ Switch Round</div>
+            <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 16 }}>{tournamentName}</div>
 
             {pickerLoading ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#8890b8", fontSize: 13 }}>Loading…</div>
+              <div style={{ padding: 24, textAlign: "center", color: "#666d8a", fontSize: 13 }}>Loading…</div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
                 {pickerLabels.map(label => {
@@ -2561,14 +2561,14 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                       onClick={() => { setShowRoundPicker(false); if (!isCurrent) onPickRound?.(label); }}
                       style={{
                         padding: "14px 0", borderRadius: 10, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
-                        background: isCurrent ? "#1a4a2a" : hasData ? "#141a2a" : "#0d0f1a",
-                        border: `1px solid ${isCurrent ? "#6effa0" : hasData ? "#4e9af155" : "#2a2d4a"}`,
+                        background: isCurrent ? "#dff3e6" : hasData ? "#eef1f8" : "#f4f6fb",
+                        border: `1px solid ${isCurrent ? "#0e8a43" : hasData ? "#1565c055" : "#d5dbe9"}`,
                         display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                       }}>
-                      <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 1, color: isCurrent ? "#6effa0" : "#eee" }}>
+                      <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 1, color: isCurrent ? "#0e8a43" : "#1b1f30" }}>
                         {label === "Q" ? "Q" : `R${label}`}
                       </span>
-                      <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#6effa0" : hasData ? "#4e9af1" : "#8890b8" }}>
+                      <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#0e8a43" : hasData ? "#1565c0" : "#666d8a" }}>
                         {isCurrent ? "● LIVE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
                       </span>
                     </button>
@@ -2578,7 +2578,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             )}
 
             <button onClick={() => setShowRoundPicker(false)}
-              style={{ width: "100%", background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+              style={{ width: "100%", background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
               Cancel
             </button>
           </div>
@@ -2586,17 +2586,17 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
       )}
 
       {clearModal && (
-        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#ff7070", marginBottom: 12 }}>🗑 Clear all groups</div>
-            <div style={{ fontSize: 14, color: "#aaa", marginBottom: 6 }}>
-              Delete groups <span style={{ color: "#eee", fontWeight: 700 }}>
+        <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#c62828", marginBottom: 12 }}>🗑 Clear all groups</div>
+            <div style={{ fontSize: 14, color: "#555555", marginBottom: 6 }}>
+              Delete groups <span style={{ color: "#1b1f30", fontWeight: 700 }}>
                 {clearModal === "h1" ? `All ${groups1.length} H1 group(s)`
                   : clearModal === "h10" ? `All ${groups10.length} H10 group(s)`
                   : `All ${groupsShotgun.length} Shotgun group(s)`}
               </span>
             </div>
-            <div style={{ fontSize: 13, color: "#9aa2c7", marginBottom: 22 }}>The group list will be deleted; per-hole times and Par remain unchanged</div>
+            <div style={{ fontSize: 13, color: "#5c6480", marginBottom: 22 }}>The group list will be deleted; per-hole times and Par remain unchanged</div>
             <div style={{ display: "flex", gap: 10 }}>
               <button
                 onClick={() => {
@@ -2614,11 +2614,11 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                   else setGroupsShotgun([]);
                   setClearModal(null);
                 }}
-                style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2 }}
+                style={{ flex: 1, background: "#fdeaea", border: "1px solid #c62828", color: "#c62828", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2 }}
               >✓ Confirm</button>
               <button
                 onClick={() => setClearModal(null)}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}
+                style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}
               >Cancel</button>
             </div>
           </div>
@@ -2629,21 +2629,21 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 }
 
 // ─── Time Input Helper ────────────────────────────────────────────────────────
-function TimeInput({ value, onChange, label, color = "#4e9af1" }) {
+function TimeInput({ value, onChange, label, color = "#1565c0" }) {
   const parts = value ? value.split(":") : ["", ""];
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      {label && <span style={{ fontSize: 12, color: "#9aa2c7", minWidth: 60 }}>{label}</span>}
+      {label && <span style={{ fontSize: 12, color: "#5c6480", minWidth: 60 }}>{label}</span>}
       <input type="number" min={0} max={23} placeholder="HH"
         value={parts[0]}
         onChange={e => { const hh = String(Number(e.target.value)).padStart(2,"0"); onChange(`${hh}:${parts[1] || "00"}`); }}
-        style={{ width: 48, background: "#1e2135", border: `1px solid ${color}44`, color: "#eee", borderRadius: 8, padding: "5px 6px", fontFamily: "inherit", fontSize: 16, fontWeight: 700, textAlign: "center" }}
+        style={{ width: 48, background: "#eef1f8", border: `1px solid ${color}44`, color: "#1b1f30", borderRadius: 8, padding: "5px 6px", fontFamily: "inherit", fontSize: 16, fontWeight: 700, textAlign: "center" }}
       />
       <span style={{ color, fontSize: 18, fontWeight: 700 }}>:</span>
       <input type="number" min={0} max={59} placeholder="MM"
         value={parts[1]}
         onChange={e => { const mm = String(Number(e.target.value)).padStart(2,"0"); onChange(`${parts[0] || "00"}:${mm}`); }}
-        style={{ width: 48, background: "#1e2135", border: `1px solid ${color}44`, color: "#eee", borderRadius: 8, padding: "5px 6px", fontFamily: "inherit", fontSize: 16, fontWeight: 700, textAlign: "center" }}
+        style={{ width: 48, background: "#eef1f8", border: `1px solid ${color}44`, color: "#1b1f30", borderRadius: 8, padding: "5px 6px", fontFamily: "inherit", fontSize: 16, fontWeight: 700, textAlign: "center" }}
       />
     </div>
   );
@@ -3066,7 +3066,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // screen it passes that same rating in so the badge here can't disagree with the
   // badge on the card/table the user just tapped.
   const status = statusOverride ?? overallStatus();
-  const bgColor = { ok: "#0a1f15", warn: "#1f180a", late: "#1f0a0a", idle: "#0d0f1a" }[status];
+  const bgColor = { ok: "#e4f6ea", warn: "#fff4d9", late: "#fdeaea", idle: "#f4f6fb" }[status];
   const done = currentSlot >= 18;
 
   // Slot (play-order position) where the MN/TM "coming up" preview should be shown:
@@ -3116,24 +3116,24 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   const diffDisplay = displayEnd - deadlineMin + 1;
   const canConfirm = inputMode === "manual" || !!recordedEnd;
 
-  const diffColor = (d) => d >= 3 ? "#ff7070" : d >= 1 ? "#ffd966" : "#6effa0";
+  const diffColor = (d) => d >= 3 ? "#c62828" : d >= 1 ? "#a67c00" : "#0e8a43";
 
   return (
     <div style={compact
-      ? { fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }
-      : { background: bgColor, minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#eee", transition: "background 1s" }}>
+      ? { fontFamily: "'IBM Plex Mono', monospace", color: "#1b1f30" }
+      : { background: bgColor, minHeight: "100vh", fontFamily: "'IBM Plex Mono', monospace", color: "#1b1f30", transition: "background 1s" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
       {!compact && (
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", background: "#141626cc", borderBottom: "1px solid #2a2d4a", backdropFilter: "blur(8px)" }}>
-        <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: closeLabel ? 15 : 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "←"}</button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", background: "#ffffffcc", borderBottom: "1px solid #d5dbe9", backdropFilter: "blur(8px)" }}>
+        <button onClick={onBack} style={{ background: "#e9edf6", border: "1px solid #1565c044", color: "#1565c0", cursor: "pointer", fontSize: closeLabel ? 15 : 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{closeLabel || "←"}</button>
 
         {onSwitchGroup && (
           <button
             onClick={() => prevGroup && onSwitchGroup(prevGroup, currentSlot)}
             disabled={!prevGroup}
             title="Previous group"
-            style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: prevGroup ? "#4e9af1" : "#333", cursor: prevGroup ? "pointer" : "not-allowed", fontSize: 20, fontWeight: 700, borderRadius: 8, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            style={{ background: "#e9edf6", border: "1px solid #1565c044", color: prevGroup ? "#1565c0" : "#cccccc", cursor: prevGroup ? "pointer" : "not-allowed", fontSize: 20, fontWeight: 700, borderRadius: 8, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
           >‹</button>
         )}
 
@@ -3146,13 +3146,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             onKeyDown={e => { if (e.key === "Enter") confirmGroupNumberInput(); if (e.key === "Escape") setEditingGroupNum(false); }}
             onBlur={confirmGroupNumberInput}
             placeholder="Group no."
-            style={{ width: 80, fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 2, background: "#0d0f1a", border: "1px solid #4e9af1", color: "#eee", borderRadius: 6, padding: "4px 8px", flexShrink: 0 }}
+            style={{ width: 80, fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 2, background: "#f4f6fb", border: "1px solid #1565c0", color: "#1b1f30", borderRadius: 6, padding: "4px 8px", flexShrink: 0 }}
           />
         ) : (
           <div
             onClick={openGroupNumberInput}
             title={onSwitchGroup ? "Tap to type a group number" : undefined}
-            style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, flexShrink: 0, cursor: onSwitchGroup ? "pointer" : "default", borderBottom: onSwitchGroup ? "1px dashed #4e9af166" : "none" }}
+            style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, flexShrink: 0, cursor: onSwitchGroup ? "pointer" : "default", borderBottom: onSwitchGroup ? "1px dashed #1565c066" : "none" }}
           >{group.name}</div>
         )}
 
@@ -3161,7 +3161,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             onClick={() => nextGroup && onSwitchGroup(nextGroup, currentSlot)}
             disabled={!nextGroup}
             title="Next group"
-            style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: nextGroup ? "#4e9af1" : "#333", cursor: nextGroup ? "pointer" : "not-allowed", fontSize: 20, fontWeight: 700, borderRadius: 8, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            style={{ background: "#e9edf6", border: "1px solid #1565c044", color: nextGroup ? "#1565c0" : "#cccccc", cursor: nextGroup ? "pointer" : "not-allowed", fontSize: 20, fontWeight: 700, borderRadius: 8, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
           >›</button>
         )}
 
@@ -3169,12 +3169,12 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
           {/* Row 1: user + logout */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {currentUser && <span style={{ fontSize: 12, color: "#8899cc" }}>👤 {currentUser}</span>}
+            {currentUser && <span style={{ fontSize: 12, color: "#3f4763" }}>👤 {currentUser}</span>}
             <LogoutButton onLogout={onLogout} />
           </div>
           {/* Row 2: hole info + status */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, color: "#8890b8" }}>H{group.startHole || 1} · Tee time {group.startTime}</span>
+            <span style={{ fontSize: 11, color: "#666d8a" }}>H{group.startHole || 1} · Tee time {group.startTime}</span>
             <StatusBadge status={status} />
           </div>
         </div>
@@ -3184,13 +3184,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       {/* Global Suspension Banner */}
       {isSuspended && (
         <div style={{
-          background: "#1f0f00", borderBottom: "1px solid #ffd96666",
+          background: "#fff0c9", borderBottom: "1px solid #a67c0066",
           padding: "8px 20px", display: "flex", alignItems: "center", gap: 10,
         }}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#ffd966", boxShadow: "0 0 8px #ffd966", animation: "pulse 1.5s infinite" }} />
-          <span style={{ fontSize: 13, color: "#ffd966", fontWeight: 700 }}>⏸ Match paused</span>
-          <span style={{ fontSize: 12, color: "#aaa" }}>Since <b style={{ color: "#eee" }}>{pendingStopTime}</b></span>
-          <span style={{ fontSize: 12, color: "#8890b8" }}>— Go back to the main screen to resume play</span>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#a67c00", boxShadow: "0 0 8px #a67c00", animation: "pulse 1.5s infinite" }} />
+          <span style={{ fontSize: 13, color: "#a67c00", fontWeight: 700 }}>⏸ Match paused</span>
+          <span style={{ fontSize: 12, color: "#555555" }}>Since <b style={{ color: "#1b1f30" }}>{pendingStopTime}</b></span>
+          <span style={{ fontSize: 12, color: "#666d8a" }}>— Go back to the main screen to resume play</span>
         </div>
       )}
 
@@ -3199,20 +3199,20 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         {/* Suspension History */}
         {suspensions && suspensions.length > 0 && (
           <div style={{
-            background: "#141626", border: "1px solid #ffd96633",
+            background: "#ffffff", border: "1px solid #a67c0033",
             borderRadius: 10, padding: "10px 16px", marginBottom: 16,
           }}>
-            <div style={{ fontSize: 11, color: "#ffd966", letterSpacing: 2, marginBottom: 8, fontWeight: 700 }}>⏱ Pause history</div>
+            <div style={{ fontSize: 11, color: "#a67c00", letterSpacing: 2, marginBottom: 8, fontWeight: 700 }}>⏱ Pause history</div>
             {suspensions.map((s, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#aaa", marginBottom: 4 }}>
-                <span style={{ color: "#ffd966" }}>#{i + 1}</span>
-                <span>Stopped <b style={{ color: "#eee" }}>{s.stopTime}</b></span>
-                <span>→ Resumed <b style={{ color: "#6effa0" }}>{s.resumeTime}</b></span>
-                <span style={{ marginLeft: "auto", color: "#ff9966" }}>+{s.offsetMin} min</span>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#555555", marginBottom: 4 }}>
+                <span style={{ color: "#a67c00" }}>#{i + 1}</span>
+                <span>Stopped <b style={{ color: "#1b1f30" }}>{s.stopTime}</b></span>
+                <span>→ Resumed <b style={{ color: "#0e8a43" }}>{s.resumeTime}</b></span>
+                <span style={{ marginLeft: "auto", color: "#d84315" }}>+{s.offsetMin} min</span>
               </div>
             ))}
             {totalOffsetMin > 0 && (
-              <div style={{ borderTop: "1px solid #2a2d4a", marginTop: 8, paddingTop: 8, fontSize: 12, color: "#ff9966", fontWeight: 700 }}>
+              <div style={{ borderTop: "1px solid #d5dbe9", marginTop: 8, paddingTop: 8, fontSize: 12, color: "#d84315", fontWeight: 700 }}>
                 Total time shift +{totalOffsetMin} min
               </div>
             )}
@@ -3222,7 +3222,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         {!done && (
         <div style={{
           position: "relative",
-          background: "#141626",
+          background: "#ffffff",
           border: `1px solid ${group.color}44`,
           borderRadius: 14,
           padding: compact ? 16 : 24,
@@ -3230,7 +3230,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           boxShadow: `0 0 40px ${group.color}11`,
         }}>
           {compact && (
-            <button onClick={onBack} style={{ position: "absolute", top: 14, right: 14, background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>{closeLabel || "✕"}</button>
+            <button onClick={onBack} style={{ position: "absolute", top: 14, right: 14, background: "#e9edf6", border: "1px solid #1565c044", color: "#1565c0", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>{closeLabel || "✕"}</button>
           )}
 
           <div style={{ display: "flex", alignItems: compact ? "flex-start" : "center", justifyContent: "flex-start", gap: compact ? 28 : 16, marginBottom: compact ? 10 : 14, paddingTop: compact ? 6 : 0 }}>
@@ -3243,19 +3243,19 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 <StatusBadge status={status} />
               </div>
             ) : (
-              <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2 }}>CURRENT HOLE</div>
+              <div style={{ fontSize: 12, color: "#5c6480", letterSpacing: 2 }}>CURRENT HOLE</div>
             )}
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
             {compact && (
-              <div style={{ fontSize: 12, color: "#9aa2c7", letterSpacing: 2, marginBottom: 6, width: "100%" }}>CURRENT HOLE</div>
+              <div style={{ fontSize: 12, color: "#5c6480", letterSpacing: 2, marginBottom: 6, width: "100%" }}>CURRENT HOLE</div>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 16 }}>
             <button
               onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
               disabled={currentSlot === 0}
               title="Previous hole"
-              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#333" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#f4f6fb", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#cccccc" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >‹</button>
             <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 30 : 72, lineHeight: 1, color: group.color }}>
               {currentHole + 1}
@@ -3264,54 +3264,54 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               onClick={() => setCurrentSlot(Math.min(17, currentSlot + 1))}
               disabled={currentSlot === 17}
               title="Next hole"
-              style={{ background: "#0d0f1a", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#333" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#f4f6fb", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#cccccc" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >›</button>
             {compact && (
               <div style={{ marginLeft: 6 }}>
-                <div style={{ color: "#888", fontSize: 13 }}>Par {pars[currentHole]}</div>
-                <div style={{ color: "#8890b8", fontSize: 11 }}>Slot {currentSlot + 1}/18</div>
+                <div style={{ color: "#6e6e6e", fontSize: 13 }}>Par {pars[currentHole]}</div>
+                <div style={{ color: "#666d8a", fontSize: 11 }}>Slot {currentSlot + 1}/18</div>
               </div>
             )}
             </div>
             {!compact && (
               <>
-                <div style={{ color: "#888", fontSize: 13, textAlign: "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
-                <div style={{ color: "#8890b8", fontSize: 11, textAlign: "left" }}>Slot {currentSlot + 1}/18</div>
+                <div style={{ color: "#6e6e6e", fontSize: 13, textAlign: "left", marginTop: 2 }}>Par {pars[currentHole]}</div>
+                <div style={{ color: "#666d8a", fontSize: 11, textAlign: "left" }}>Slot {currentSlot + 1}/18</div>
               </>
             )}
           </div>
           </div>
 
           {holeData[currentHole]?.endTime && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "#2a1a0a", border: "1px solid #ffd96644", borderRadius: 10, padding: "8px 12px", marginBottom: compact ? 10 : 14 }}>
-              <span style={{ fontSize: 12, color: "#ffd966" }}>Finish time already recorded for this hole ({holeData[currentHole].endTime})</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "#fdeaea", border: "1px solid #a67c0044", borderRadius: 10, padding: "8px 12px", marginBottom: compact ? 10 : 14 }}>
+              <span style={{ fontSize: 12, color: "#a67c00" }}>Finish time already recorded for this hole ({holeData[currentHole].endTime})</span>
               <button
                 onClick={() => { if (window.confirm(`Clear the recorded finish time for H${currentHole + 1}?\n\nYou can record it again afterwards.`)) clearHoleRecord(currentHole); }}
-                style={{ background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0 }}
+                style={{ background: "#fdeaea", border: "1px solid #c62828", color: "#c62828", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0 }}
               >🗑 Clear</button>
             </div>
           )}
 
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16, marginBottom: compact ? 12 : 20 }}>
-            <div style={{ flex: 1, background: "#0d0f1a", borderRadius: 12, padding: compact ? "8px 10px" : "12px 14px" }}>
+            <div style={{ flex: 1, background: "#f4f6fb", borderRadius: 12, padding: compact ? "8px 10px" : "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>🏌️ Start</div>
-                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#4e9af1", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
+                  <div style={{ fontSize: 11, color: "#666d8a", marginBottom: 2 }}>🏌️ Start</div>
+                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#1565c0", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
                 </div>
                 <div style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: "#8890b8", marginBottom: 2 }}>Par Time</div>
-                  <div style={{ color: "#666f99", fontSize: compact ? 14 : 18 }}>+{parTimeNow}m→</div>
+                  <div style={{ fontSize: 10, color: "#666d8a", marginBottom: 2 }}>Par Time</div>
+                  <div style={{ color: "#7a8099", fontSize: compact ? 14 : 18 }}>+{parTimeNow}m→</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>🏁 Finish</div>
-                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#8899cc", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
+                  <div style={{ fontSize: 11, color: "#666d8a", marginBottom: 2 }}>🏁 Finish</div>
+                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#3f4763", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
                 </div>
               </div>
             </div>
-            <div style={{ textAlign: "center", background: "#0d0f1a", borderRadius: 12, padding: compact ? "6px 8px" : "10px 12px", minWidth: compact ? 64 : 80 }}>
-              <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 2 }}>Now</div>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, lineHeight: 1, color: "#eee" }}>{minToTime(now)}</div>
+            <div style={{ textAlign: "center", background: "#f4f6fb", borderRadius: 12, padding: compact ? "6px 8px" : "10px 12px", minWidth: compact ? 64 : 80 }}>
+              <div style={{ fontSize: 11, color: "#666d8a", marginBottom: 2 }}>Now</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, lineHeight: 1, color: "#1b1f30" }}>{minToTime(now)}</div>
               <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4, color: diffColor(diffLive) }}>
                 {diffLive > 0 ? `+${diffLive}` : diffLive} min
               </div>
@@ -3319,27 +3319,27 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           </div>
 
           {/* Delay input */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#0d0f1a", borderRadius: 10, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
-            <span style={{ fontSize: 12, color: "#ff7070" }}>⏱ Delay Time</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f4f6fb", borderRadius: 10, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
+            <span style={{ fontSize: 12, color: "#c62828" }}>⏱ Delay Time</span>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
+              <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#555555", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
               <input
                 type="number" min="0" value={delayMin}
                 onChange={e => updateDelay(e.target.value)}
-                style={{ width: 52, background: "#1e2135", border: `1px solid ${delayMin > 0 ? "#ffd96666" : "#2a2d4a"}`, color: "#ffd966", fontFamily: "'Bebas Neue'", fontSize: 22, textAlign: "center", borderRadius: 6, padding: "2px 0", outline: "none" }}
+                style={{ width: 52, background: "#eef1f8", border: `1px solid ${delayMin > 0 ? "#a67c0066" : "#d5dbe9"}`, color: "#a67c00", fontFamily: "'Bebas Neue'", fontSize: 22, textAlign: "center", borderRadius: 6, padding: "2px 0", outline: "none" }}
               />
-              <button onClick={() => updateDelay(delayMin + 1)} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>+</button>
+              <button onClick={() => updateDelay(delayMin + 1)} style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#555555", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>+</button>
             </div>
-            <span style={{ fontSize: 12, color: "#8890b8" }}>min</span>
+            <span style={{ fontSize: 12, color: "#666d8a" }}>min</span>
             {delayMin > 0 && (
-              <span style={{ fontSize: 11, color: "#ffd966", background: "#2a1a00", border: "1px solid #ffd96644", borderRadius: 5, padding: "2px 7px" }}>
+              <span style={{ fontSize: 11, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0044", borderRadius: 5, padding: "2px 7px" }}>
                 schedule +{delayMin}m
               </span>
             )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14 }}>
-            <span style={{ fontSize: 12, color: "#8890b8", fontWeight: 700 }}>Flag:</span>
+            <span style={{ fontSize: 12, color: "#666d8a", fontWeight: 700 }}>Flag:</span>
             {(() => {
               const wnDisabled = (actionLogs.some(l => l.type === "WN" && l.holeIdx === currentHole)) || mnActive || tmActive;
               const mnDisabledHere = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === currentHole);
@@ -3350,13 +3350,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   <button onClick={() => !wnDisabled && openActionModal("WN", currentHole)}
                     disabled={wnDisabled}
                     title={mnActive || tmActive ? "MN/TM is active — WN cannot be used right now" : wnDisabled ? "WN already logged on this hole" : undefined}
-                    style={{ flex: 1, background: wnDisabled ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabled ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabled ? "#666" : "#ffd966", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: wnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
+                    style={{ flex: 1, background: wnDisabled ? "#f0f0f0" : "#fff4d9", border: `1px solid ${wnDisabled ? "#c9cede" : "#a67c0088"}`, color: wnDisabled ? "#7a7a7a" : "#a67c00", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: wnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                   <button onClick={() => !mnDisabled && openActionModal("MN", currentHole)}
                     disabled={mnDisabled}
                     title={mnActive ? "MN is already running — turn MN off before starting again" : mnDisabledHere ? "MN already logged on this hole" : mnAlreadyUsed ? "This group has already had MN turned on and off — MN can only be used once per group" : undefined}
-                    style={{ flex: 1, background: mnDisabled ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabled ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabled ? "#666" : "#4e9af1", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: mnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
+                    style={{ flex: 1, background: mnDisabled ? "#f0f0f0" : "#e3effa", border: `1px solid ${mnDisabled ? "#c9cede" : "#1565c088"}`, color: mnDisabled ? "#7a7a7a" : "#1565c0", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: mnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                   <button onClick={() => openActionModal("TM", currentHole)}
-                    style={{ flex: 1, background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+                    style={{ flex: 1, background: "#fce7f1", border: "1px solid #ad1457aa", color: "#ad1457", borderRadius: 8, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
                 </>
               );
             })()}
@@ -3368,9 +3368,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 style={{
                   flex: 1, padding: compact ? "7px 0" : "8px 0", borderRadius: 8, cursor: "pointer",
                   fontFamily: "inherit", fontSize: compact ? 12 : 13, fontWeight: 700,
-                  background: inputMode === mode ? "#1e2a3a" : "#0d0f1a",
-                  border: `1px solid ${inputMode === mode ? "#4e9af1" : "#2a2d4a"}`,
-                  color: inputMode === mode ? "#4e9af1" : "#555",
+                  background: inputMode === mode ? "#e6eef8" : "#f4f6fb",
+                  border: `1px solid ${inputMode === mode ? "#1565c0" : "#d5dbe9"}`,
+                  color: inputMode === mode ? "#1565c0" : "#8a8a8a",
                   transition: "all 0.15s",
                 }}>
                 {label}
@@ -3384,28 +3384,28 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 onClick={() => setRecordedEnd(nowInMin())}
                 style={{
                   width: "100%", padding: compact ? "16px 0" : "22px 0", marginBottom: 12,
-                  background: "linear-gradient(135deg, #1a2a1a, #1f3f1f)",
-                  border: "2px solid #6effa066", borderRadius: 14, cursor: "pointer",
-                  fontFamily: "'Bebas Neue'", fontSize: compact ? 22 : 28, letterSpacing: 4, color: "#6effa0",
+                  background: "linear-gradient(135deg, #e4f6ea, #dff3e6)",
+                  border: "2px solid #0e8a4366", borderRadius: 14, cursor: "pointer",
+                  fontFamily: "'Bebas Neue'", fontSize: compact ? 22 : 28, letterSpacing: 4, color: "#0e8a43",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, #1f3f1f, #2a5a2a)"; e.currentTarget.style.borderColor = "#6effa0aa"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, #1a2a1a, #1f3f1f)"; e.currentTarget.style.borderColor = "#6effa066"; }}
+                onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, #dff3e6, #c7e9d2)"; e.currentTarget.style.borderColor = "#0e8a43aa"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, #e4f6ea, #dff3e6)"; e.currentTarget.style.borderColor = "#0e8a4366"; }}
               >
                 🏁 Record holed time
               </button>
             ) : (
-              <div style={{ background: "#0d0f1a", borderRadius: 14, padding: "16px 20px", marginBottom: 12 }}>
+              <div style={{ background: "#f4f6fb", borderRadius: 14, padding: "16px 20px", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 4 }}>🏁 Recorded finish time</div>
-                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 36, color: "#eee", lineHeight: 1 }}>{minToTime(recordedEnd)}</div>
+                    <div style={{ fontSize: 11, color: "#666d8a", marginBottom: 4 }}>🏁 Recorded finish time</div>
+                    <div style={{ fontFamily: "'Bebas Neue'", fontSize: 36, color: "#1b1f30", lineHeight: 1 }}>{minToTime(recordedEnd)}</div>
                     <div style={{ fontSize: 14, fontWeight: 700, marginTop: 6, color: diffColor(diffDisplay) }}>
                       {diffDisplay === 0 ? "On time" : diffDisplay > 0 ? `${diffDisplay} min late` : `${Math.abs(diffDisplay)} min early`}
                     </div>
                   </div>
                   <button onClick={() => setRecordedEnd(null)}
-                    style={{ background: "#2a1a1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+                    style={{ background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                     ↺ Cancel
                   </button>
                 </div>
@@ -3414,14 +3414,14 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           )}
 
           {inputMode === "manual" && (
-            <div style={{ background: "#0d0f1a", borderRadius: 12, padding: "16px 14px", marginBottom: 14 }}>
-              <div style={{ fontSize: 12, color: "#aaa", letterSpacing: 1, marginBottom: 14 }}>Difference from scheduled (min)</div>
+            <div style={{ background: "#f4f6fb", borderRadius: 12, padding: "16px 14px", marginBottom: 14 }}>
+              <div style={{ fontSize: 12, color: "#555555", letterSpacing: 1, marginBottom: 14 }}>Difference from scheduled (min)</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => setDiffManual(d => d - 5)}
-                    style={{ width: 44, height: 52, borderRadius: 10, background: "#2a1010", border: "1px solid #ff707044", color: "#ff7070", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−5</button>
+                    style={{ width: 44, height: 52, borderRadius: 10, background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−5</button>
                   <button onClick={() => setDiffManual(d => d - 1)}
-                    style={{ width: 44, height: 52, borderRadius: 10, background: "#1e1515", border: "1px solid #ff707033", color: "#ff9090", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−</button>
+                    style={{ width: 44, height: 52, borderRadius: 10, background: "#fdeaea", border: "1px solid #c6282833", color: "#ff9090", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−</button>
                 </div>
                 <div style={{ flex: 1, textAlign: "center" }}>
                   <input type="text" inputMode="numeric" pattern="-?[0-9]*"
@@ -3431,31 +3431,31 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       setDiffManual(v === "" || v === "-" ? 0 : Number(v));
                     }}
                     style={{
-                      width: 90, background: "#141626",
-                      border: `2px solid ${diffManual >= 3 ? "#ff707066" : diffManual >= 1 ? "#ffd96666" : "#6effa066"}`,
+                      width: 90, background: "#ffffff",
+                      border: `2px solid ${diffManual >= 3 ? "#c6282866" : diffManual >= 1 ? "#a67c0066" : "#0e8a4366"}`,
                       color: diffColor(diffManual),
                       borderRadius: 12, padding: "6px 4px",
                       fontFamily: "'Bebas Neue'", fontSize: 44, textAlign: "center", outline: "none",
                     }}
                   />
-                  <div style={{ fontSize: 12, color: "#8890b8", marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: "#666d8a", marginTop: 4 }}>
                     {diffManual === 0 ? `On time → finish ${minToTime(deadlineMin - 1)}` : diffManual > 0 ? `${diffManual} min late → finish ${minToTime(deadlineMin - 1)}` : `${Math.abs(diffManual)} min early → finish ${minToTime(deadlineMin - 1)}`}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => setDiffManual(d => d + 1)}
-                    style={{ width: 44, height: 52, borderRadius: 10, background: "#101e15", border: "1px solid #6effa033", color: "#6effa0", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+</button>
+                    style={{ width: 44, height: 52, borderRadius: 10, background: "#e8f7ee", border: "1px solid #0e8a4333", color: "#0e8a43", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+</button>
                   <button onClick={() => setDiffManual(d => d + 5)}
-                    style={{ width: 44, height: 52, borderRadius: 10, background: "#0d1a10", border: "1px solid #6effa044", color: "#6effa0", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+5</button>
+                    style={{ width: 44, height: 52, borderRadius: 10, background: "#e8f7ee", border: "1px solid #0e8a4344", color: "#0e8a43", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+5</button>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 12, justifyContent: "center" }}>
                 {[-5, -3, -1, 0, 1, 3, 5].map(v => (
                   <button key={v} onClick={() => setDiffManual(v)}
                     style={{
-                      background: diffManual === v ? (v >= 3 ? "#7a1a1a" : v >= 1 ? "#4a3a00" : v < 0 ? "#1a3a1a" : "#1a2a3a") : "#1e2135",
-                      border: `1px solid ${diffManual === v ? "transparent" : "#2a2d4a"}`,
-                      color: diffManual === v ? "#fff" : "#666",
+                      background: diffManual === v ? (v >= 3 ? "#c62828" : v >= 1 ? "#fff0c9" : v < 0 ? "#e4f6ea" : "#e6eef8") : "#eef1f8",
+                      border: `1px solid ${diffManual === v ? "transparent" : "#d5dbe9"}`,
+                      color: diffManual === v ? "#ffffff" : "#7a7a7a",
                       borderRadius: 6, padding: "4px 8px", cursor: "pointer", fontSize: 13, fontFamily: "inherit", fontWeight: 700,
                     }}>
                     {v > 0 ? `+${v}` : v}
@@ -3470,7 +3470,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               style={{
                 width: "100%",
                 background: `linear-gradient(135deg, ${group.color}88, ${group.color})`,
-                border: "none", color: "#fff", borderRadius: 10, padding: "16px",
+                border: "none", color: "#ffffff", borderRadius: 10, padding: "16px",
                 cursor: "pointer",
                 fontFamily: "'Bebas Neue'", letterSpacing: 3, fontSize: 22, fontWeight: 700,
               }}
@@ -3483,26 +3483,26 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           {/* MN Active Banner */}
         {mnActive && (
           <div style={{
-            background: "#001a2a", border: "1px solid #4e9af1aa",
+            background: "#e3effa", border: "1px solid #1565c0aa",
             borderRadius: 10, padding: "10px 16px", marginBottom: 16,
-            boxShadow: "0 0 20px #4e9af133",
+            boxShadow: "0 0 20px #1565c033",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4e9af1", boxShadow: "0 0 8px #4e9af1", animation: "pulse 1.5s infinite" }} />
-              <span style={{ fontSize: 13, color: "#4e9af1", fontWeight: 700, letterSpacing: 1 }}>👁 MONITORING</span>
-              {mnName && <span style={{ fontSize: 12, color: "#8899cc" }}>by {mnName}</span>}
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1565c0", boxShadow: "0 0 8px #1565c0", animation: "pulse 1.5s infinite" }} />
+              <span style={{ fontSize: 13, color: "#1565c0", fontWeight: 700, letterSpacing: 1 }}>👁 MONITORING</span>
+              {mnName && <span style={{ fontSize: 12, color: "#3f4763" }}>by {mnName}</span>}
               <button
                 onClick={offMN}
                 style={{
-                  marginLeft: "auto", background: "#1a2a3a", border: "1px solid #4e9af188",
-                  color: "#ff7070", borderRadius: 7, padding: "5px 12px",
+                  marginLeft: "auto", background: "#e6eef8", border: "1px solid #1565c088",
+                  color: "#c62828", borderRadius: 7, padding: "5px 12px",
                   cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                 }}
               >✕ Off MN</button>
             </div>
             {currentSlot < 18 && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 11, color: "#8899cc", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
+                <span style={{ fontSize: 11, color: "#3f4763", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
                 {playerNums.map(n => {
                   const label = `P${n}`;
                   const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label));
@@ -3516,9 +3516,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       disabled={usedUpInMN}
                       title={usedUpInMN ? `${label} is already a TM target — use the TIMING row below for further Bad Times` : `Bad Time — ${label} → flags TM on this hole immediately`}
                       style={{
-                        background: usedUpInMN ? "#1a1a1a" : "#2a0020",
-                        border: `1px solid ${usedUpInMN ? "#3a3a3a" : "#ff6ec788"}`,
-                        color: usedUpInMN ? "#666" : "#ff6ec7",
+                        background: usedUpInMN ? "#f0f0f0" : "#fce7f1",
+                        border: `1px solid ${usedUpInMN ? "#c9cede" : "#ad1457aa"}`,
+                        color: usedUpInMN ? "#7a7a7a" : "#ad1457",
                         borderRadius: 6, padding: "4px 10px", cursor: usedUpInMN ? "not-allowed" : "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
@@ -3533,27 +3533,27 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         {/* TM Active Banner */}
         {tmActive && (
           <div style={{
-            background: "#2a0020", border: "1px solid #ff6ec7aa",
+            background: "#fce7f1", border: "1px solid #ff6ec7aa",
             borderRadius: 10, padding: "10px 16px", marginBottom: 16,
-            boxShadow: "0 0 20px #ff6ec733",
+            boxShadow: "0 0 20px #ad145733",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff6ec7", boxShadow: "0 0 8px #ff6ec7", animation: "pulse 1.5s infinite" }} />
-              <span style={{ fontSize: 13, color: "#ff6ec7", fontWeight: 700, letterSpacing: 1 }}>⏱ TIMING</span>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ad1457", boxShadow: "0 0 8px #ad1457", animation: "pulse 1.5s infinite" }} />
+              <span style={{ fontSize: 13, color: "#ad1457", fontWeight: 700, letterSpacing: 1 }}>⏱ TIMING</span>
               <span style={{ fontSize: 12, color: "#ffb3e6", fontWeight: 700 }}>{tmTarget || "All"}</span>
-              {tmName && <span style={{ fontSize: 12, color: "#8899cc" }}>by {tmName}</span>}
+              {tmName && <span style={{ fontSize: 12, color: "#3f4763" }}>by {tmName}</span>}
               <button
                 onClick={offTM}
                 style={{
-                  marginLeft: "auto", background: "#3a0030", border: "1px solid #ff6ec788",
-                  color: "#ff7070", borderRadius: 7, padding: "5px 12px",
+                  marginLeft: "auto", background: "#fce7f1", border: "1px solid #ad1457aa",
+                  color: "#c62828", borderRadius: 7, padding: "5px 12px",
                   cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                 }}
               >✕ Off TM</button>
             </div>
             {currentSlot < 18 && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 11, color: "#8899cc", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
+                <span style={{ fontSize: 11, color: "#3f4763", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
                 {playerNums.map(n => {
                   const label = `P${n}`;
                   const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label);
@@ -3567,9 +3567,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       disabled={notYetTarget}
                       title={notYetTarget ? `${label} is not a TM target yet — use Bad Time in the MONITORING row above first` : isBadTimed ? `${label} already flagged Bad Time — tap to log it again` : `Bad Time — ${label} → flags TM on this hole immediately`}
                       style={{
-                        background: notYetTarget ? "#1a1a1a" : isBadTimed ? "#ff3d3d" : "#ff6ec7",
-                        border: `1px solid ${notYetTarget ? "#3a3a3a" : isBadTimed ? "#ff3d3d" : "#ff6ec7"}`,
-                        color: notYetTarget ? "#666" : "#1a0014",
+                        background: notYetTarget ? "#f0f0f0" : isBadTimed ? "#ff3d3d" : "#ad1457",
+                        border: `1px solid ${notYetTarget ? "#c9cede" : isBadTimed ? "#ff3d3d" : "#ad1457"}`,
+                        color: notYetTarget ? "#7a7a7a" : "#fce7f1",
                         borderRadius: 6, padding: "4px 10px", cursor: notYetTarget ? "not-allowed" : "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
@@ -3587,25 +3587,25 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         )}
 
         {done && (
-          <div style={{ background: "#141626", border: "1px solid #6effa044", borderRadius: 14, padding: 32, marginBottom: 20, textAlign: "center" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 48, color: "#6effa0", letterSpacing: 4 }}>✓ All 18 holes complete</div>
-            <div style={{ color: "#9aa2c7", marginTop: 8 }}>{group.name} has finished all holes</div>
+          <div style={{ background: "#ffffff", border: "1px solid #0e8a4344", borderRadius: 14, padding: 32, marginBottom: 20, textAlign: "center" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 48, color: "#0e8a43", letterSpacing: 4 }}>✓ All 18 holes complete</div>
+            <div style={{ color: "#5c6480", marginTop: 8 }}>{group.name} has finished all holes</div>
           </div>
         )}
 
 
         {!hideLog && (
         /* Hole Log Table */
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: "14px 16px", borderBottom: "1px solid #2a2d4a", fontSize: 12, color: "#4e9af1", letterSpacing: 2, fontWeight: 700 }}>
-            📊 HOLE LOG — <span style={{ color: "#8890b8", fontWeight: 400 }}>press ✏ to edit</span>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #d5dbe9", fontSize: 12, color: "#1565c0", letterSpacing: 2, fontWeight: 700 }}>
+            📊 HOLE LOG — <span style={{ color: "#666d8a", fontWeight: 400 }}>press ✏ to edit</span>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#0d0f1a" }}>
+                <tr style={{ background: "#f4f6fb" }}>
                   {["Hole","Par","Due","Time","Diff","Status","WN/MN/TM",""].map((h, i) => (
-                    <th key={i} style={{ padding: "8px 6px", color: h === "WN/MN/TM" ? "#ffd966" : "#555", fontWeight: 600, textAlign: "center", borderBottom: "1px solid #2a2d4a" }}>{h}</th>
+                    <th key={i} style={{ padding: "8px 6px", color: h === "WN/MN/TM" ? "#a67c00" : "#8a8a8a", fontWeight: 600, textAlign: "center", borderBottom: "1px solid #d5dbe9" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -3616,16 +3616,16 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   const firstHd = holeData[firstHi];
                   const startTime = firstHd?.startTime ?? group.startTime;
                   return (
-                    <tr style={{ background: "#0a1a0a", borderLeft: "3px solid #6effa044" }}>
-                      <td colSpan={2} style={{ padding: "6px 8px", textAlign: "center", color: "#6effa0", fontWeight: 700, fontSize: 12, letterSpacing: 1 }}>🏌 Tee off</td>
-                      <td style={{ padding: "6px 8px", textAlign: "center", color: "#8899cc" }}>{minToTime(schedule[holeOrder[0]] ?? 0)}</td>
-                      <td style={{ padding: "6px 8px", textAlign: "center", color: "#6effa0", fontWeight: 700 }}>
+                    <tr style={{ background: "#e8f7ee", borderLeft: "3px solid #0e8a4344" }}>
+                      <td colSpan={2} style={{ padding: "6px 8px", textAlign: "center", color: "#0e8a43", fontWeight: 700, fontSize: 12, letterSpacing: 1 }}>🏌 Tee off</td>
+                      <td style={{ padding: "6px 8px", textAlign: "center", color: "#3f4763" }}>{minToTime(schedule[holeOrder[0]] ?? 0)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "center", color: "#0e8a43", fontWeight: 700 }}>
                         {minToTime((schedule[holeOrder[0]] ?? 0) - 1 + delayMin)}
                       </td>
                       <td style={{ padding: "6px 8px", textAlign: "center" }}>
                         {delayMin > 0
-                          ? <span style={{ color: "#ffd966", fontWeight: 700 }}>+{delayMin}m</span>
-                          : <span style={{ color: "#666f99" }}>—</span>}
+                          ? <span style={{ color: "#a67c00", fontWeight: 700 }}>+{delayMin}m</span>
+                          : <span style={{ color: "#7a8099" }}>—</span>}
                       </td>
                       <td colSpan={3} style={{ padding: "6px 8px" }} />
                     </tr>
@@ -3652,7 +3652,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                     <tr key={i}
                       onClick={jumpToSlot}
                       style={{
-                        background: isEditing ? "#1e2135" : isActive ? `${group.color}11` : "transparent",
+                        background: isEditing ? "#eef1f8" : isActive ? `${group.color}11` : "transparent",
                         transition: "background 0.15s",
                         borderLeft: isActive ? `3px solid ${group.color}` : "3px solid transparent",
                         cursor: isEditing ? "default" : "pointer",
@@ -3664,18 +3664,18 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                         {i + 1}{isActive ? " ◀" : ""}
                       </td>
                       <td style={{ padding: "6px 8px", textAlign: "center", color: "#ccc" }}>Par {pars[i]}</td>
-                      <td style={{ padding: "6px 8px", textAlign: "center", color: "#8899cc" }}>{minToTime((schedule[i] ?? 0) + (parTimes?.[i] ?? 14))}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "center", color: "#3f4763" }}>{minToTime((schedule[i] ?? 0) + (parTimes?.[i] ?? 14))}</td>
                       <td style={{ padding: "6px 8px", textAlign: "center" }}>
                         {isEditing ? (
                           <input type="time" value={editVal} autoFocus
                             onChange={e => setEditVal(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter") confirmEditHole(i); if (e.key === "Escape") setEditingHole(null); }}
-                            style={{ background: "#0d0f1a", border: "1px solid #f16b4e", color: "#eee", borderRadius: 6, padding: "3px 6px", fontFamily: "inherit", fontSize: 13, width: 80 }}
+                            style={{ background: "#f4f6fb", border: "1px solid #f16b4e", color: "#1b1f30", borderRadius: 6, padding: "3px 6px", fontFamily: "inherit", fontSize: 13, width: 80 }}
                           />
                         ) : (
                           <span
                               onClick={() => hasEnd && startEditHole(i, "end")}
-                              style={{ color: hasEnd ? "#eee" : "#333", cursor: hasEnd ? "pointer" : "default" }}
+                              style={{ color: hasEnd ? "#1b1f30" : "#cccccc", cursor: hasEnd ? "pointer" : "default" }}
                             >{hasEnd ? (
                               hd.manualDiff !== undefined
                                 ? minToTime((schedule[i] ?? 0) + (parTimes?.[i] ?? 14) - 1 + hd.manualDiff)
@@ -3690,11 +3690,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                               type="number" autoFocus value={editDiffVal}
                               onChange={e => setEditDiffVal(e.target.value)}
                               onKeyDown={e => { if (e.key === "Enter") confirmEditDiff(i); if (e.key === "Escape") setEditingDiff(null); }}
-                              style={{ width: 60, background: "#0d0f1a", border: "1px solid #ffd966", color: "#ffd966", fontFamily: "inherit", fontSize: 14, borderRadius: 6, padding: "3px 4px", textAlign: "center", outline: "none" }}
+                              style={{ width: 60, background: "#f4f6fb", border: "1px solid #a67c00", color: "#a67c00", fontFamily: "inherit", fontSize: 14, borderRadius: 6, padding: "3px 4px", textAlign: "center", outline: "none" }}
                             />
                             <div style={{ display: "flex", gap: 3 }}>
-                              <button onClick={() => confirmEditDiff(i)} style={{ background: "#1a3a1a", border: "none", color: "#6effa0", borderRadius: 5, padding: "2px 6px", cursor: "pointer", fontSize: 11 }}>✓</button>
-                              <button onClick={() => setEditingDiff(null)} style={{ background: "#2a2a2a", border: "none", color: "#888", borderRadius: 5, padding: "2px 6px", cursor: "pointer", fontSize: 11 }}>✕</button>
+                              <button onClick={() => confirmEditDiff(i)} style={{ background: "#e4f6ea", border: "none", color: "#0e8a43", borderRadius: 5, padding: "2px 6px", cursor: "pointer", fontSize: 11 }}>✓</button>
+                              <button onClick={() => setEditingDiff(null)} style={{ background: "#e8e8e8", border: "none", color: "#6e6e6e", borderRadius: 5, padding: "2px 6px", cursor: "pointer", fontSize: 11 }}>✕</button>
                             </div>
                           </div>
                         ) : hasEnd && hasStart && diff !== null && !isEditing ? (
@@ -3723,13 +3723,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                 <button onClick={() => !wnDisabledRow && openActionModal("WN", i)}
                                   disabled={wnDisabledRow}
                                   title={mnActive || tmActive ? "MN/TM is active — WN cannot be used right now" : wnDisabledRow ? "WN already logged on this hole" : undefined}
-                                  style={{ background: wnDisabledRow ? "#1a1a1a" : "#2a1a00", border: `1px solid ${wnDisabledRow ? "#3a3a3a" : "#ffd96688"}`, color: wnDisabledRow ? "#666" : "#ffd966", borderRadius: 5, padding: "3px 7px", cursor: wnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
+                                  style={{ background: wnDisabledRow ? "#f0f0f0" : "#fff4d9", border: `1px solid ${wnDisabledRow ? "#c9cede" : "#a67c0088"}`, color: wnDisabledRow ? "#7a7a7a" : "#a67c00", borderRadius: 5, padding: "3px 7px", cursor: wnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>WN</button>
                                 <button onClick={() => !mnDisabledRow && openActionModal("MN", i)}
                                   disabled={mnDisabledRow}
                                   title={mnActive ? "MN is already running — turn MN off first" : mnDisabledHereRow ? "MN already logged on this hole" : mnAlreadyUsedRow ? "This group has already had MN turned on and off — MN can only be used once per group" : undefined}
-                                  style={{ background: mnDisabledRow ? "#1a1a1a" : "#001a2a", border: `1px solid ${mnDisabledRow ? "#3a3a3a" : "#4e9af188"}`, color: mnDisabledRow ? "#666" : "#4e9af1", borderRadius: 5, padding: "3px 7px", cursor: mnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
+                                  style={{ background: mnDisabledRow ? "#f0f0f0" : "#e3effa", border: `1px solid ${mnDisabledRow ? "#c9cede" : "#1565c088"}`, color: mnDisabledRow ? "#7a7a7a" : "#1565c0", borderRadius: 5, padding: "3px 7px", cursor: mnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                                 <button onClick={() => openActionModal("TM", i)}
-                                  style={{ background: "#2a0020", border: "1px solid #ff6ec788", color: "#ff6ec7", borderRadius: 5, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+                                  style={{ background: "#fce7f1", border: "1px solid #ad1457aa", color: "#ad1457", borderRadius: 5, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
                               </div>
                               {logs.map((l, li) => (
                                 <div key={li} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: logColor(l.type), background: `${logBg(l.type)}44`, borderRadius: 4, padding: "2px 4px", textAlign: "left", lineHeight: 1.4 }}>
@@ -3745,17 +3745,17 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                   <button
                                     onClick={() => setDeleteLogConfirm(l.idx)}
                                     title="Delete this log"
-                                    style={{ background: "none", border: "none", color: "#ff7070", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                                    style={{ background: "none", border: "none", color: "#c62828", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
                                   >🗑</button>
                                 </div>
                               ))}
                               {isFutureMN && !logs.some(l => l.type === "MN") && (
-                                <div style={{ fontSize: 11, color: "#4e9af1", background: "#001a2a66", border: "1px dashed #4e9af144", borderRadius: 4, padding: "2px 4px", textAlign: "center", lineHeight: 1.4 }}>
+                                <div style={{ fontSize: 11, color: "#1565c0", background: "#e3effa", border: "1px dashed #1565c044", borderRadius: 4, padding: "2px 4px", textAlign: "center", lineHeight: 1.4 }}>
                                   👁 MN{mnName ? ` - ${mnName}` : ""}
                                 </div>
                               )}
                               {isFutureTM && !logs.some(l => l.type === "TM") && (
-                                <div style={{ fontSize: 11, color: "#ff6ec7", background: "#2a002066", border: "1px dashed #ff6ec744", borderRadius: 4, padding: "2px 4px", textAlign: "center", lineHeight: 1.4 }}>
+                                <div style={{ fontSize: 11, color: "#ad1457", background: "#fce7f1", border: "1px dashed #ff6ec744", borderRadius: 4, padding: "2px 4px", textAlign: "center", lineHeight: 1.4 }}>
                                   ⏱ TM {tmName ? `- ${tmName}` : ""}
                                 </div>
                               )}
@@ -3766,12 +3766,12 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       <td style={{ padding: "6px 8px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
                         {isEditing ? (
                           <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>
-                            <button onClick={() => confirmEditHole(i)} style={{ ...btnStyle("#1a3a1a","#6effa0"), padding: "3px 7px", fontSize: 12 }}>✓</button>
-                            <button onClick={() => setEditingHole(null)} style={{ ...btnStyle("#2a2a2a","#888"), padding: "3px 7px", fontSize: 12 }}>✕</button>
-                            {(hasStart || hasEnd) && <button onClick={() => clearHole(i)} style={{ ...btnStyle("#3a1a1a","#ff7070"), padding: "3px 7px", fontSize: 12 }}>Delete</button>}
+                            <button onClick={() => confirmEditHole(i)} style={{ ...btnStyle("#e4f6ea","#0e8a43"), padding: "3px 7px", fontSize: 12 }}>✓</button>
+                            <button onClick={() => setEditingHole(null)} style={{ ...btnStyle("#e8e8e8","#6e6e6e"), padding: "3px 7px", fontSize: 12 }}>✕</button>
+                            {(hasStart || hasEnd) && <button onClick={() => clearHole(i)} style={{ ...btnStyle("#fdeaea","#c62828"), padding: "3px 7px", fontSize: 12 }}>Delete</button>}
                           </div>
                         ) : hasEnd ? (
-                          <button onClick={() => startEditHole(i, "end")} style={{ background: "none", border: "1px solid #f16b4e44", color: "#f16b4e", borderRadius: 6, padding: "3px 6px", cursor: "pointer", fontSize: 11, fontFamily: "inherit" }} title="Edit finish time">🏁 ✏</button>
+                          <button onClick={() => startEditHole(i, "end")} style={{ background: "none", border: "1px solid #d8431544", color: "#f16b4e", borderRadius: 6, padding: "3px 6px", cursor: "pointer", fontSize: 11, fontFamily: "inherit" }} title="Edit finish time">🏁 ✏</button>
                         ) : null}
                       </td>
                     </tr>
@@ -3786,25 +3786,25 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
       {/* WN/MN/TM Modal */}
       {actionModal && (
-        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#141626", border: `1px solid ${logColor(actionModal.type)}88`, borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #000" }}>
+        <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#ffffff", border: `1px solid ${logColor(actionModal.type)}88`, borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #0b1020" }}>
             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: logColor(actionModal.type), marginBottom: 6 }}>
               {actionModal.type === "WN" ? "⚠ PACE OF PLAY WARNING" : actionModal.type === "MN" ? "👁 MONITORING" : "⏱ TIMING"}
             </div>
-            <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 18 }}>
+            <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 18 }}>
               Hole {actionModal.holeIdx + 1} — {minToTime(nowInMin())}
             </div>
 
             {actionModal.type === "TM" && (
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 13, color: "#aaa", marginBottom: 8 }}>Players being timed (TM)</div>
+                <div style={{ fontSize: 13, color: "#555555", marginBottom: 8 }}>Players being timed (TM)</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   <button
                     onClick={() => toggleTarget("ALL")}
                     style={{
-                      background: actionTargets.includes("ALL") ? "#ff6ec7" : "#0d0f1a",
-                      color: actionTargets.includes("ALL") ? "#1a0014" : "#ff6ec7",
-                      border: "1px solid #ff6ec788", borderRadius: 8, padding: "6px 12px",
+                      background: actionTargets.includes("ALL") ? "#ad1457" : "#f4f6fb",
+                      color: actionTargets.includes("ALL") ? "#fce7f1" : "#ad1457",
+                      border: "1px solid #ad1457aa", borderRadius: 8, padding: "6px 12px",
                       cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                     }}
                   >All</button>
@@ -3813,35 +3813,35 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       key={n}
                       onClick={() => toggleTarget(n)}
                       style={{
-                        background: actionTargets.includes(n) ? "#ff6ec7" : "#0d0f1a",
-                        color: actionTargets.includes(n) ? "#1a0014" : "#ff6ec7",
-                        border: "1px solid #ff6ec788", borderRadius: 8, padding: "6px 12px",
+                        background: actionTargets.includes(n) ? "#ad1457" : "#f4f6fb",
+                        color: actionTargets.includes(n) ? "#fce7f1" : "#ad1457",
+                        border: "1px solid #ad1457aa", borderRadius: 8, padding: "6px 12px",
                         cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                       }}
                     >P{n}</button>
                   ))}
                 </div>
-                <div style={{ fontSize: 11, color: "#8890b8", marginTop: 6 }}>Multiple players can be selected</div>
+                <div style={{ fontSize: 11, color: "#666d8a", marginTop: 6 }}>Multiple players can be selected</div>
               </div>
             )}
 
-            <div style={{ fontSize: 13, color: "#aaa", marginBottom: 8 }}>Recorded by</div>
+            <div style={{ fontSize: 13, color: "#555555", marginBottom: 8 }}>Recorded by</div>
             <input
               autoFocus
               value={actionName}
               onChange={e => setActionName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") confirmAction(); if (e.key === "Escape") setActionModal(null); }}
               placeholder="Enter name..."
-              style={{ width: "100%", background: "#0d0f1a", border: `1px solid ${logColor(actionModal.type)}44`, color: "#eee", borderRadius: 8, padding: "10px 14px", fontFamily: "inherit", fontSize: 14, boxSizing: "border-box", marginBottom: 18 }}
+              style={{ width: "100%", background: "#f4f6fb", border: `1px solid ${logColor(actionModal.type)}44`, color: "#1b1f30", borderRadius: 8, padding: "10px 14px", fontFamily: "inherit", fontSize: 14, boxSizing: "border-box", marginBottom: 18 }}
             />
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={confirmAction}
                 disabled={actionModal.type === "TM" && actionTargets.length === 0}
                 style={{
                   flex: 1,
-                  background: (actionModal.type === "TM" && actionTargets.length === 0) ? "#1a1c2c" : logBg(actionModal.type),
-                  border: `1px solid ${(actionModal.type === "TM" && actionTargets.length === 0) ? "#333" : logColor(actionModal.type)}`,
-                  color: (actionModal.type === "TM" && actionTargets.length === 0) ? "#555" : logColor(actionModal.type),
+                  background: (actionModal.type === "TM" && actionTargets.length === 0) ? "#f0f3fa" : logBg(actionModal.type),
+                  border: `1px solid ${(actionModal.type === "TM" && actionTargets.length === 0) ? "#cccccc" : logColor(actionModal.type)}`,
+                  color: (actionModal.type === "TM" && actionTargets.length === 0) ? "#8a8a8a" : logColor(actionModal.type),
                   borderRadius: 8, padding: "10px",
                   cursor: (actionModal.type === "TM" && actionTargets.length === 0) ? "not-allowed" : "pointer",
                   fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2,
@@ -3849,7 +3849,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 ✓ Save {actionModal.type}
               </button>
               <button onClick={() => setActionModal(null)}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                 Cancel
               </button>
             </div>
@@ -3861,19 +3861,19 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       {deleteLogConfirm !== null && actionLogs[deleteLogConfirm] && (() => {
         const l = actionLogs[deleteLogConfirm];
         return (
-          <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
-            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
-              <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
+          <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
+            <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #0b1020" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#c62828", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
+              <div style={{ fontSize: 13, color: "#555555", marginBottom: 20, lineHeight: 1.6 }}>
                 Are you sure?
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => deleteLogAt(deleteLogConfirm)}
-                  style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                  style={{ flex: 1, background: "#fdeaea", border: "1px solid #c62828", color: "#c62828", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
                   ✓ Yes, delete
                 </button>
                 <button onClick={() => setDeleteLogConfirm(null)}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                  style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                   Cancel
                 </button>
               </div>
@@ -3934,8 +3934,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     };
   });
 
-  const thS = { padding: "10px 8px", color: "#888", fontWeight: 700, textAlign: "center", borderBottom: "1px solid #2a2d4a", fontSize: 12, letterSpacing: 0.5 };
-  const tdS = { padding: "10px 8px", textAlign: "center", borderBottom: "1px solid #1a1d2e", fontSize: 14 };
+  const thS = { padding: "10px 8px", color: "#6e6e6e", fontWeight: 700, textAlign: "center", borderBottom: "1px solid #d5dbe9", fontSize: 12, letterSpacing: 0.5 };
+  const tdS = { padding: "10px 8px", textAlign: "center", borderBottom: "1px solid #e9edf6", fontSize: 14 };
 
   // ─── TM (Timing) / Bad Time summary — every TM log across all groups, plus totals ──
   const tmRows = [];
@@ -4026,12 +4026,12 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   }).filter(Boolean);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0b14", color: "#eee", fontFamily: "'IBM Plex Mono', monospace" }}>
-      <div style={{ padding: "16px 24px", borderBottom: "1px solid #1a1d2e", display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={onBack} style={btnStyle("#141626", "#8899cc")}>← Back</button>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 2, color: "#4e9af1" }}>📈 SUMMARY REPORT</div>
+    <div style={{ minHeight: "100vh", background: "#eaeef7", color: "#1b1f30", fontFamily: "'IBM Plex Mono', monospace" }}>
+      <div style={{ padding: "16px 24px", borderBottom: "1px solid #e9edf6", display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={onBack} style={btnStyle("#ffffff", "#3f4763")}>← Back</button>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 2, color: "#1565c0" }}>📈 SUMMARY REPORT</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: "#9aa2c7" }}>{currentUser}</span>
+          <span style={{ fontSize: 12, color: "#5c6480" }}>{currentUser}</span>
           <LogoutButton onLogout={onLogout} />
         </div>
       </div>
@@ -4039,8 +4039,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       <div style={{ padding: "20px 24px", maxWidth: 900, margin: "0 auto" }}>
 
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#eee", letterSpacing: 1, marginBottom: 10 }}>⛳ PACE OF PLAY</div>
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1b1f30", letterSpacing: 1, marginBottom: 10 }}>⛳ PACE OF PLAY</div>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -4062,7 +4062,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         {s.first3Details.map((d, i) => (
                           <span key={i} style={{ whiteSpace: "nowrap" }}>
-                            <span style={{ color: "#888" }}>{d.name}</span>{" "}
+                            <span style={{ color: "#6e6e6e" }}>{d.name}</span>{" "}
                             <span style={{ color: diffColor(d.diff), fontWeight: 700 }}>
                               {d.diff === null ? "–" : (d.diff > 0 ? `+${d.diff}` : `${d.diff}`)}
                             </span>
@@ -4070,7 +4070,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                           </span>
                         ))}
                       </div>
-                    ) : <span style={{ color: "#8890b8" }}>–</span>}
+                    ) : <span style={{ color: "#666d8a" }}>–</span>}
                   </td>
                   <td style={{ ...tdS, color: diffColor(s.lastDiff), fontWeight: 700 }}>
                     {fmtDiff(s.lastDiff)}{s.lastDiff !== null && !s.lastComplete ? " *" : ""}
@@ -4078,18 +4078,18 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 </tr>
               ))}
               {sideStats.length === 0 && (
-                <tr><td colSpan={5} style={{ ...tdS, color: "#8890b8", padding: 20 }}>No groups yet</td></tr>
+                <tr><td colSpan={5} style={{ ...tdS, color: "#666d8a", padding: 20 }}>No groups yet</td></tr>
               )}
             </tbody>
           </table>
         </div>
-        <div style={{ fontSize: 11, color: "#8890b8", marginTop: -14, marginBottom: 24 }}>
+        <div style={{ fontSize: 11, color: "#666d8a", marginTop: -14, marginBottom: 24 }}>
           * = based on the most recently completed hole (round not finished yet). Δ is minutes ahead (–) / behind (+) of scheduled pace.
         </div>
 
         {/* ─── Suspension & Resumption ──────────────────────────────── */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#eee", letterSpacing: 1, marginBottom: 10 }}>⏸ SUSPENSION &amp; RESUMPTION</div>
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: "4px 0", overflowX: "auto" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1b1f30", letterSpacing: 1, marginBottom: 10 }}>⏸ SUSPENSION &amp; RESUMPTION</div>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: "4px 0", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -4111,20 +4111,20 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
               {isSuspended && (
                 <tr>
                   <td style={tdS}>{suspensions.length + 1}</td>
-                  <td style={{ ...tdS, color: "#ffd966" }}>{pendingStopTime}</td>
-                  <td style={{ ...tdS, color: "#ffd966" }}>Ongoing…</td>
-                  <td style={{ ...tdS, color: "#ffd966" }}>—</td>
+                  <td style={{ ...tdS, color: "#a67c00" }}>{pendingStopTime}</td>
+                  <td style={{ ...tdS, color: "#a67c00" }}>Ongoing…</td>
+                  <td style={{ ...tdS, color: "#a67c00" }}>—</td>
                 </tr>
               )}
               {suspensions.length === 0 && !isSuspended && (
-                <tr><td colSpan={4} style={{ ...tdS, color: "#8890b8", padding: 20 }}>No suspensions recorded</td></tr>
+                <tr><td colSpan={4} style={{ ...tdS, color: "#666d8a", padding: 20 }}>No suspensions recorded</td></tr>
               )}
             </tbody>
             {(suspensions.length > 0 || isSuspended) && (
               <tfoot>
                 <tr>
-                  <td colSpan={3} style={{ ...tdS, textAlign: "right", color: "#8899cc", fontWeight: 700, borderBottom: "none" }}>Total Suspended</td>
-                  <td style={{ ...tdS, color: "#6effa0", fontWeight: 700, borderBottom: "none" }}>{minToHM(totalOffsetMin)}</td>
+                  <td colSpan={3} style={{ ...tdS, textAlign: "right", color: "#3f4763", fontWeight: 700, borderBottom: "none" }}>Total Suspended</td>
+                  <td style={{ ...tdS, color: "#0e8a43", fontWeight: 700, borderBottom: "none" }}>{minToHM(totalOffsetMin)}</td>
                 </tr>
               </tfoot>
             )}
@@ -4132,30 +4132,30 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#eee", letterSpacing: 1, margin: "24px 0 10px" }}>⏱ TM &amp; BAD TIME SUMMARY</div>
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: "10px", overflowX: "auto" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1b1f30", letterSpacing: 1, margin: "24px 0 10px" }}>⏱ TM &amp; BAD TIME SUMMARY</div>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: "10px", overflowX: "auto" }}>
           {tmGroupSummaries.length === 0 && (
-            <div style={{ color: "#8890b8", padding: 20, textAlign: "center", fontSize: 14 }}>No TM records yet</div>
+            <div style={{ color: "#666d8a", padding: 20, textAlign: "center", fontSize: 14 }}>No TM records yet</div>
           )}
           {tmGroupSummaries.map(gs => {
             const isOpen = expandedTMGroups.has(gs.groupId);
             return (
-              <div key={gs.groupId} style={{ border: "1px solid #2a2d4a", borderRadius: 8, marginBottom: 8, overflow: "hidden" }}>
+              <div key={gs.groupId} style={{ border: "1px solid #d5dbe9", borderRadius: 8, marginBottom: 8, overflow: "hidden" }}>
                 <button
                   onClick={() => toggleTMGroup(gs.groupId)}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                    background: isOpen ? "#1a1d33" : "#10111f", border: "none", cursor: "pointer",
-                    padding: "10px 14px", fontFamily: "inherit", color: "#eee", textAlign: "left",
+                    background: isOpen ? "#eef1f8" : "#eef1f8", border: "none", cursor: "pointer",
+                    padding: "10px 14px", fontFamily: "inherit", color: "#1b1f30", textAlign: "left",
                   }}
                 >
                   <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 12, color: "#9aa2c7", transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block" }}>▶</span>
+                    <span style={{ fontSize: 12, color: "#5c6480", transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block" }}>▶</span>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{gs.groupName}</span>
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
-                    <span style={{ color: "#ff6ec7" }}>{gs.players.length} Timing</span>
-                    {gs.totalBadTime > 0 && <span style={{ color: "#ffd966" }}>⚡ {gs.totalBadTime} Bad Time</span>}
+                    <span style={{ color: "#ad1457" }}>{gs.players.length} Timing</span>
+                    {gs.totalBadTime > 0 && <span style={{ color: "#a67c00" }}>⚡ {gs.totalBadTime} Bad Time</span>}
                   </span>
                 </button>
                 {isOpen && (
@@ -4175,7 +4175,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                         return (
                           <Fragment key={p.label}>
                             <tr>
-                              <td style={{ ...tdS, color: "#ff6ec7", fontWeight: 700 }}>{p.label}</td>
+                              <td style={{ ...tdS, color: "#ad1457", fontWeight: 700 }}>{p.label}</td>
                               <td style={tdS}>{p.firstHole === p.lastHole ? `H${p.firstHole}` : `H${p.firstHole} → H${p.lastHole}`}</td>
                               <td style={tdS}>
                                 {p.badTimeCount > 0 ? (
@@ -4183,7 +4183,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                                     onClick={() => toggleBadTimePlayer(key)}
                                     style={{
                                       background: "none", border: "none", cursor: "pointer",
-                                      color: "#ffd966", fontFamily: "inherit", fontSize: 14,
+                                      color: "#a67c00", fontFamily: "inherit", fontSize: 14,
                                       display: "inline-flex", alignItems: "center", gap: 4, padding: 0,
                                     }}
                                   >
@@ -4196,15 +4196,15 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                             </tr>
                             {badTimeOpen && p.badTimeHoles.length > 0 && (
                               <tr>
-                                <td colSpan={4} style={{ padding: "6px 12px 12px", borderBottom: "1px solid #1a1d2e", background: "#0d0f1a" }}>
+                                <td colSpan={4} style={{ padding: "6px 12px 12px", borderBottom: "1px solid #e9edf6", background: "#f4f6fb" }}>
                                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                     {p.badTimeHoles.map((bt, bi) => (
                                       <span key={bi} style={{
                                         display: "inline-flex", alignItems: "center", gap: 5,
-                                        background: "#2a0020", border: "1px solid #ffd96666",
-                                        borderRadius: 6, padding: "3px 8px", fontSize: 12, color: "#ffd966",
+                                        background: "#fce7f1", border: "1px solid #a67c0066",
+                                        borderRadius: 6, padding: "3px 8px", fontSize: 12, color: "#a67c00",
                                       }}>
-                                        ⚡ H{bt.holeIdx + 1} <span style={{ color: "#888" }}>· {bt.time} · {bt.name}</span>
+                                        ⚡ H{bt.holeIdx + 1} <span style={{ color: "#6e6e6e" }}>· {bt.time} · {bt.name}</span>
                                       </span>
                                     ))}
                                   </div>
@@ -4221,22 +4221,22 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             );
           })}
           {tmGroupSummaries.length > 0 && (
-            <div style={{ borderTop: "1px solid #2a2d4a", marginTop: 6, paddingTop: 10, fontSize: 13 }}>
+            <div style={{ borderTop: "1px solid #d5dbe9", marginTop: 6, paddingTop: 10, fontSize: 13 }}>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px" }}>
-                <span style={{ color: "#8899cc", fontWeight: 700 }}>Timing</span>
-                <span style={{ color: "#ff6ec7", fontWeight: 700 }}>{totalPlayersTimed}</span>
+                <span style={{ color: "#3f4763", fontWeight: 700 }}>Timing</span>
+                <span style={{ color: "#ad1457", fontWeight: 700 }}>{totalPlayersTimed}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px", fontSize: 12 }}>
-                <span style={{ color: "#9aa2c7" }}>⤷ via normal TM selection</span>
-                <span style={{ color: "#ff6ec7" }}>{totalNormalTMPlayers}</span>
+                <span style={{ color: "#5c6480" }}>⤷ via normal TM selection</span>
+                <span style={{ color: "#ad1457" }}>{totalNormalTMPlayers}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px", fontSize: 12 }}>
-                <span style={{ color: "#9aa2c7" }}>⤷ via Bad Time</span>
-                <span style={{ color: "#ffd966" }}>{totalBadTimePlayers}</span>
+                <span style={{ color: "#5c6480" }}>⤷ via Bad Time</span>
+                <span style={{ color: "#a67c00" }}>{totalBadTimePlayers}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px" }}>
-                <span style={{ color: "#8899cc", fontWeight: 700 }}>Bad Time</span>
-                <span style={{ color: "#ffd966", fontWeight: 700 }}>{totalBadTime}</span>
+                <span style={{ color: "#3f4763", fontWeight: 700 }}>Bad Time</span>
+                <span style={{ color: "#a67c00", fontWeight: 700 }}>{totalBadTime}</span>
               </div>
             </div>
           )}
@@ -4310,7 +4310,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   };
 
   const sel = {
-    background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8,
+    background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 8,
     padding: "0 8px", height: compact ? 34 : 40, fontFamily: "inherit", fontSize: 12, outline: "none",
   };
 
@@ -4342,9 +4342,9 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
           height: compact ? 34 : 40, padding: "0 14px", borderRadius: 8, flexShrink: 0,
           cursor: (!tid || !label || busy) ? "not-allowed" : "pointer",
           fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-          background: (!tid || !label) ? "#1a1d2e" : "#1a4a8a",
-          border: `1px solid ${(!tid || !label) ? "#2a2d4a" : "#4e9af1"}`,
-          color: (!tid || !label) ? "#555" : "#fff",
+          background: (!tid || !label) ? "#e9edf6" : "#1565c0",
+          border: `1px solid ${(!tid || !label) ? "#d5dbe9" : "#1565c0"}`,
+          color: (!tid || !label) ? "#8a8a8a" : "#ffffff",
         }}>
         {busy ? "…" : "🔍 Search"}
       </button>
@@ -4472,30 +4472,30 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0d0f1a", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
+    <div style={{ minHeight: "100vh", background: "#f4f6fb", fontFamily: "'IBM Plex Mono', monospace", color: "#1b1f30" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
       {/* Grid, not flex: the left cell is allowed to shrink so the right cell can
           never be pushed off the edge of the screen. */}
-      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
+      <div style={{ background: "#ffffff", borderBottom: "1px solid #d5dbe9", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <button onClick={onBack} style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
+          <button onClick={onBack} style={{ background: "#e9edf6", border: "1px solid #1565c044", color: "#1565c0", cursor: "pointer", fontSize: 26, fontWeight: 700, borderRadius: 8, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
           {/* BETA sits above the title, right edge flush with the final "D".
               The subtitle wraps rather than truncating, so it always reads fully. */}
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, marginBottom: 2 }}>BETA</span>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#4e9af1", whiteSpace: "nowrap" }}>⛳ DASHBOARD</div>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, marginBottom: 2 }}>BETA</span>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#1565c0", whiteSpace: "nowrap" }}>⛳ DASHBOARD</div>
             </div>
             {tournamentName ? (
-              <div style={{ fontSize: 11, color: "#eee", lineHeight: 1.4, marginTop: 2, fontWeight: 700 }}>
+              <div style={{ fontSize: 11, color: "#1b1f30", lineHeight: 1.4, marginTop: 2, fontWeight: 700 }}>
                 {tournamentName}
                 {roundLabel && (
-                  <span style={{ color: "#6effa0" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>
+                  <span style={{ color: "#0e8a43" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>
                 )}
               </div>
             ) : (
-              <div style={{ fontSize: 10, color: "#8890b8", lineHeight: 1.4, marginTop: 2 }}>Golf Referee · Pace of Play System</div>
+              <div style={{ fontSize: 10, color: "#666d8a", lineHeight: 1.4, marginTop: 2 }}>Golf Referee · Pace of Play System</div>
             )}
           </div>
         </div>
@@ -4505,37 +4505,37 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
           <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-            <span style={{ fontSize: 13, color: "#8899cc" }}>⏱ {minToTime(now)}</span>
+            <span style={{ fontSize: 13, color: "#3f4763" }}>⏱ {minToTime(now)}</span>
             {currentUser && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontSize: 12, color: "#8890b8" }}>👤</span>
-                <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
+                <span style={{ fontSize: 12, color: "#666d8a" }}>👤</span>
+                <span style={{ fontSize: 13, color: "#3f4763", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
               </span>
             )}
           </span>
           <div style={{ display: "flex", gap: 8, width: "100%" }}>
             <button onClick={onChangePassword}
               title="Change your password"
-              style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
+              style={{ background: "#f4f6fb", border: "1px solid #1565c044", color: "#1565c0", borderRadius: 10, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
             >🔑</button>
             <button onClick={onLogout}
-              style={{ flex: 1, background: "#1a0d0d", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "#ff707088"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "#ff707044"}
+              style={{ flex: 1, background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 10, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#c62828aa"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "#c6282844"}
             >⏏ Log out</button>
           </div>
         </div>
       </div>
 
       {/* Where you are, and how to get somewhere else without leaving this page */}
-      <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 10, margin: "12px 16px 0", padding: "10px 14px" }}>
+      <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 10, margin: "12px 16px 0", padding: "10px 14px" }}>
         {(tournamentName || roundLabel) && (
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#c8ceee" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#252a3d" }}>
               🏆 {tournamentName || "(untitled tournament)"}
-              {roundLabel && <span style={{ color: "#6effa0" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
+              {roundLabel && <span style={{ color: "#0e8a43" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
             </div>
-            {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
+            {hostVenue && <div style={{ fontSize: 12, color: "#666d8a", marginTop: 2 }}>{hostVenue}</div>}
           </div>
         )}
         {onOpenRound && (
@@ -4550,12 +4550,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       </div>
 
       {/* Action row — Summary / Export Data / Stopping Play, equal-size buttons */}
-      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "10px 24px", display: "flex", gap: 10 }}>
+      <div style={{ background: "#ffffff", borderBottom: "1px solid #d5dbe9", padding: "10px 24px", display: "flex", gap: 10 }}>
         {onNavigateSummary && (
           <button
             onClick={onNavigateSummary}
             style={{
-              flex: 1, background: "#0a1a2a", border: "1px solid #6effa088", color: "#6effa0",
+              flex: 1, background: "#e3effa", border: "1px solid #0e8a4388", color: "#0e8a43",
               borderRadius: 8, padding: "10px 0", cursor: "pointer",
               fontFamily: "'IBM Plex Mono'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
             }}
@@ -4564,33 +4564,33 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         <button
           onClick={() => setExportModal(true)}
           style={{
-            flex: 1, background: "#0a1a2a", border: "1px solid #4e9af188", color: "#4e9af1",
+            flex: 1, background: "#e3effa", border: "1px solid #1565c088", color: "#1565c0",
             borderRadius: 8, padding: "10px 0", cursor: "pointer",
             fontFamily: "'IBM Plex Mono'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
           }}
         >⬇ Export Data</button>
         {!isSuspended ? (
           <button onClick={openStop} style={{
-            flex: 1, background: "#2a1500", border: "1px solid #ffd96688", color: "#ffd966",
+            flex: 1, background: "#fff0c9", border: "1px solid #a67c0088", color: "#a67c00",
             borderRadius: 8, padding: "10px 0", cursor: "pointer",
             fontFamily: "'IBM Plex Mono'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
           }}>⏸ Stopping play</button>
         ) : (
           <button onClick={openResume} style={{
-            flex: 1, background: "#0a2a10", border: "1px solid #6effa088", color: "#6effa0",
+            flex: 1, background: "#e4f6ea", border: "1px solid #0e8a4388", color: "#0e8a43",
             borderRadius: 8, padding: "10px 0", cursor: "pointer",
             fontFamily: "'IBM Plex Mono'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
-            boxShadow: "0 0 12px #6effa033",
+            boxShadow: "0 0 12px #0e8a4333",
           }}>▶ Resume play</button>
         )}
       </div>
 
       {!isSuspended && suspensions.length > 0 && (
         <div style={{
-          background: "#141210", borderBottom: "1px solid #ff996633",
+          background: "#fff4d9", borderBottom: "1px solid #ff996633",
           padding: "8px 24px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5,
         }}>
-          <span style={{ color: "#ff9966", fontSize: 12, fontWeight: 700 }}>⏱ Time shift</span>
+          <span style={{ color: "#d84315", fontSize: 12, fontWeight: 700 }}>⏱ Time shift</span>
           {suspensions.map((s, i) => (
             <span key={i}
               onClick={() => onSuspendEdit && setEditSuspension({ idx: i, stopTime: s.stopTime, resumeTime: s.resumeTime })}
@@ -4600,29 +4600,29 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 // Fixed columns keep every row's arrow, offset and pencil in line
                 gridTemplateColumns: "26px 46px 12px 46px 62px 16px",
                 alignItems: "center", gap: 4,
-                fontSize: 12, color: "#aaa", background: "#0d0f1a", border: "1px solid #2a2d4a",
+                fontSize: 12, color: "#555555", background: "#f4f6fb", border: "1px solid #d5dbe9",
                 borderRadius: 6, padding: "3px 8px", cursor: onSuspendEdit ? "pointer" : "default",
               }}>
               <span>#{i + 1}</span>
-              <b style={{ color: "#ffd966" }}>{s.stopTime}</b>
+              <b style={{ color: "#a67c00" }}>{s.stopTime}</b>
               <span style={{ textAlign: "center" }}>→</span>
-              <b style={{ color: "#6effa0" }}>{s.resumeTime}</b>
-              <b style={{ color: "#ff9966", textAlign: "right" }}>+{s.offsetMin}min</b>
-              <span style={{ color: "#4e9af1", textAlign: "right" }}>{onSuspendEdit ? "✏️" : ""}</span>
+              <b style={{ color: "#0e8a43" }}>{s.resumeTime}</b>
+              <b style={{ color: "#d84315", textAlign: "right" }}>+{s.offsetMin}min</b>
+              <span style={{ color: "#1565c0", textAlign: "right" }}>{onSuspendEdit ? "✏️" : ""}</span>
             </span>
           ))}
-          <span style={{ fontSize: 13, color: "#ff9966", fontWeight: 700, marginTop: 2 }}>Total +{totalOffsetMin} min</span>
+          <span style={{ fontSize: 13, color: "#d84315", fontWeight: 700, marginTop: 2 }}>Total +{totalOffsetMin} min</span>
         </div>
       )}
 
       {/* Per-device hole focus — hide columns for holes this marshal doesn't supervise */}
-      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "8px 24px" }}>
+      <div style={{ background: "#ffffff", borderBottom: "1px solid #d5dbe9", padding: "8px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => setShowFocusPicker(v => !v)}
             style={{
-              background: focusHoles.length ? "#1a4a8a" : "#0d0f1a",
-              border: `1px solid ${focusHoles.length ? "#4e9af1" : "#2a2d4a"}`,
-              color: focusHoles.length ? "#fff" : "#8890b8",
+              background: focusHoles.length ? "#1565c0" : "#f4f6fb",
+              border: `1px solid ${focusHoles.length ? "#1565c0" : "#d5dbe9"}`,
+              color: focusHoles.length ? "#ffffff" : "#666d8a",
               borderRadius: 7, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
             🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
@@ -4630,30 +4630,30 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <button onClick={toggleFitAll}
             title="Shrink columns to fit all 18 holes on one screen (for TD / CR)"
             style={{
-              background: fitAllHoles ? "#1a4a8a" : "#0d0f1a",
-              border: `1px solid ${fitAllHoles ? "#4e9af1" : "#2a2d4a"}`,
-              color: fitAllHoles ? "#fff" : "#8890b8",
+              background: fitAllHoles ? "#1565c0" : "#f4f6fb",
+              border: `1px solid ${fitAllHoles ? "#1565c0" : "#d5dbe9"}`,
+              color: fitAllHoles ? "#ffffff" : "#666d8a",
               borderRadius: 7, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
             {fitAllHoles ? "🔍 Normal view" : "⛶ Fit 18 holes"}
           </button>
           {focusHoles.length > 0 && (
             <button onClick={() => saveFocusHoles([])}
-              style={{ marginLeft: "auto", background: "#0d0f1a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
+              style={{ marginLeft: "auto", background: "#f4f6fb", border: "1px solid #c6282844", color: "#c62828", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
               ✕ Show all
             </button>
           )}
         </div>
         {focusHoles.length > 0 && (
-          <div style={{ fontSize: 12, color: "#8890b8", marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: "#666d8a", marginTop: 6 }}>
             Showing {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
           </div>
         )}
       </div>
 
       {showFocusPicker && (
-        <div style={{ background: "#0d0f1a", borderBottom: "1px solid #2a2d4a", padding: "12px 24px" }}>
-          <div style={{ fontSize: 11, color: "#8890b8", marginBottom: 8 }}>Select the holes you supervise (none selected = show all) — saved on this device only</div>
+        <div style={{ background: "#f4f6fb", borderBottom: "1px solid #d5dbe9", padding: "12px 24px" }}>
+          <div style={{ fontSize: 11, color: "#666d8a", marginBottom: 8 }}>Select the holes you supervise (none selected = show all) — saved on this device only</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 6, marginBottom: 10 }}>
             {Array.from({ length: 18 }, (_, i) => i).map(hi => {
               const on = focusHoles.includes(hi);
@@ -4662,22 +4662,22 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   onClick={() => saveFocusHoles(on ? focusHoles.filter(x => x !== hi) : [...focusHoles, hi])}
                   style={{
                     width: "100%", height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0,
-                    background: on ? "#1a4a8a" : "#141626",
-                    border: `1px solid ${on ? "#4e9af1" : "#2a2d4a"}`,
-                    color: on ? "#fff" : "#8890b8",
+                    background: on ? "#1565c0" : "#ffffff",
+                    border: `1px solid ${on ? "#1565c0" : "#d5dbe9"}`,
+                    color: on ? "#ffffff" : "#666d8a",
                   }}>H{hi + 1}</button>
               );
             })}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i))}
-              style={{ background: "#141626", border: "1px solid #2a2d4a", color: "#8890b8", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H1–H9</button>
+              style={{ background: "#ffffff", border: "1px solid #d5dbe9", color: "#666d8a", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H1–H9</button>
             <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i + 9))}
-              style={{ background: "#141626", border: "1px solid #2a2d4a", color: "#8890b8", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H10–H18</button>
+              style={{ background: "#ffffff", border: "1px solid #d5dbe9", color: "#666d8a", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H10–H18</button>
             <button onClick={() => saveFocusHoles([])}
-              style={{ background: "#141626", border: "1px solid #2a2d4a", color: "#8890b8", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show all</button>
+              style={{ background: "#ffffff", border: "1px solid #d5dbe9", color: "#666d8a", borderRadius: 7, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show all</button>
             <button onClick={() => setShowFocusPicker(false)}
-              style={{ marginLeft: "auto", background: "#1a4a2a", border: "1px solid #6effa066", color: "#6effa0", borderRadius: 7, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
+              style={{ marginLeft: "auto", background: "#dff3e6", border: "1px solid #0e8a4366", color: "#0e8a43", borderRadius: 7, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
           </div>
         </div>
       )}
@@ -4687,18 +4687,18 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           clipboard copy is the one export path that works everywhere.) */}
       {exportModal && exportData && (
         <div style={{
-          position: "fixed", inset: 0, background: "#000000aa", zIndex: 200,
+          position: "fixed", inset: 0, background: "#0b102088", zIndex: 200,
           display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
         }} onClick={() => setExportModal(false)}>
           <div
-            style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, padding: 24, maxWidth: 560, width: "100%", maxHeight: "85vh", overflowY: "auto" }}
+            style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 14, padding: 24, maxWidth: 560, width: "100%", maxHeight: "85vh", overflowY: "auto" }}
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1" }}>📊 EXPORT DATA</div>
-              <button onClick={() => setExportModal(false)} style={{ background: "none", border: "none", color: "#9aa2c7", cursor: "pointer", fontSize: 18 }}>✕</button>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0" }}>📊 EXPORT DATA</div>
+              <button onClick={() => setExportModal(false)} style={{ background: "none", border: "none", color: "#5c6480", cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
-            <div style={{ fontSize: 12, color: "#888", marginBottom: 18, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: "#6e6e6e", marginBottom: 18, lineHeight: 1.5 }}>
               Tap "Copy" for a sheet, then paste (long-press → Paste, or Ctrl/Cmd+V) into a new tab in Excel or Google Sheets — the columns will line up automatically.
             </div>
 
@@ -4707,19 +4707,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               { key: "detail", label: "Hole Details", tsv: exportData.detailTSV, rows: exportData.detailRows },
               { key: "logs", label: "Action Logs", tsv: exportData.logsTSV, rows: exportData.logRows },
             ].map(sheet => (
-              <div key={sheet.key} style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+              <div key={sheet.key} style={{ background: "#f4f6fb", border: "1px solid #d5dbe9", borderRadius: 10, padding: 14, marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#eee" }}>{sheet.label}</div>
-                    <div style={{ fontSize: 11, color: "#9aa2c7" }}>{sheet.rows.length} row{sheet.rows.length === 1 ? "" : "s"}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1b1f30" }}>{sheet.label}</div>
+                    <div style={{ fontSize: 11, color: "#5c6480" }}>{sheet.rows.length} row{sheet.rows.length === 1 ? "" : "s"}</div>
                   </div>
                   <button
                     onClick={() => handleCopySheet(sheet.label, sheet.tsv)}
                     disabled={!sheet.rows.length}
                     style={{
-                      background: exportCopied === sheet.label ? "#0a2a10" : "#1e2135",
-                      border: `1px solid ${exportCopied === sheet.label ? "#6effa088" : "#2a2d4a"}`,
-                      color: exportCopied === sheet.label ? "#6effa0" : (sheet.rows.length ? "#8899cc" : "#444"),
+                      background: exportCopied === sheet.label ? "#e4f6ea" : "#eef1f8",
+                      border: `1px solid ${exportCopied === sheet.label ? "#0e8a4388" : "#d5dbe9"}`,
+                      color: exportCopied === sheet.label ? "#0e8a43" : (sheet.rows.length ? "#3f4763" : "#444"),
                       borderRadius: 7, padding: "6px 14px", cursor: sheet.rows.length ? "pointer" : "default",
                       fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                     }}
@@ -4734,24 +4734,24 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {/* Suspended Banner */}
       {isSuspended && (
         <div style={{
-          background: "#1f0f00", borderBottom: "1px solid #ffd96666",
+          background: "#fff0c9", borderBottom: "1px solid #a67c0066",
           padding: "10px 24px", display: "flex", alignItems: "center", gap: 12,
         }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ffd966", boxShadow: "0 0 8px #ffd966", animation: "pulse 1.5s infinite" }} />
-          <span style={{ color: "#ffd966", fontWeight: 700, fontSize: 14 }}>⏸ Match paused</span>
-          <span style={{ color: "#aaa", fontSize: 13 }}>Since <b style={{ color: "#eee" }}>{pendingStopTime}</b></span>
-          <span style={{ color: "#8890b8", fontSize: 12 }}>— All groups paused together</span>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#a67c00", boxShadow: "0 0 8px #a67c00", animation: "pulse 1.5s infinite" }} />
+          <span style={{ color: "#a67c00", fontWeight: 700, fontSize: 14 }}>⏸ Match paused</span>
+          <span style={{ color: "#555555", fontSize: 13 }}>Since <b style={{ color: "#1b1f30" }}>{pendingStopTime}</b></span>
+          <span style={{ color: "#666d8a", fontSize: 12 }}>— All groups paused together</span>
           <button onClick={openResume} style={{
-            marginLeft: "auto", background: "#0a2a10", border: "1px solid #6effa088",
-            color: "#6effa0", borderRadius: 7, padding: "5px 14px",
+            marginLeft: "auto", background: "#e4f6ea", border: "1px solid #0e8a4388",
+            color: "#0e8a43", borderRadius: 7, padding: "5px 14px",
             cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
           }}>▶ Resume play</button>
           {onSuspendCancel && (
             <button onClick={() => { if (window.confirm("Cancel this stoppage?\n\nUse this if it was pressed by mistake — nothing is recorded and the schedule is not shifted.")) onSuspendCancel(); }}
               title="Pressed by mistake? Cancel without recording"
               style={{
-                background: "#2a0a0a", border: "1px solid #ff707088",
-                color: "#ff7070", borderRadius: 7, padding: "5px 12px",
+                background: "#fdeaea", border: "1px solid #c62828aa",
+                color: "#c62828", borderRadius: 7, padding: "5px 12px",
                 cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
               }}>✕ Cancel</button>
           )}
@@ -4761,42 +4761,42 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {/* Suspension History Banner */}
 
       {editSuspension && (
-        <div onClick={() => setEditSuspension(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #ff996688", borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #000" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#ff9966", marginBottom: 16 }}>
+        <div onClick={() => setEditSuspension(null)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #ff996688", borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #0b1020" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#d84315", marginBottom: 16 }}>
               ⏱ Edit stop #{editSuspension.idx + 1}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               <div>
-                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Stop time</label>
+                <label style={{ fontSize: 11, color: "#666d8a", letterSpacing: 1 }}>Stop time</label>
                 <input type="time" value={editSuspension.stopTime}
                   onChange={e => setEditSuspension(v => ({ ...v, stopTime: e.target.value }))}
-                  style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#ffd966", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 15, outline: "none", marginTop: 4 }} />
+                  style={{ display: "block", width: "100%", background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#a67c00", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 15, outline: "none", marginTop: 4 }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Resume time</label>
+                <label style={{ fontSize: 11, color: "#666d8a", letterSpacing: 1 }}>Resume time</label>
                 <input type="time" value={editSuspension.resumeTime}
                   onChange={e => setEditSuspension(v => ({ ...v, resumeTime: e.target.value }))}
-                  style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#6effa0", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 15, outline: "none", marginTop: 4 }} />
+                  style={{ display: "block", width: "100%", background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#0e8a43", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 15, outline: "none", marginTop: 4 }} />
               </div>
               {(() => {
                 const [sh, sm] = (editSuspension.stopTime || "0:00").split(":").map(Number);
                 const [rh, rm] = (editSuspension.resumeTime || "0:00").split(":").map(Number);
                 const off = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
-                return <div style={{ fontSize: 12, color: "#ff9966" }}>Schedule shifts by <b>+{off} min</b></div>;
+                return <div style={{ fontSize: 12, color: "#d84315" }}>Schedule shifts by <b>+{off} min</b></div>;
               })()}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => { onSuspendEdit(editSuspension.idx, editSuspension.stopTime, editSuspension.resumeTime); setEditSuspension(null); }}
-                style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                style={{ flex: 1, background: "#dff3e6", border: "1px solid #0e8a43", color: "#0e8a43", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
                 ✓ Save
               </button>
               <button onClick={() => { if (window.confirm(`Delete stoppage #${editSuspension.idx + 1}?\n\nThe schedule will be recalculated without this period.`)) { onSuspendDelete(editSuspension.idx); setEditSuspension(null); } }}
-                style={{ background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 }}>
+                style={{ background: "#fdeaea", border: "1px solid #c62828", color: "#c62828", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 }}>
                 🗑
               </button>
               <button onClick={() => setEditSuspension(null)}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
                 Cancel
               </button>
             </div>
@@ -4854,7 +4854,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               }
               return hd.endTime;
             })();
-            const diffColor = nowDiff === null ? "#555" : { ok: "#6effa0", warn: "#ffd966", late: "#ff7070" }[status];
+            const diffColor = nowDiff === null ? "#8a8a8a" : { ok: "#0e8a43", warn: "#a67c00", late: "#c62828" }[status];
             const mnActive = gd?.mnActive === true;
             const mnName = gd?.mnName ?? "";
             const tmActive = gd?.tmActive === true;
@@ -4862,7 +4862,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const tmTarget = gd?.tmTarget ?? "";
             return (
               <div key={g.id} onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })} style={{
-                background: "#141626", border: `1px solid ${g.color}44`, borderRadius: 12,
+                background: "#ffffff", border: `1px solid ${g.color}44`, borderRadius: 12,
                 padding: "8px 10px", cursor: "pointer", transition: "box-shadow 0.15s",
                 boxShadow: status === "late" ? `0 0 14px #ff707022` : "none",
                 minWidth: 0, overflow: "hidden",
@@ -4874,15 +4874,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
                   <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>{g.name}</div>
-                  <div style={{ fontSize: 11, color: "#9aa2c7", whiteSpace: "nowrap", flexShrink: 0 }}>H{hole}/18</div>
+                  <div style={{ fontSize: 11, color: "#5c6480", whiteSpace: "nowrap", flexShrink: 0 }}>H{hole}/18</div>
                   {nowDiff !== null ? (
                     <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
-                      <span style={{ fontSize: 11, color: "#8890b8" }}>H{lastHoleIdx + 1}</span>
+                      <span style={{ fontSize: 11, color: "#666d8a" }}>H{lastHoleIdx + 1}</span>
                       <span style={{ fontFamily: "'Bebas Neue'", fontSize: 17, color: diffColor, lineHeight: 1 }}>{nowDiff > 0 ? `+${nowDiff}` : nowDiff}</span>
-                      {lastEndTime && <span style={{ fontSize: 11, color: "#888" }}>{lastEndTime}</span>}
+                      {lastEndTime && <span style={{ fontSize: 11, color: "#6e6e6e" }}>{lastEndTime}</span>}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 11, color: "#8890b8", whiteSpace: "nowrap", flexShrink: 0 }}>No data yet</span>
+                    <span style={{ fontSize: 11, color: "#666d8a", whiteSpace: "nowrap", flexShrink: 0 }}>No data yet</span>
                   )}
                   <div style={{ marginLeft: "auto", flexShrink: 0 }}><StatusBadge status={status} small /></div>
                 </div>
@@ -4947,8 +4947,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               {morningAlerts.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: "#8899cc", fontWeight: 700, letterSpacing: 2 }}>🌅 MORNING</div>
-                    <div style={{ flex: 1, height: 1, background: "#2a2d4a" }} />
+                    <div style={{ fontSize: 12, color: "#3f4763", fontWeight: 700, letterSpacing: 2 }}>🌅 MORNING</div>
+                    <div style={{ flex: 1, height: 1, background: "#d5dbe9" }} />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {morningAlerts.map(renderGroupCard)}
@@ -4958,8 +4958,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               {afternoonAlerts.length > 0 && (
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: "#ffd966", fontWeight: 700, letterSpacing: 2 }}>☀️ AFTERNOON</div>
-                    <div style={{ flex: 1, height: 1, background: "#2a2d4a" }} />
+                    <div style={{ fontSize: 12, color: "#a67c00", fontWeight: 700, letterSpacing: 2 }}>☀️ AFTERNOON</div>
+                    <div style={{ flex: 1, height: 1, background: "#d5dbe9" }} />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {afternoonAlerts.map(renderGroupCard)}
@@ -5000,10 +5000,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const nameColW = fitAllHoles ? 26 : 80;
             const startColW = fitAllHoles ? 28 : 56;
             return (
-              <div key={tableKey} style={{ background: "#141626", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
+              <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 12, marginTop: 16, overflow: "hidden" }}>
                 <div
                   onClick={() => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
-                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #2a2d4a", fontSize: 12, color: colColor, letterSpacing: 2, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d5dbe9", fontSize: 12, color: colColor, letterSpacing: 2, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
                 >
                   <span>📋 {holeLabel}</span>
                   <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
@@ -5012,9 +5012,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 <div style={{ overflowX: fitAllHoles ? "hidden" : "auto" }}>
                   <table style={{ borderCollapse: "collapse", fontSize: 13, ...(fitAllHoles ? { width: "100%", tableLayout: "fixed" } : {}) }}>
                     <thead>
-                      <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
-                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a" }}>{fitAllHoles ? "Time" : "Start"}</th>
+                      <tr style={{ background: "#f4f6fb" }}>
+                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#f4f6fb", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
+                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f4f6fb", width: startColW, minWidth: startColW, borderRight: "1px solid #d5dbe9" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
@@ -5042,13 +5042,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         return (
                           <tr key={g.id}>
                             <td onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })}
-                              style={{ ...td, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 1, background: "#141626", width: nameColW, minWidth: nameColW }}
+                              style={{ ...td, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 1, background: "#ffffff", width: nameColW, minWidth: nameColW }}
                               onMouseEnter={e => e.currentTarget.style.background = `${g.color}22`}
-                              onMouseLeave={e => e.currentTarget.style.background = "#141626"}
+                              onMouseLeave={e => e.currentTarget.style.background = "#ffffff"}
                             >
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: fitAllHoles ? 0 : 5 }}>
                                 <span>{fitAllHoles ? g.name.replace(/^\s*group\s*/i, "") : g.name}</span>
-                                {!fitAllHoles && <span style={{ fontSize: 11, color: "#8890b8" }}>›</span>}
+                                {!fitAllHoles && <span style={{ fontSize: 11, color: "#666d8a" }}>›</span>}
                               </div>
                               <div style={{ display: fitAllHoles ? "none" : "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
                                 {data?.roundFinished === true && (
@@ -5060,32 +5060,32 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       }
                                     }}
                                     title="Tap to undo the finished status"
-                                    style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#6effa0", background: "#0a2a1066", border: "1px solid #6effa044", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
+                                    style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0e8a43", background: "#e4f6ea", border: "1px solid #0e8a4344", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
                                   >{fitAllHoles ? "🏁" : "🏁 FINISHED"}</span>
                                 )}
-                                {hasWN && <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "W" : "WN"}</span>}
+                                {hasWN && <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0044", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "W" : "WN"}</span>}
                                 {mnActiveNow ? (
-                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a66", border: "1px solid #4e9af144", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "M" : "👁 MN"}</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#1565c0", background: "#e3effa", border: "1px solid #1565c044", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "M" : "👁 MN"}</span>
                                 ) : hasMN && (
-                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#888", background: "#1a1a1a66", border: "1px solid #55555544", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×M" : "✕ MN"}</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#6e6e6e", background: "#f0f0f0", border: "1px solid #55555544", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×M" : "✕ MN"}</span>
                                 )}
                                 {tmActiveNow ? (
-                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002066", border: "1px solid #ff6ec744", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "T" : "⏱ TM"}</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ad1457", background: "#fce7f1", border: "1px solid #ff6ec744", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "T" : "⏱ TM"}</span>
                                 ) : hasTM && (
-                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#888", background: "#1a1a1a66", border: "1px solid #55555544", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×T" : "✕ TM"}</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#6e6e6e", background: "#f0f0f0", border: "1px solid #55555544", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×T" : "✕ TM"}</span>
                                 )}
                               </div>
                             </td>
                             <td
                               onClick={e => e.stopPropagation()}
-                              style={{ ...td, color: colColor, fontWeight: 700, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 1, background: "#141626", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a" }}
+                              style={{ ...td, color: colColor, fontWeight: 700, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 1, background: "#ffffff", width: startColW, minWidth: startColW, borderRight: "1px solid #d5dbe9" }}
                             >
                               {fitAllHoles ? (
                                 <div style={{ fontSize: 11, lineHeight: 1.05 }}>
                                   <div>{g.startTime.slice(0, 2)}</div>
                                   <div>{g.startTime.slice(3)}</div>
                                   {(data?.delayMin ?? 0) > 0 && (
-                                    <div style={{ fontSize: 9, color: "#eee", marginTop: 1 }}>+{data.delayMin}</div>
+                                    <div style={{ fontSize: 9, color: "#1b1f30", marginTop: 1 }}>+{data.delayMin}</div>
                                   )}
                                 </div>
                               ) : <div>{g.startTime}</div>}
@@ -5099,17 +5099,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, marginTop: 4 }}>
                                     <button
                                       onClick={() => setDelay(delayMin - 1)}
-                                      style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 4, width: 16, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0 }}
+                                      style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#555555", borderRadius: 4, width: 16, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0 }}
                                     >−</button>
                                     <input
                                       type="number" min="0" value={delayMin}
                                       onChange={e => setDelay(e.target.value)}
                                       onClick={e => e.stopPropagation()}
-                                      style={{ width: 28, background: "#1e2135", border: `1px solid ${delayMin > 0 ? "#ffd96666" : "#2a2d4a"}`, color: "#ffd966", fontFamily: "'IBM Plex Mono'", fontSize: 11, fontWeight: 700, textAlign: "center", borderRadius: 4, padding: "1px 0", outline: "none" }}
+                                      style={{ width: 28, background: "#eef1f8", border: `1px solid ${delayMin > 0 ? "#a67c0066" : "#d5dbe9"}`, color: "#a67c00", fontFamily: "'IBM Plex Mono'", fontSize: 11, fontWeight: 700, textAlign: "center", borderRadius: 4, padding: "1px 0", outline: "none" }}
                                     />
                                     <button
                                       onClick={() => setDelay(delayMin + 1)}
-                                      style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#aaa", borderRadius: 4, width: 16, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0 }}
+                                      style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#555555", borderRadius: 4, width: 16, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0 }}
                                     >+</button>
                                   </div>
                                 );
@@ -5128,20 +5128,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 const showMnPreview = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
                                 const showTmPreview = tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
                                 return (
-                                  <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#666f99", cursor: "pointer", transition: "background 0.15s", ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
+                                  <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#7a8099", cursor: "pointer", transition: "background 0.15s", ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
                                     {fitAllHoles ? (() => {
                                       const t = minToTime(deadline);
                                       return (
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: "#9aa2c7", lineHeight: 1.05 }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: "#5c6480", lineHeight: 1.05 }}>
                                           <div>{t.slice(0, 2)}</div>
                                           <div>{t.slice(3)}</div>
                                         </div>
                                       );
                                     })() : (
-                                      <div style={{ fontSize: 16, fontWeight: 700, color: "#9aa2c7" }}>{minToTime(deadline)}</div>
+                                      <div style={{ fontSize: 16, fontWeight: 700, color: "#5c6480" }}>{minToTime(deadline)}</div>
                                     )}
                                     {holeLogs.map((l, li) => (
                                       <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
@@ -5151,12 +5151,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       </div>
                                     ))}
                                     {showMnPreview && (
-                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#4e9af1", background: "#001a2a55", border: "1px dashed #4e9af155", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
+                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#1565c0", background: "#e3effa", border: "1px dashed #1565c055", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
                                         {fitAllHoles ? "M" : <>👁 MN{data?.mnName ? ` - ${data.mnName}` : ""}</>}
                                       </div>
                                     )}
                                     {showTmPreview && (
-                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ff6ec7", background: "#2a002055", border: "1px dashed #ff6ec755", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
+                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#ad1457", background: "#fce7f1", border: "1px dashed #ad145755", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
                                         {fitAllHoles ? "T" : <>⏱ TM {data?.tmName ? `- ${data.tmName}` : ""}</>}
                                       </div>
                                     )}
@@ -5194,12 +5194,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         the header scrolls out of view, so this keeps it obvious which
                         hole each column belongs to. */}
                     <tfoot>
-                      <tr style={{ background: "#0d0f1a" }}>
-                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#0d0f1a", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>{fitAllHoles ? "Grp" : "Group"}</th>
-                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#0d0f1a", width: startColW, minWidth: startColW, borderRight: "1px solid #2a2d4a", borderBottom: "none", borderTop: "1px solid #2a2d4a" }}>{fitAllHoles ? "Time" : "Start"}</th>
+                      <tr style={{ background: "#f4f6fb" }}>
+                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#f4f6fb", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d5dbe9" }}>{fitAllHoles ? "Grp" : "Group"}</th>
+                        <th style={{ ...th, color: colColor, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f4f6fb", width: startColW, minWidth: startColW, borderRight: "1px solid #d5dbe9", borderBottom: "none", borderTop: "1px solid #d5dbe9" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #2a2d4a", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
+                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d5dbe9", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         )), turnGapW, `f-${tableKey}`, "th")}
                       </tr>
@@ -5216,8 +5216,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             if (secGroups.length === 0) return null;
             const startHolesInSec = Array.from(new Set(secGroups.map(g => g.startHole || 1))).sort((a, b) => a - b);
             const secLabel = sec === "morning" ? "🌅 MORNING SECTION" : "☀️ AFTERNOON SECTION";
-            const secColor = sec === "morning" ? "#8899cc" : "#ffd966";
-            const secBorder = sec === "morning" ? "#8899cc22" : "#ffd96622";
+            const secColor = sec === "morning" ? "#3f4763" : "#a67c00";
+            const secBorder = sec === "morning" ? "#1a4a8a11" : "#ffd96622";
             return (
               <div key={sec} style={{ marginTop: 28 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
@@ -5235,17 +5235,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       {/* Stop Modal */}
       {suspendModal === "stop" && (
-        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#141626", border: "1px solid #ffd96688", borderRadius: 14, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#ffd966", marginBottom: 6 }}>⏸ Stopping play</div>
-            <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>All groups will be paused together; hole finish times will shift when play resumes</div>
-            <div style={{ fontSize: 13, color: "#ffd966", marginBottom: 8 }}>Stop time</div>
-            <TimeInput value={suspendStopInput} onChange={setSuspendStopInput} color="#ffd966" />
+        <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #a67c0088", borderRadius: 14, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#a67c00", marginBottom: 6 }}>⏸ Stopping play</div>
+            <div style={{ fontSize: 13, color: "#6e6e6e", marginBottom: 20 }}>All groups will be paused together; hole finish times will shift when play resumes</div>
+            <div style={{ fontSize: 13, color: "#a67c00", marginBottom: 8 }}>Stop time</div>
+            <TimeInput value={suspendStopInput} onChange={setSuspendStopInput} color="#a67c00" />
             <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-              <button onClick={confirmStop} style={{ flex: 1, background: "#2a1500", border: "1px solid #ffd966", color: "#ffd966", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 17, letterSpacing: 2 }}>
+              <button onClick={confirmStop} style={{ flex: 1, background: "#fff0c9", border: "1px solid #a67c00", color: "#a67c00", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 17, letterSpacing: 2 }}>
                 ✓ Confirm pause
               </button>
-              <button onClick={() => setSuspendModal(false)} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+              <button onClick={() => setSuspendModal(false)} style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                 Cancel
               </button>
             </div>
@@ -5255,31 +5255,31 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       {/* Resume Modal */}
       {suspendModal === "resume" && (
-        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#141626", border: "1px solid #6effa088", borderRadius: 14, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#6effa0", marginBottom: 6 }}>▶ Resume play</div>
-            <div style={{ fontSize: 13, color: "#888", marginBottom: 6 }}>
-              Paused since <b style={{ color: "#ffd966" }}>{pendingStopTime}</b>
+        <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #0e8a4388", borderRadius: 14, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#0e8a43", marginBottom: 6 }}>▶ Resume play</div>
+            <div style={{ fontSize: 13, color: "#6e6e6e", marginBottom: 6 }}>
+              Paused since <b style={{ color: "#a67c00" }}>{pendingStopTime}</b>
             </div>
-            <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>The system will add the pause duration to the schedule for every hole and group</div>
-            <div style={{ fontSize: 13, color: "#6effa0", marginBottom: 8 }}>Resume time</div>
-            <TimeInput value={suspendResumeInput} onChange={setSuspendResumeInput} color="#6effa0" />
+            <div style={{ fontSize: 13, color: "#6e6e6e", marginBottom: 20 }}>The system will add the pause duration to the schedule for every hole and group</div>
+            <div style={{ fontSize: 13, color: "#0e8a43", marginBottom: 8 }}>Resume time</div>
+            <TimeInput value={suspendResumeInput} onChange={setSuspendResumeInput} color="#0e8a43" />
             {(() => {
               const [sh, sm] = pendingStopTime.split(":").map(Number);
               const [rh, rm] = suspendResumeInput.split(":").map(Number);
               const offset = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
               return (
-                <div style={{ marginTop: 14, background: "#0d0f1a", borderRadius: 8, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 13, color: "#8890b8" }}>Time to add to every hole</span>
-                  <span style={{ color: "#ff9966", fontWeight: 700, fontSize: 20, fontFamily: "'Bebas Neue'", letterSpacing: 2 }}>+{offset} min</span>
+                <div style={{ marginTop: 14, background: "#f4f6fb", borderRadius: 8, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#666d8a" }}>Time to add to every hole</span>
+                  <span style={{ color: "#d84315", fontWeight: 700, fontSize: 20, fontFamily: "'Bebas Neue'", letterSpacing: 2 }}>+{offset} min</span>
                 </div>
               );
             })()}
             <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-              <button onClick={confirmResume} style={{ flex: 1, background: "#0a2a10", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 17, letterSpacing: 2 }}>
+              <button onClick={confirmResume} style={{ flex: 1, background: "#e4f6ea", border: "1px solid #0e8a43", color: "#0e8a43", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 17, letterSpacing: 2 }}>
                 ✓ Confirm resume
               </button>
-              <button onClick={() => setSuspendModal(false)} style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+              <button onClick={() => setSuspendModal(false)} style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                 Cancel
               </button>
             </div>
@@ -5294,19 +5294,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         if (!l) return null;
         const gName = groups.find(g => g.id === deleteLogConfirm.groupId)?.name ?? "";
         return (
-          <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
-            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
-              <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
+          <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
+            <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #0b1020" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#c62828", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
+              <div style={{ fontSize: 13, color: "#555555", marginBottom: 20, lineHeight: 1.6 }}>
                 {gName && <>{gName} — </>}Are you sure?
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => deleteLogAt(deleteLogConfirm.groupId, deleteLogConfirm.idx)}
-                  style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                  style={{ flex: 1, background: "#fdeaea", border: "1px solid #c62828", color: "#c62828", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
                   ✓ Yes, delete
                 </button>
                 <button onClick={() => setDeleteLogConfirm(null)}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                  style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                   Cancel
                 </button>
               </div>
@@ -5326,33 +5326,33 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           setEditLogPopup(null);
         };
         return (
-          <div onClick={() => setEditLogPopup(null)} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: `1px solid ${logColor(l.type)}88`, borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #000" }}>
+          <div onClick={() => setEditLogPopup(null)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: `1px solid ${logColor(l.type)}88`, borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #0b1020" }}>
               <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: logColor(l.type), marginBottom: 4 }}>
                 Edit {l.badTime ? "Bad Time" : l.off ? `Off ${l.type}` : l.type}
               </div>
-              <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 18 }}>{gName}</div>
+              <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 18 }}>{gName}</div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
                 <div>
-                  <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Hole</label>
+                  <label style={{ fontSize: 11, color: "#666d8a", letterSpacing: 1 }}>Hole</label>
                   <input type="number" min="1" max="18" defaultValue={l.holeIdx + 1}
                     onChange={e => { l._newHole = Math.min(18, Math.max(1, Number(e.target.value) || 1)); }}
-                    style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
+                    style={{ display: "block", width: "100%", background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
                 </div>
                 {(l.target || l.badTime) && (
                   <div>
-                    <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Player</label>
+                    <label style={{ fontSize: 11, color: "#666d8a", letterSpacing: 1 }}>Player</label>
                     <input defaultValue={l.target || ""} placeholder="e.g. P2"
                       onChange={e => { l._newTarget = e.target.value; }}
-                      style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
+                      style={{ display: "block", width: "100%", background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
                   </div>
                 )}
                 <div>
-                  <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Recorded by</label>
+                  <label style={{ fontSize: 11, color: "#666d8a", letterSpacing: 1 }}>Recorded by</label>
                   <input defaultValue={l.name || ""}
                     onChange={e => { l._newName = e.target.value; }}
-                    style={{ display: "block", width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
+                    style={{ display: "block", width: "100%", background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
                 </div>
               </div>
 
@@ -5362,11 +5362,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   ...(l._newTarget !== undefined ? { target: l._newTarget } : {}),
                   ...(l._newName !== undefined ? { name: l._newName } : {}),
                 })}
-                  style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                  style={{ flex: 1, background: "#dff3e6", border: "1px solid #0e8a43", color: "#0e8a43", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
                   ✓ Save
                 </button>
                 <button onClick={() => setEditLogPopup(null)}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                  style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                   Cancel
                 </button>
               </div>
@@ -5378,19 +5378,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {clearStatusConfirm && (() => {
         const gName = groups.find(g => g.id === clearStatusConfirm.groupId)?.name ?? "";
         return (
-          <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
-            <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #000" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#ff7070", marginBottom: 10 }}>Clear {clearStatusConfirm.type} status?</div>
-              <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20, lineHeight: 1.6 }}>
+          <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
+            <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #0b1020" }}>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#c62828", marginBottom: 10 }}>Clear {clearStatusConfirm.type} status?</div>
+              <div style={{ fontSize: 13, color: "#555555", marginBottom: 20, lineHeight: 1.6 }}>
                 {gName && <>{gName} — </>}Are you sure?
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => clearStatusFor(clearStatusConfirm.groupId, clearStatusConfirm.type)}
-                  style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+                  style={{ flex: 1, background: "#fdeaea", border: "1px solid #c62828", color: "#c62828", borderRadius: 8, padding: "10px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
                   ✓ Yes, clear
                 </button>
                 <button onClick={() => setClearStatusConfirm(null)}
-                  style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                  style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                   Cancel
                 </button>
               </div>
@@ -5404,8 +5404,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         if (!qGroup) return null;
         const gd = groupData[quickRecord.groupId] || {};
         return (
-          <div onClick={() => setQuickRecord(null)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#000000cc", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", borderRadius: 16, padding: 16, width: "100%", maxWidth: 440, boxShadow: "0 24px 70px #000a" }}>
+          <div onClick={() => setQuickRecord(null)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#0b1020aa", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#f4f6fb", border: "1px solid #d5dbe9", borderRadius: 16, padding: 16, width: "100%", maxWidth: 440, boxShadow: "0 24px 70px #000a" }}>
               <GroupMonitor
                 key={quickRecord.groupId}
                 group={{
@@ -5472,15 +5472,15 @@ function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
   };
 
   const field = {
-    width: "100%", background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee",
+    width: "100%", background: "#f4f6fb", border: "1px solid #d5dbe9", color: "#1b1f30",
     borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none",
   };
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 2 }}>🔑 Change Password</div>
-        <div style={{ fontSize: 12, color: "#8890b8", marginBottom: 16 }}>{currentUser}</div>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 2 }}>🔑 Change Password</div>
+        <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 16 }}>{currentUser}</div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
           <input type={show ? "text" : "password"} value={current} placeholder="Current password"
@@ -5492,22 +5492,22 @@ function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
             onKeyDown={e => { if (e.key === "Enter") submit(); }} style={field} />
         </div>
 
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8890b8", margin: "8px 0 14px", cursor: "pointer" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#666d8a", margin: "8px 0 14px", cursor: "pointer" }}>
           <input type="checkbox" checked={show} onChange={e => setShow(e.target.checked)} />
           Show passwords
         </label>
 
         {error && (
-          <div style={{ background: "#2a0a0a", border: "1px solid #ff707055", color: "#ff7070", borderRadius: 8, padding: "8px 10px", fontSize: 12, marginBottom: 12 }}>{error}</div>
+          <div style={{ background: "#fdeaea", border: "1px solid #c6282855", color: "#c62828", borderRadius: 8, padding: "8px 10px", fontSize: 12, marginBottom: 12 }}>{error}</div>
         )}
 
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={submit}
-            style={{ flex: 1, background: "#1a4a2a", border: "1px solid #6effa0", color: "#6effa0", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
+            style={{ flex: 1, background: "#dff3e6", border: "1px solid #0e8a43", color: "#0e8a43", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 2 }}>
             ✓ Save
           </button>
           <button onClick={onClose}
-            style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+            style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "11px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
             Cancel
           </button>
         </div>
@@ -5534,33 +5534,33 @@ function LoginScreen({ onLogin, users, hasSession }) {
 
   return (
     <div style={{
-      minHeight: "100vh", background: "#0d0f1a", fontFamily: "'IBM Plex Mono', monospace",
-      color: "#eee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      minHeight: "100vh", background: "#f4f6fb", fontFamily: "'IBM Plex Mono', monospace",
+      color: "#1b1f30", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
     }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
       <div style={{
-        background: "#141626", border: "1px solid #2a2d4a", borderRadius: 18,
-        padding: "40px 36px", width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #00000088",
+        background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 18,
+        padding: "40px 36px", width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #0b102066",
       }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 38, letterSpacing: 5, color: "#4e9af1" }}>⛳ POP APP</div>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96655", borderRadius: 5, padding: "2px 7px" }}>BETA</span>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 38, letterSpacing: 5, color: "#1565c0" }}>⛳ POP APP</div>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 5, padding: "2px 7px" }}>BETA</span>
           </div>
-          <div style={{ fontSize: 12, color: "#8890b8", marginTop: 4, letterSpacing: 2 }}>Golf Referee · Pace of Play System</div>
+          <div style={{ fontSize: 12, color: "#666d8a", marginTop: 4, letterSpacing: 2 }}>Golf Referee · Pace of Play System</div>
           {hasSession && (
-            <div style={{ marginTop: 12, background: "#0a1a0a", border: "1px solid #6effa044", borderRadius: 8, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6effa0", boxShadow: "0 0 6px #6effa0" }} />
-              <span style={{ fontSize: 12, color: "#6effa0", fontWeight: 700 }}>Game in progress</span>
+            <div style={{ marginTop: 12, background: "#e8f7ee", border: "1px solid #0e8a4344", borderRadius: 8, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#0e8a43", boxShadow: "0 0 6px #0e8a43" }} />
+              <span style={{ fontSize: 12, color: "#0e8a43", fontWeight: 700 }}>Game in progress</span>
             </div>
           )}
         </div>
 
         {/* Username */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: "#8899cc", marginBottom: 6, letterSpacing: 1 }}>USER NAME</div>
+          <div style={{ fontSize: 12, color: "#3f4763", marginBottom: 6, letterSpacing: 1 }}>USER NAME</div>
           <input
             type="text"
             value={username}
@@ -5568,19 +5568,19 @@ function LoginScreen({ onLogin, users, hasSession }) {
             onKeyDown={e => e.key === "Enter" && handleSubmit()}
             placeholder="Enter username"
             style={{
-              width: "100%", background: "#1e2135", border: `1px solid ${error ? "#ff707066" : "#2a2d4a"}`,
-              color: "#eee", borderRadius: 8, padding: "10px 14px", fontFamily: "inherit",
+              width: "100%", background: "#eef1f8", border: `1px solid ${error ? "#c6282866" : "#d5dbe9"}`,
+              color: "#1b1f30", borderRadius: 8, padding: "10px 14px", fontFamily: "inherit",
               fontSize: 14, outline: "none", boxSizing: "border-box",
               transition: "border-color 0.2s",
             }}
-            onFocus={e => e.target.style.borderColor = "#4e9af1"}
-            onBlur={e => e.target.style.borderColor = error ? "#ff707066" : "#2a2d4a"}
+            onFocus={e => e.target.style.borderColor = "#1565c0"}
+            onBlur={e => e.target.style.borderColor = error ? "#c6282866" : "#d5dbe9"}
           />
         </div>
 
         {/* Password */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, color: "#8899cc", marginBottom: 6, letterSpacing: 1 }}>PASSWORD</div>
+          <div style={{ fontSize: 12, color: "#3f4763", marginBottom: 6, letterSpacing: 1 }}>PASSWORD</div>
           <div style={{ position: "relative" }}>
             <input
               type={showPass ? "text" : "password"}
@@ -5589,19 +5589,19 @@ function LoginScreen({ onLogin, users, hasSession }) {
               onKeyDown={e => e.key === "Enter" && handleSubmit()}
               placeholder="Enter password"
               style={{
-                width: "100%", background: "#1e2135", border: `1px solid ${error ? "#ff707066" : "#2a2d4a"}`,
-                color: "#eee", borderRadius: 8, padding: "10px 40px 10px 14px", fontFamily: "inherit",
+                width: "100%", background: "#eef1f8", border: `1px solid ${error ? "#c6282866" : "#d5dbe9"}`,
+                color: "#1b1f30", borderRadius: 8, padding: "10px 40px 10px 14px", fontFamily: "inherit",
                 fontSize: 14, outline: "none", boxSizing: "border-box",
                 transition: "border-color 0.2s",
               }}
-              onFocus={e => e.target.style.borderColor = "#4e9af1"}
-              onBlur={e => e.target.style.borderColor = error ? "#ff707066" : "#2a2d4a"}
+              onFocus={e => e.target.style.borderColor = "#1565c0"}
+              onBlur={e => e.target.style.borderColor = error ? "#c6282866" : "#d5dbe9"}
             />
             <button
               onClick={() => setShowPass(v => !v)}
               style={{
                 position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                background: "none", border: "none", color: "#8890b8", cursor: "pointer", fontSize: 16, padding: 0,
+                background: "none", border: "none", color: "#666d8a", cursor: "pointer", fontSize: 16, padding: 0,
               }}
             >{showPass ? "🙈" : "👁"}</button>
           </div>
@@ -5610,8 +5610,8 @@ function LoginScreen({ onLogin, users, hasSession }) {
         {/* Error */}
         {error && (
           <div style={{
-            background: "#2a0a0a", border: "1px solid #ff707044", borderRadius: 8,
-            padding: "8px 12px", fontSize: 13, color: "#ff7070", marginBottom: 16, textAlign: "center",
+            background: "#fdeaea", border: "1px solid #c6282844", borderRadius: 8,
+            padding: "8px 12px", fontSize: 13, color: "#c62828", marginBottom: 16, textAlign: "center",
           }}>{error}</div>
         )}
 
@@ -5620,8 +5620,8 @@ function LoginScreen({ onLogin, users, hasSession }) {
           onClick={handleSubmit}
           style={{
             width: "100%", padding: "13px 0",
-            background: "linear-gradient(135deg, #1a3a6a, #4e9af1)",
-            border: "none", borderRadius: 10, color: "#fff",
+            background: "linear-gradient(135deg, #1565c0, #1565c0)",
+            border: "none", borderRadius: 10, color: "#ffffff",
             fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3,
             cursor: "pointer", transition: "opacity 0.15s",
           }}
@@ -5696,21 +5696,21 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
   };
 
   const inputStyle = {
-    background: "#1e2135", border: "1px solid #2a2d4a", color: "#eee",
+    background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30",
     borderRadius: 8, padding: "9px 12px", fontFamily: "inherit", fontSize: 14, outline: "none",
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0d0f1a", fontFamily: "'IBM Plex Mono', monospace", color: "#eee" }}>
+    <div style={{ minHeight: "100vh", background: "#f4f6fb", fontFamily: "'IBM Plex Mono', monospace", color: "#1b1f30" }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
 
       {/* Header */}
-      <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "16px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", color: "#4e9af1", cursor: "pointer", fontSize: 18 }}>←</button>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 4, color: "#4e9af1" }}>👤 Manage Users</div>
+      <div style={{ background: "#ffffff", borderBottom: "1px solid #d5dbe9", padding: "16px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: "#1565c0", cursor: "pointer", fontSize: 18 }}>←</button>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 4, color: "#1565c0" }}>👤 Manage Users</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: "#ffd966", fontWeight: 700 }}>🔑 ADMIN</span>
-          <span style={{ fontSize: 13, color: "#8899cc", fontWeight: 700 }}>{currentUser}</span>
+          <span style={{ fontSize: 12, color: "#a67c00", fontWeight: 700 }}>🔑 ADMIN</span>
+          <span style={{ fontSize: 13, color: "#3f4763", fontWeight: 700 }}>{currentUser}</span>
           <LogoutButton onLogout={onLogout} />
         </div>
       </div>
@@ -5718,8 +5718,8 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "28px 20px" }}>
 
         {/* Add User Card */}
-        <div style={{ background: "#141626", border: "1px solid #4e9af133", borderRadius: 14, padding: 24, marginBottom: 24 }}>
-          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 2, fontWeight: 700, marginBottom: 18 }}>➕ Add New User</div>
+        <div style={{ background: "#ffffff", border: "1px solid #1565c033", borderRadius: 14, padding: 24, marginBottom: 24 }}>
+          <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 2, fontWeight: 700, marginBottom: 18 }}>➕ Add New User</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 10 }}>
             {/* Username with autocomplete */}
             <div style={{ position: "relative" }}>
@@ -5736,7 +5736,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
               {showSuggestions && suggestions.length > 0 && (
                 <div style={{
                   position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                  background: "#1e2135", border: "1px solid #4e9af155", borderRadius: 8,
+                  background: "#eef1f8", border: "1px solid #1565c055", borderRadius: 8,
                   marginTop: 4, boxShadow: "0 8px 24px #000a",
                   display: "flex", flexWrap: "wrap", gap: 6, padding: 10,
                 }}>
@@ -5745,12 +5745,12 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                       key={s}
                       onMouseDown={() => { setNewUsername(s); setShowSuggestions(false); }}
                       style={{
-                        background: "#0d1a2a", border: "1px solid #4e9af144", color: "#4e9af1",
+                        background: "#e6eef8", border: "1px solid #1565c044", color: "#1565c0",
                         borderRadius: 6, padding: "5px 12px", cursor: "pointer",
                         fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 1,
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "#1a3a5a"; e.currentTarget.style.borderColor = "#4e9af1"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "#0d1a2a"; e.currentTarget.style.borderColor = "#4e9af144"; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#d6e6f8"; e.currentTarget.style.borderColor = "#1565c0"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#e6eef8"; e.currentTarget.style.borderColor = "#1565c044"; }}
                     >{s}</button>
                   ))}
                 </div>
@@ -5769,12 +5769,12 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                 />
                 <button
                   onClick={() => setShowNewPass(v => !v)}
-                  style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8890b8", cursor: "pointer", fontSize: 14, padding: 0 }}
+                  style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#666d8a", cursor: "pointer", fontSize: 14, padding: 0 }}
                 >{showNewPass ? "🙈" : "👁"}</button>
               </div>
               <button
                 onClick={handleAdd}
-                style={{ background: "linear-gradient(135deg, #1a4a8a, #4e9af1)", border: "none", color: "#fff", borderRadius: 8, padding: "9px 18px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2, whiteSpace: "nowrap" }}
+                style={{ background: "linear-gradient(135deg, #1565c0, #1565c0)", border: "none", color: "#ffffff", borderRadius: 8, padding: "9px 18px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2, whiteSpace: "nowrap" }}
               >Add</button>
             </div>
           </div>
@@ -5785,9 +5785,9 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
               style={{
                 flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
                 fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                background: !newIsAdmin ? "#001020" : "#0d0f1a",
-                border: `1px solid ${!newIsAdmin ? "#4e9af1" : "#2a2d4a"}`,
-                color: !newIsAdmin ? "#4e9af1" : "#555",
+                background: !newIsAdmin ? "#001020" : "#f4f6fb",
+                border: `1px solid ${!newIsAdmin ? "#1565c0" : "#d5dbe9"}`,
+                color: !newIsAdmin ? "#1565c0" : "#8a8a8a",
                 transition: "all 0.15s",
               }}
             >👤 User</button>
@@ -5796,26 +5796,26 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
               style={{
                 flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
                 fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                background: newIsAdmin ? "#2a1a00" : "#0d0f1a",
-                border: `1px solid ${newIsAdmin ? "#ffd966" : "#2a2d4a"}`,
-                color: newIsAdmin ? "#ffd966" : "#555",
+                background: newIsAdmin ? "#fff4d9" : "#f4f6fb",
+                border: `1px solid ${newIsAdmin ? "#a67c00" : "#d5dbe9"}`,
+                color: newIsAdmin ? "#a67c00" : "#8a8a8a",
                 transition: "all 0.15s",
               }}
             >🔑 Admin</button>
           </div>
-          {addError && <div style={{ fontSize: 12, color: "#ff7070", marginTop: 4 }}>⚠ {addError}</div>}
-          {addSuccess && <div style={{ fontSize: 12, color: "#6effa0", marginTop: 4 }}>✓ {addSuccess}</div>}
-          <div style={{ fontSize: 11, color: "#8890b8", marginTop: 10 }}>
-            💡 The password is visible while typing · reset will set it back to <span style={{ color: "#ffd966" }}>{DEFAULT_RESET_PASSWORD}</span>
+          {addError && <div style={{ fontSize: 12, color: "#c62828", marginTop: 4 }}>⚠ {addError}</div>}
+          {addSuccess && <div style={{ fontSize: 12, color: "#0e8a43", marginTop: 4 }}>✓ {addSuccess}</div>}
+          <div style={{ fontSize: 11, color: "#666d8a", marginTop: 10 }}>
+            💡 The password is visible while typing · reset will set it back to <span style={{ color: "#a67c00" }}>{DEFAULT_RESET_PASSWORD}</span>
             <br />
-            <span style={{ color: "#4e9af1" }}>👤 User</span> — View only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
-            <span style={{ color: "#ffd966" }}>🔑 Admin</span> — Full access to all functions
+            <span style={{ color: "#1565c0" }}>👤 User</span> — View only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
+            <span style={{ color: "#a67c00" }}>🔑 Admin</span> — Full access to all functions
           </div>
         </div>
 
         {/* User List */}
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #2a2d4a", fontSize: 12, color: "#8899cc", letterSpacing: 2, fontWeight: 700 }}>
+        <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #d5dbe9", fontSize: 12, color: "#3f4763", letterSpacing: 2, fontWeight: 700 }}>
             All users ({users.length} total)
           </div>
           {users.map((u, idx) => {
@@ -5824,21 +5824,21 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
             return (
               <div key={u.username} style={{
                 display: "flex", alignItems: "center", gap: 12, padding: "14px 20px",
-                borderBottom: idx < users.length - 1 ? "1px solid #1a1d2e" : "none",
-                background: isCurrentUser ? "#1a2135" : "transparent",
+                borderBottom: idx < users.length - 1 ? "1px solid #e9edf6" : "none",
+                background: isCurrentUser ? "#eef1f8" : "transparent",
               }}>
                 {/* Avatar dot */}
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: u.isAdmin ? "#ffd966" : "#4e9af1", flexShrink: 0 }} />
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: u.isAdmin ? "#a67c00" : "#1565c0", flexShrink: 0 }} />
 
                 {/* Name + badge */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: isCurrentUser ? "#4e9af1" : "#eee" }}>{u.username}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: isCurrentUser ? "#1565c0" : "#1b1f30" }}>{u.username}</span>
                     {u.isAdmin && (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#ffd966", background: "#2a1a0066", border: "1px solid #ffd96644", borderRadius: 4, padding: "1px 6px", letterSpacing: 1 }}>ADMIN</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0044", borderRadius: 4, padding: "1px 6px", letterSpacing: 1 }}>ADMIN</span>
                     )}
                     {isCurrentUser && (
-                      <span style={{ fontSize: 11, color: "#4e9af1", background: "#001a2a66", border: "1px solid #4e9af144", borderRadius: 4, padding: "1px 6px" }}>You</span>
+                      <span style={{ fontSize: 11, color: "#1565c0", background: "#e3effa", border: "1px solid #1565c044", borderRadius: 4, padding: "1px 6px" }}>You</span>
                     )}
                   </div>
                   {/* Password peek. The built-in admin is the system's master
@@ -5846,17 +5846,17 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                       only the person signed in as it may reveal it. */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                     {isBuiltInAdmin(u.username) && !isCurrentUser ? (
-                      <span style={{ fontSize: 12, color: "#5a6180", letterSpacing: 1 }} title="Hidden — sign in as this account to view">
+                      <span style={{ fontSize: 12, color: "#7a8099", letterSpacing: 1 }} title="Hidden — sign in as this account to view">
                         •••••• 🔒
                       </span>
                     ) : (
                       <>
-                        <span style={{ fontSize: 12, color: "#8890b8", letterSpacing: 1 }}>
+                        <span style={{ fontSize: 12, color: "#666d8a", letterSpacing: 1 }}>
                           {isShowingPass ? u.password : "••••••"}
                         </span>
                         <button
                           onClick={() => setShowPassFor(s => ({ ...s, [u.username]: !s[u.username] }))}
-                          style={{ background: "none", border: "none", color: "#767fa8", cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}
+                          style={{ background: "none", border: "none", color: "#6b7290", cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}
                           title="Show/hide password"
                         >{isShowingPass ? "🙈" : "👁"}</button>
                       </>
@@ -5872,16 +5872,16 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                   {isBuiltInAdmin(u.username) ? (
                     <span
                       title="The built-in admin account cannot be changed"
-                      style={{ background: "#1a1000", border: "1px solid #ffd96633", color: "#7a6a33", borderRadius: 7, padding: "5px 10px", fontSize: 12, fontFamily: "inherit", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}
+                      style={{ background: "#fff4d9", border: "1px solid #a67c0033", color: "#9a8a4a", borderRadius: 7, padding: "5px 10px", fontSize: 12, fontFamily: "inherit", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}
                     >🔒 Admin</span>
                   ) : (
                     <button
                       onClick={() => handleToggleRole(u)}
                       disabled={u.isAdmin && adminCount <= 1}
                       style={{
-                        background: u.isAdmin ? "#1a1000" : "#001020",
-                        border: `1px solid ${u.isAdmin ? "#ffd96644" : "#4e9af144"}`,
-                        color: u.isAdmin && adminCount <= 1 ? "#555" : (u.isAdmin ? "#ffd966" : "#4e9af1"),
+                        background: u.isAdmin ? "#fff4d9" : "#001020",
+                        border: `1px solid ${u.isAdmin ? "#a67c0044" : "#1565c044"}`,
+                        color: u.isAdmin && adminCount <= 1 ? "#8a8a8a" : (u.isAdmin ? "#a67c00" : "#1565c0"),
                         borderRadius: 7, padding: "5px 10px",
                         cursor: u.isAdmin && adminCount <= 1 ? "not-allowed" : "pointer",
                         fontSize: 12, fontFamily: "inherit", fontWeight: 700,
@@ -5898,7 +5898,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                   {!isCurrentUser && !isBuiltInAdmin(u.username) && (
                     <button
                       onClick={() => setResetConfirm(u.username)}
-                      style={{ background: "#1a1a0a", border: "1px solid #ffd96644", color: "#ffd966", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 700 }}
+                      style={{ background: "#fff4d9", border: "1px solid #a67c0044", color: "#a67c00", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 700 }}
                       title={`Reset password → ${DEFAULT_RESET_PASSWORD}`}
                     >↺ Reset</button>
                   )}
@@ -5906,11 +5906,11 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                   {!isCurrentUser && !isBuiltInAdmin(u.username) && (
                     <button
                       onClick={() => setDeleteConfirm(u.username)}
-                      style={{ background: "#1a0a0a", border: "1px solid #ff707044", color: "#ff7070", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 700 }}
+                      style={{ background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 700 }}
                     >✕ Delete</button>
                   )}
                   {(isCurrentUser || isBuiltInAdmin(u.username)) && (
-                    <span style={{ fontSize: 11, color: "#666f99", padding: "5px 10px" }}>—</span>
+                    <span style={{ fontSize: 11, color: "#7a8099", padding: "5px 10px" }}>—</span>
                   )}
                 </div>
               </div>
@@ -5921,22 +5921,22 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
       {/* Reset Confirm Modal */}
       {resetConfirm && (
-        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#141626", border: "1px solid #ffd96688", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#ffd966", marginBottom: 8 }}>↺ Reset Password</div>
-            <div style={{ fontSize: 14, color: "#aaa", marginBottom: 6 }}>
-              User: <span style={{ color: "#eee", fontWeight: 700 }}>{resetConfirm}</span>
+        <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #a67c0088", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#a67c00", marginBottom: 8 }}>↺ Reset Password</div>
+            <div style={{ fontSize: 14, color: "#555555", marginBottom: 6 }}>
+              User: <span style={{ color: "#1b1f30", fontWeight: 700 }}>{resetConfirm}</span>
             </div>
-            <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
-              The password will be immediately set to <span style={{ color: "#ffd966", fontWeight: 700, fontSize: 16 }}>{DEFAULT_RESET_PASSWORD}</span>
+            <div style={{ fontSize: 13, color: "#6e6e6e", marginBottom: 20 }}>
+              The password will be immediately set to <span style={{ color: "#a67c00", fontWeight: 700, fontSize: 16 }}>{DEFAULT_RESET_PASSWORD}</span>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => handleReset(resetConfirm)}
-                style={{ flex: 1, background: "#2a1500", border: "1px solid #ffd966", color: "#ffd966", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2 }}>
+                style={{ flex: 1, background: "#fff0c9", border: "1px solid #a67c00", color: "#a67c00", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2 }}>
                 ✓ Confirm
               </button>
               <button onClick={() => setResetConfirm(null)}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                 Cancel
               </button>
             </div>
@@ -5946,20 +5946,20 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
       {/* Delete Confirm Modal */}
       {deleteConfirm && (
-        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#141626", border: "1px solid #ff707088", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #000", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#ff7070", marginBottom: 8 }}>✕ Delete User</div>
-            <div style={{ fontSize: 14, color: "#aaa", marginBottom: 6 }}>
-              User: <span style={{ color: "#eee", fontWeight: 700 }}>{deleteConfirm}</span>
+        <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#c62828", marginBottom: 8 }}>✕ Delete User</div>
+            <div style={{ fontSize: 14, color: "#555555", marginBottom: 6 }}>
+              User: <span style={{ color: "#1b1f30", fontWeight: 700 }}>{deleteConfirm}</span>
             </div>
-            <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>This action cannot be undone</div>
+            <div style={{ fontSize: 13, color: "#6e6e6e", marginBottom: 20 }}>This action cannot be undone</div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => handleDelete(deleteConfirm)}
-                style={{ flex: 1, background: "#2a0a0a", border: "1px solid #ff7070", color: "#ff7070", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2 }}>
+                style={{ flex: 1, background: "#fdeaea", border: "1px solid #c62828", color: "#c62828", borderRadius: 8, padding: "11px", cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2 }}>
                 ✓ Confirm delete
               </button>
               <button onClick={() => setDeleteConfirm(null)}
-                style={{ background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
+                style={{ background: "#eef1f8", border: "1px solid #d5dbe9", color: "#5c6480", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>
                 Cancel
               </button>
             </div>
@@ -6984,7 +6984,7 @@ export default function App() {
 
   if (loading) return (
     <div style={{
-      minHeight: "100vh", background: "#0d0f1a", color: "#8899cc", fontFamily: "'IBM Plex Mono', monospace",
+      minHeight: "100vh", background: "#f4f6fb", color: "#3f4763", fontFamily: "'IBM Plex Mono', monospace",
       display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, letterSpacing: 2,
     }}>⛳ Loading...</div>
   );
