@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-b (beta)";
+const APP_BUILD = "2026-08-03-c (beta)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1260,249 +1260,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
 
-  // ── Quick selector (Year → Tournament → Round) ────────────────────────────
-  const [selYear, setSelYear] = useState(String(new Date().getFullYear()));
-  const [selTid, setSelTid] = useState("");
-  const [selRoundLabel, setSelRoundLabel] = useState("");
-  const [selRounds, setSelRounds] = useState([]);
-  const [selRoundsLoading, setSelRoundsLoading] = useState(false);
-
-  const selStyle = {
-    background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8,
-    padding: "0 10px", height: 40, fontFamily: "inherit", fontSize: 13, outline: "none",
-  };
-
-  // A tournament's year comes from its name when it contains one (e.g. "... 2026"),
-  // otherwise from when it was created.
-  const yearOf = (t) => {
-    const m = (t.name || "").match(/(20\d{2})/);
-    if (m) return m[1];
-    return t.created_at ? String(new Date(t.created_at).getFullYear()) : String(new Date().getFullYear());
-  };
-
-  const yearOptions = (() => {
-    const ys = new Set(tournaments.map(yearOf));
-    ys.add(String(new Date().getFullYear()));
-    return [...ys].sort((a, b) => Number(b) - Number(a));
-  })();
-
-  const tournamentsForYear = tournaments.filter(t => yearOf(t) === selYear);
-
-  // Load the chosen tournament's rounds for the third dropdown
-  useEffect(() => {
-    if (!selTid) { setSelRounds([]); return; }
-    let cancelled = false;
-    (async () => {
-      setSelRoundsLoading(true);
-      const rs = await fetchRounds(selTid);
-      if (cancelled) return;
-      setSelRounds(rs);
-      // Default to the round that's running, so one tap gets you to the right place
-      const live = rs.find(r => r.status === "live");
-      setSelRoundLabel(live ? live.label : (rs[rs.length - 1]?.label || ""));
-      setSelRoundsLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [selTid]);
-
-  const handleQuickOpen = async () => {
-    const t = tournaments.find(x => x.id === selTid);
-    if (!t || busy) return;
-    setSelectedTournamentId(t.id);
-    if (t.status === "closed" && !isAdmin) {
-      window.alert(`Competition "${t.name}" is closed.\n\nPlease choose another one.`);
-      return;
-    }
-    const runsEvent = isAdmin;
-    if (!runsEvent && t.run_state !== "started") {
-      window.alert(`Competition "${t.name}" has not started.\n\nPlease wait for the TD / CR to start it.`);
-      return;
-    }
-    const round = selRounds.find(r => r.label === selRoundLabel) || selRounds.find(r => r.status === "live");
-    if (!round) {
-      window.alert("Please choose a round.");
-      return;
-    }
-    onRoundSelected(t, round, round.status === "finished" ? "reopen" : "resume");
-  };
-
-
-  // Opening the picker also makes that tournament the selected one, so the round
-  // list and access rules below all refer to it.
-  const openRoundPicker = async (t) => {
-    setSelectedTournamentId(t.id);
-    setShowCreate(false);
-    // Only the people running the event choose a round. Referees are taken
-    // straight to whichever round is active, so they can't land on the wrong one.
-    const runsEvent = isAdmin;
-    if (!runsEvent) {
-      if (t.status === "closed" || t.run_state !== "started") {
-        window.alert(`Competition "${t.name}" is not running.\n\nPlease wait for the TD / CR to start it.`);
-        return;
-      }
-      setBusy(true);
-      const rs = await fetchRounds(t.id);
-      setBusy(false);
-      const active = rs.find(r => r.status === "live");
-      if (!active) {
-        window.alert(`No round is active in "${t.name}" yet.\n\nPlease wait for the TD / CR to open one.`);
-        return;
-      }
-      onRoundSelected(t, active, "resume");
-      return;
-    }
-    setRoundPickerFor(t);
-  };
-
-  const reloadTournaments = async () => {
-    const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
-    setRolesMap(roles);
-    // Referees only see the tournament they hold a position in
-    const visible = t.filter(x => canUserSeeTournament(x, roles, currentUser, isAdmin));
-    setTournaments(visible);
-    // Hand the freshly fetched roles back: setRolesMap hasn't been applied yet,
-    // so callers must not read the state to decide anything right now.
-    return { visible, roles };
-  };
-
-  useEffect(() => {
-    (async () => {
-      const { visible, roles } = await reloadTournaments();
-      if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
-      if (!visible.length && isAdmin) setShowCreate(true);
-      setLoading(false);
-      // Point the quick selector at something sensible: the running event if
-      // there is one, otherwise the newest.
-      if (visible.length) {
-        const preferred = visible.find(t => t.run_state === "started") || visible[0];
-        const m = (preferred.name || "").match(/(20\d{2})/);
-        setSelYear(m ? m[1] : (preferred.created_at ? String(new Date(preferred.created_at).getFullYear()) : String(new Date().getFullYear())));
-        setSelTid(preferred.id);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (!selectedTournamentId) { setRounds([]); return; }
-    (async () => setRounds(await fetchRounds(selectedTournamentId)))();
-  }, [selectedTournamentId]);
-
-  const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
-  // Which round slots to offer. Prefer the tournament's saved configuration, but
-  // tournaments created before that setting existed have it blank — for those,
-  // infer the list from the rounds that actually exist instead of assuming Q+4.
-  const availableRoundLabels = (() => {
-    if (!selectedTournament) return ROUND_LABELS;
-    const existing = rounds.map(r => r.label);
-    const configured = selectedTournament.num_rounds != null || selectedTournament.has_qualifying != null;
-
-    if (configured) {
-      const list = [
-        ...(selectedTournament.has_qualifying !== false ? ["Q"] : []),
-        ...ROUND_LABELS.filter(l => l !== "Q").slice(0, selectedTournament.num_rounds ?? 4),
-      ];
-      // Never hide a round that already holds data
-      existing.forEach(l => { if (!list.includes(l)) list.push(l); });
-      return ROUND_LABELS.filter(l => list.includes(l));
-    }
-
-    // Unconfigured: show what exists (plus the next round so it can be started)
-    if (existing.length === 0) return ROUND_LABELS;
-    const numbered = existing.filter(l => l !== "Q").map(Number).filter(n => !isNaN(n));
-    const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
-    const list = [...existing];
-    if (nextNum <= 4 && !list.includes(String(nextNum))) list.push(String(nextNum));
-    return ROUND_LABELS.filter(l => list.includes(l));
-  })();
-
-  const resetForm = () => {
-    setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
-    setEditingTournamentId(null);
-  };
-
-  const handleStartEdit = (t) => {
-    setNewName(t.name || "");
-    setNewVenue(t.host_venue || "");
-    setNewFormat(t.format || "stroke");
-    setNewHasQualifying(t.has_qualifying !== false);
-    setNewNumRounds(t.num_rounds ?? 4);
-    setEditingTournamentId(t.id);
-    setShowCreate(true);
-  };
-
-  const handleSaveTournament = async () => {
-    if (!newName.trim() || busy) return;
-    setBusy(true);
-    if (editingTournamentId) {
-      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
-      setTournaments(prev => prev.map(t => t.id === editingTournamentId
-        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds }
-        : t));
-      setBusy(false);
-      setShowCreate(false);
-      resetForm();
-    } else {
-      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
-      setBusy(false);
-      if (t) {
-        setTournaments(prev => [t, ...prev]);
-        setSelectedTournamentId(t.id);
-        setShowCreate(false);
-        resetForm();
-      }
-    }
-  };
-
-  const handleDeleteTournament = async (t) => {
-    if (busy) return;
-    const ok = window.confirm(`Delete tournament "${t.name}" permanently?\n\nEvery round in it — including archived data — will be deleted. This cannot be undone.\n\nContinue?`);
-    if (!ok) return;
-    setBusy(true);
-    await deleteTournament(t.id);
-    setBusy(false);
-    setTournaments(prev => prev.filter(x => x.id !== t.id));
-    if (selectedTournamentId === t.id) setSelectedTournamentId(null);
-  };
-
-  // Starting the tournament opens it to the assigned referees.
-  const handleToggleStarted = async (t) => {
-    if (busy) return;
-    const starting = t.run_state !== "started";
-    if (starting) {
-      const roles = rolesMap[t.id] || {};
-      if (Object.keys(roles).length === 0) {
-        window.alert(`No positions have been assigned in "${t.name}" yet.\n\nTap 👥 to assign TD / CR / R1-R6 before starting the competition.`);
-        return;
-      }
-      const staff = Object.entries(roles).map(([p, u]) => `• ${p} — ${u}`).join("\n");
-      if (!window.confirm(`Start competition "${t.name}"?\n\n${staff}\n\nThese referees will enter this tournament as soon as they log in.`)) return;
-    } else {
-      if (!window.confirm(`Pause competition "${t.name}"?\n\nReferees stay logged in, but anyone logging in again cannot enter until it is started once more.`)) return;
-    }
-    setBusy(true);
-    await setTournamentRunState(t.id, starting ? "started" : "draft");
-    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, run_state: starting ? "started" : "draft" } : x));
-    setBusy(false);
-  };
-
-  const handleToggleClosed = async (t) => {
-    if (busy) return;
-    const closing = t.status !== "closed";
-    const msg = closing
-      ? `Close competition "${t.name}"?\n\n• All referees are signed out immediately\n• Every TD / CR / R1-R6 position is cleared\n• Reopening requires assigning positions again\n\n(Admins stay signed in and can still view/edit.)`
-      : `Reopen competition "${t.name}"?\n\nRemember to assign TD / CR / R1-R6 again before referees can use it.`;
-    if (!window.confirm(msg)) return;
-    setBusy(true);
-    await setTournamentStatus(t.id, closing ? "closed" : "open");
-    // Closing wipes the roster — every event is staffed fresh.
-    if (closing) {
-      await clearTournamentRoles(t.id);
-      setRolesMap(prev => ({ ...prev, [t.id]: {} }));
-    }
-    setBusy(false);
-    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, status: closing ? "closed" : "open" } : x));
-  };
-
   const handlePickRound = async (label) => {
     if (busy) return;
     // A closed competition is read-only for everyone except admins
@@ -1614,53 +1371,25 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px" }}>
-        {/* ── Quick selector: Year → Tournament → Round → Open ───────────────
-            Everyone gets this; it only ever lists what the person may open. */}
+        {/* Same selector as the dashboard, so the flow is identical everywhere */}
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 12 }}>Select competition</div>
-
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-            <select value={selYear} onChange={e => { setSelYear(e.target.value); setSelTid(""); setSelRoundLabel(""); }}
-              style={{ ...selStyle, width: 110, flexShrink: 0 }}>
-              {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select value={selTid} onChange={e => { setSelTid(e.target.value); setSelRoundLabel(""); }}
-              style={{ ...selStyle, flex: 1, minWidth: 0 }}>
-              <option value="">— Tournament —</option>
-              {tournamentsForYear.map(t => (
-                <option key={t.id} value={t.id}>{t.name || "(untitled)"}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <select value={selRoundLabel} onChange={e => setSelRoundLabel(e.target.value)}
-              disabled={!selTid || selRoundsLoading}
-              style={{ ...selStyle, width: 110, flexShrink: 0, opacity: selTid ? 1 : 0.5 }}>
-              <option value="">{selRoundsLoading ? "…" : "— Round —"}</option>
-              {selRounds.map(r => (
-                <option key={r.id} value={r.label}>
-                  {r.label === "Q" ? "Q" : `R${r.label}`}{r.status === "live" ? "  ● live" : ""}
-                </option>
-              ))}
-            </select>
-            <button onClick={handleQuickOpen} disabled={!selTid || busy}
-              style={{
-                flex: 1, height: 40, borderRadius: 8, cursor: !selTid || busy ? "not-allowed" : "pointer",
-                fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                background: !selTid ? "#1a1d2e" : "#1a4a8a",
-                border: `1px solid ${!selTid ? "#2a2d4a" : "#4e9af1"}`,
-                color: !selTid ? "#555" : "#fff",
-              }}>
-              {busy ? "Searching…" : "🔍 Search"}
-            </button>
-          </div>
-
-          {selTid && !selRoundsLoading && selRounds.length === 0 && (
-            <div style={{ fontSize: 11, color: "#ff9966", marginTop: 8 }}>
-              No rounds yet in this tournament.
-            </div>
-          )}
+          <RoundSelectorBar
+            tournamentId={selectedTournamentId}
+            roundLabel={null}
+            isAdmin={isAdmin}
+            onOpen={async (t, r) => {
+              if (t.status === "closed" && !isAdmin) {
+                window.alert(`Competition "${t.name}" is closed.\n\nPlease choose another one.`);
+                return;
+              }
+              if (!isAdmin && t.run_state !== "started") {
+                window.alert(`Competition "${t.name}" has not started.\n\nPlease wait for an admin to start it.`);
+                return;
+              }
+              onRoundSelected(t, r, r.status === "finished" ? "reopen" : "resume");
+            }}
+          />
         </div>
 
         {/* Tournament picker */}
@@ -4434,7 +4163,110 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, onlineUsers, onSelectGroup, onBack, currentUser,
+// Year → Tournament → Round → Search. Used on both the tournament screen and the
+// dashboard, so switching rounds never means walking back through another page.
+function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }) {
+  const [tournaments, setTournaments] = useState([]);
+  const [year, setYear] = useState("");
+  const [tid, setTid] = useState(tournamentId || "");
+  const [rounds, setRounds] = useState([]);
+  const [label, setLabel] = useState(roundLabel || "");
+  const [loadingRounds, setLoadingRounds] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const yearOf = (t) => {
+    const m = (t.name || "").match(/(20\d{2})/);
+    if (m) return m[1];
+    return t.created_at ? String(new Date(t.created_at).getFullYear()) : String(new Date().getFullYear());
+  };
+
+  useEffect(() => {
+    (async () => {
+      const all = await fetchTournaments();
+      const visible = all.filter(t => isAdmin || t.status !== "closed");
+      setTournaments(visible);
+      const current = visible.find(t => t.id === tournamentId) || visible[0];
+      if (current) { setYear(yearOf(current)); setTid(current.id); }
+    })();
+  }, [tournamentId, isAdmin]);
+
+  useEffect(() => {
+    if (!tid) { setRounds([]); return; }
+    let cancelled = false;
+    (async () => {
+      setLoadingRounds(true);
+      const rs = await fetchRounds(tid);
+      if (cancelled) return;
+      setRounds(rs);
+      const preferred = (tid === tournamentId && roundLabel && rs.find(r => r.label === roundLabel))
+        || rs.find(r => r.status === "live") || rs[rs.length - 1];
+      setLabel(preferred?.label || "");
+      setLoadingRounds(false);
+    })();
+    return () => { cancelled = true; };
+  }, [tid]);
+
+  const years = (() => {
+    const ys = new Set(tournaments.map(yearOf));
+    if (year) ys.add(year);
+    return [...ys].sort((a, b) => Number(b) - Number(a));
+  })();
+  const forYear = tournaments.filter(t => yearOf(t) === year);
+
+  const go = async () => {
+    const t = tournaments.find(x => x.id === tid);
+    const r = rounds.find(x => x.label === label);
+    if (!t || !r || busy) return;
+    if (t.id === tournamentId && r.label === roundLabel) return; // already here
+    setBusy(true);
+    await onOpen(t, r);
+    setBusy(false);
+  };
+
+  const sel = {
+    background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8,
+    padding: "0 8px", height: compact ? 34 : 40, fontFamily: "inherit", fontSize: 12, outline: "none",
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      <select value={year}
+        onChange={e => { setYear(e.target.value); const first = tournaments.find(t => yearOf(t) === e.target.value); setTid(first?.id || ""); }}
+        style={{ ...sel, width: 84, flexShrink: 0 }}>
+        {years.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+
+      <select value={tid} onChange={e => setTid(e.target.value)} style={{ ...sel, flex: 1, minWidth: 120 }}>
+        <option value="">— Tournament —</option>
+        {forYear.map(t => <option key={t.id} value={t.id}>{t.name || "(untitled)"}</option>)}
+      </select>
+
+      <select value={label} onChange={e => setLabel(e.target.value)} disabled={!tid || loadingRounds}
+        style={{ ...sel, width: 96, flexShrink: 0, opacity: tid ? 1 : 0.5 }}>
+        <option value="">{loadingRounds ? "…" : "— Round —"}</option>
+        {rounds.map(r => (
+          <option key={r.id} value={r.label}>
+            {r.label === "Q" ? "Q" : `R${r.label}`}{r.status === "live" ? " ●" : ""}
+          </option>
+        ))}
+      </select>
+
+      <button onClick={go} disabled={!tid || !label || busy}
+        style={{
+          height: compact ? 34 : 40, padding: "0 14px", borderRadius: 8, flexShrink: 0,
+          cursor: (!tid || !label || busy) ? "not-allowed" : "pointer",
+          fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+          background: (!tid || !label) ? "#1a1d2e" : "#1a4a8a",
+          border: `1px solid ${(!tid || !label) ? "#2a2d4a" : "#4e9af1"}`,
+          color: (!tid || !label) ? "#555" : "#fff",
+        }}>
+        {busy ? "…" : "🔍 Search"}
+      </button>
+    </div>
+  );
+}
+
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4609,14 +4441,27 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
       </div>
 
-      {/* Tournament / Round context bar */}
-      {(tournamentName || roundLabel) && (
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 10, margin: "12px 24px 0", padding: "10px 16px", display: "flex", flexDirection: "column", gap: 2 }}>
-          {tournamentName && <div style={{ fontSize: 13, fontWeight: 700, color: "#c8ceee" }}>🏆 {tournamentName}</div>}
-          {hostVenue && <div style={{ fontSize: 12, color: "#8890b8" }}>{hostVenue}</div>}
-          {roundLabel && <div style={{ fontSize: 12, color: "#6effa0", fontWeight: 700 }}>{roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</div>}
-        </div>
-      )}
+      {/* Where you are, and how to get somewhere else without leaving this page */}
+      <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 10, margin: "12px 16px 0", padding: "10px 14px" }}>
+        {(tournamentName || roundLabel) && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#c8ceee" }}>
+              🏆 {tournamentName || "(untitled tournament)"}
+              {roundLabel && <span style={{ color: "#6effa0" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
+            </div>
+            {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
+          </div>
+        )}
+        {onOpenRound && (
+          <RoundSelectorBar
+            tournamentId={tournamentId}
+            roundLabel={roundLabel}
+            isAdmin={isTrueAdmin}
+            onOpen={onOpenRound}
+            compact
+          />
+        )}
+      </div>
 
       {/* Action row — Summary / Export Data / Stopping Play, equal-size buttons */}
       <div style={{ background: "#141626", borderBottom: "1px solid #2a2d4a", padding: "10px 24px", display: "flex", gap: 10 }}>
@@ -7164,6 +7009,9 @@ export default function App() {
       roundLabel={currentRound?.label || ""}
       onlineUsers={onlineUsers}
       onChangePassword={() => setShowChangePassword(true)}
+      tournamentId={currentTournament?.id || null}
+      isTrueAdmin={isAdmin}
+      onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
       currentUser={currentUser}
