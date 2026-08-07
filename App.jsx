@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-e (beta)";
+const APP_BUILD = "2026-08-03-f (beta)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1248,6 +1248,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [selectedTournamentId, setSelectedTournamentId] = useState(liveTournamentId || null);
   const [rounds, setRounds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editingTournamentId, setEditingTournamentId] = useState(null); // non-null when the create form is editing an existing tournament
   const [newName, setNewName] = useState("");
@@ -1274,8 +1275,11 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         const { visible } = await reloadTournaments();
         if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
         if (!visible.length && isAdmin) setShowCreate(true);
+      } catch (e) {
+        // Surface the reason rather than sitting on a spinner forever
+        setLoadError(String(e?.message || e));
       } finally {
-        setLoading(false);   // show the screen even if the list couldn't load
+        setLoading(false);
       }
     })();
   }, []);
@@ -1482,8 +1486,18 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
   if (loading) {
     return (
-      <div style={{ background: "#0d0f1a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#8890b8", fontFamily: "'IBM Plex Mono', monospace" }}>
-        Loading…
+      <div style={{ background: "#0d0f1a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, color: "#8890b8", fontFamily: "'IBM Plex Mono', monospace" }}>
+        <div>Loading tournaments…</div>
+        <div style={{ fontSize: 11, color: "#4a5170" }}>build {APP_BUILD}</div>
+        {loadError && (
+          <div style={{ background: "#2a0a0a", border: "1px solid #ff707055", color: "#ff9999", borderRadius: 8, padding: "10px 12px", fontSize: 11, maxWidth: 420, lineHeight: 1.6, wordBreak: "break-word" }}>
+            {loadError}
+          </div>
+        )}
+        <button onClick={() => { setLoadError(null); setLoading(false); }}
+          style={{ background: "#1a1d2e", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+          Continue anyway
+        </button>
       </div>
     );
   }
