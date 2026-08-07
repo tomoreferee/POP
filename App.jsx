@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-x (beta · roles)";
+const APP_BUILD = "2026-08-02-y (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -6639,9 +6639,13 @@ export default function App() {
           const roles = await fetchAllRoles();
           setRolesMap(roles);
           const mayReopen = !!tournament && (savedIsAdmin || positionOf(roles, tournament.id, savedUser) !== null);
-          const blocked = tournament?.status === "closed" && !savedIsAdmin;
+          // A paused or closed event isn't live work, so don't drop straight back
+          // into it — show the list instead. The tournament stays remembered, so
+          // whoever is preparing it is one tap away from opening it again.
+          const notRunning = tournament && (tournament.status === "closed" || tournament.run_state !== "started");
+          const blocked = notRunning && !savedIsAdmin;
 
-          if (tournament && round && mayReopen && !blocked) {
+          if (tournament && round && mayReopen && !blocked && !notRunning) {
             setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
           } else {
             if (!mayReopen) {
