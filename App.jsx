@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-g (beta)";
+const APP_BUILD = "2026-08-03-h (beta)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1256,6 +1256,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [newFormat, setNewFormat] = useState("stroke");
   const [newHasQualifying, setNewHasQualifying] = useState(true);
   const [newNumRounds, setNewNumRounds] = useState(4);
+  const [newYear, setNewYear] = useState(String(new Date().getFullYear()));
   const [busy, setBusy] = useState(false);
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
@@ -1335,6 +1336,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
   const resetForm = () => {
     setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
+    setNewYear(String(new Date().getFullYear()));
     setEditingTournamentId(null);
   };
 
@@ -1344,6 +1346,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     setNewFormat(t.format || "stroke");
     setNewHasQualifying(t.has_qualifying !== false);
     setNewNumRounds(t.num_rounds ?? 4);
+    setNewYear(String(t.year || (t.name || "").match(/(20\d{2})/)?.[1] || new Date().getFullYear()));
     setEditingTournamentId(t.id);
     setShowCreate(true);
   };
@@ -1352,15 +1355,15 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     if (!newName.trim() || busy) return;
     setBusy(true);
     if (editingTournamentId) {
-      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
+      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null });
       setTournaments(prev => prev.map(t => t.id === editingTournamentId
-        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds }
+        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds, year: Number(newYear) || null }
         : t));
       setBusy(false);
       setShowCreate(false);
       resetForm();
     } else {
-      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
+      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null });
       setBusy(false);
       if (t) {
         setTournaments(prev => [t, ...prev]);
@@ -1383,57 +1386,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   };
 
   // Starting the tournament opens it to the assigned referees.
-  const handleToggleStarted = async (t) => {
-    if (busy) return;
-    const starting = t.run_state !== "started";
-    if (starting) {
-      const roles = rolesMap[t.id] || {};
-      if (Object.keys(roles).length === 0) {
-        window.alert(`ยังไม่ได้กำหนดตำแหน่งให้ใครใน "${t.name}"\n\nกดปุ่ม 👥 เพื่อกำหนด TD / CR / R1-R6 ก่อนเริ่มการแข่งขัน`);
-        return;
-      }
-      const staff = Object.entries(roles).map(([p, u]) => `• ${p} — ${u}`).join("\n");
-      if (!window.confirm(`เริ่มการแข่งขัน "${t.name}"?\n\n${staff}\n\nกรรมการเหล่านี้จะเข้าทัวร์นี้ได้ทันทีเมื่อ login`)) return;
-    } else {
-      if (!window.confirm(`หยุดการแข่งขัน "${t.name}" ชั่วคราว?\n\nกรรมการจะยังไม่ถูกออกจากระบบ แต่คนที่ login ใหม่จะยังเข้าไม่ได้จนกว่าจะเริ่มอีกครั้ง`)) return;
-    }
-    setBusy(true);
-    await setTournamentRunState(t.id, starting ? "started" : "draft");
-    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, run_state: starting ? "started" : "draft" } : x));
-    setBusy(false);
-  };
-
-  const handleToggleClosed = async (t) => {
-    if (busy) return;
-    const closing = t.status !== "closed";
-    const msg = closing
-      ? `ปิดการแข่งขัน "${t.name}"?\n\n• กรรมการทุกคนจะถูกออกจากระบบทันที\n• ตำแหน่ง TD / CR / R1-R6 ทั้งหมดจะถูกล้าง\n• เปิดใหม่ต้องกำหนดตำแหน่งใหม่\n\n(admin ไม่ถูกออกจากระบบ และยังเข้าดู/แก้ไขได้)`
-      : `เปิดการแข่งขัน "${t.name}" อีกครั้ง?\n\nอย่าลืมกำหนดตำแหน่ง TD / CR / R1-R6 ใหม่ก่อนให้กรรมการเข้าใช้งาน`;
-    if (!window.confirm(msg)) return;
-    setBusy(true);
-    await setTournamentStatus(t.id, closing ? "closed" : "open");
-    // Closing wipes the roster — every event is staffed fresh.
-    if (closing) {
-      await clearTournamentRoles(t.id);
-      setRolesMap(prev => ({ ...prev, [t.id]: {} }));
-    }
-    setBusy(false);
-    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, status: closing ? "closed" : "open" } : x));
-  };
-
   const handlePickRound = async (label) => {
     if (busy) return;
     // A closed competition is read-only for everyone except admins
-    if (selectedTournament?.status === "closed" && !isAdmin) {
-      window.alert(`Competition "${selectedTournament.name}" is closed.\n\nPlease choose another one.`);
-      return;
-    }
-    // TD and CR set their event up before it starts, so they may enter early.
-    const canPrepare = isAdmin;
-    if (selectedTournament?.run_state !== "started" && !canPrepare) {
-      window.alert(`Competition "${selectedTournament.name}" has not started.\n\nPlease wait for the TD / CR to start it.`);
-      return;
-    }
     setRoundPickerFor(null);
     const existing = rounds.find(r => r.label === label);
 
@@ -1542,38 +1497,19 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px" }}>
-        {/* Same selector as the dashboard, so the flow is identical everywhere */}
-        <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 16, marginBottom: 20 }}>
-          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 12 }}>Select competition</div>
-          <RoundSelectorBar
-            tournamentId={selectedTournamentId}
-            roundLabel={null}
-            isAdmin={isAdmin}
-            onOpen={async (t, r) => {
-              if (t.status === "closed" && !isAdmin) {
-                window.alert(`Competition "${t.name}" is closed.\n\nPlease choose another one.`);
-                return;
-              }
-              if (!isAdmin && t.run_state !== "started") {
-                window.alert(`Competition "${t.name}" has not started.\n\nPlease wait for an admin to start it.`);
-                return;
-              }
-              onRoundSelected(t, r, r.status === "finished" ? "reopen" : "resume");
-            }}
-          />
-        </div>
-
         {/* Tournament picker */}
         <div style={{ background: "#141626", border: "1px solid #2a2d4a", borderRadius: 12, padding: 20, marginBottom: 20 }}>
-          <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700, marginBottom: 14 }}>
-            {isAdmin ? "Manage tournaments" : "Your competition"}
-          </div>
-          {!isAdmin && tournaments.length === 1 && tournaments[0].run_state !== "started" && tournaments[0].status !== "closed" && (
-            <div style={{ background: "#1a1a0a", border: "1px solid #ffd96644", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "#ffd966", lineHeight: 1.5 }}>
-              ⏳ Waiting for the TD / CR to start this competition.<br />
-              You will be taken in automatically.
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 13, color: "#4e9af1", letterSpacing: 1, fontWeight: 700 }}>
+              {isAdmin ? "Manage tournaments" : "Your competition"}
             </div>
-          )}
+            {isAdmin && (
+              <button onClick={() => { resetForm(); setShowCreate(true); }}
+                style={{ marginLeft: "auto", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1" }}>
+                + New tournament
+              </button>
+            )}
+          </div>
 
           {tournaments.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: showCreate ? 16 : 0 }}>
@@ -1588,12 +1524,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                     style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, rowGap: 5, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>{t.name || "(untitled tournament)"}</span>
-                      {t.status === "closed" ? (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#ff7070", background: "#2a0a0a", border: "1px solid #ff707055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>CLOSED</span>
-                      ) : t.run_state === "started" ? (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#6effa0", background: "#0a2a10", border: "1px solid #6effa055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>● STARTED</span>
-                      ) : (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#8890b8", background: "#0d0f1a", border: "1px solid #8890b844", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>DRAFT</span>
+                      {t.year && (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#8890b8", background: "#0d0f1a", border: "1px solid #8890b844", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>{t.year}</span>
                       )}
                     </div>
                     {t.host_venue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{t.host_venue}</div>}
@@ -1607,16 +1539,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                     </button>
                     {isAdmin && (
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-                        <button onClick={() => handleToggleStarted(t)}
-                          title={t.run_state === "started" ? "Pause competition" : "Start competition"}
-                          style={{ background: "#0d0f1a", border: `1px solid ${t.run_state === "started" ? "#6effa066" : "#8890b844"}`, color: t.run_state === "started" ? "#6effa0" : "#8890b8", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
-                          {t.run_state === "started" ? "⏸" : "▶"}
-                        </button>
-                        <button onClick={() => handleToggleClosed(t)}
-                          title={t.status === "closed" ? "Reopen competition" : "Close competition"}
-                          style={{ background: "#0d0f1a", border: `1px solid ${t.status === "closed" ? "#6effa044" : "#ffd96644"}`, color: t.status === "closed" ? "#6effa0" : "#ffd966", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
-                          {t.status === "closed" ? "🔓" : "🔒"}
-                        </button>
                         <button onClick={() => handleStartEdit(t)}
                           title="Edit competition details"
                           style={{ background: "#0d0f1a", border: "1px solid #4e9af144", color: "#4e9af1", borderRadius: 7, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
@@ -1635,72 +1557,82 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
             </div>
           )}
 
-          {isAdmin && (
-            showCreate ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: tournaments.length ? 16 : 0, borderTop: tournaments.length ? "1px solid #2a2d4a" : "none" }}>
-                <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Tournament name"
-                  style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
-                <input value={newVenue} onChange={e => setNewVenue(e.target.value)} placeholder="Host venue"
-                  style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => setNewFormat("stroke")}
-                    style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                      background: newFormat === "stroke" ? "#1a4a8a" : "#0d0f1a", border: `1px solid ${newFormat === "stroke" ? "#4e9af1" : "#2a2d4a"}`, color: newFormat === "stroke" ? "#fff" : "#8890b8" }}>
-                    Stroke Play
-                  </button>
-                  <button disabled title="Match Play — coming soon"
-                    style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#444" }}>
-                    Match Play 🔒
-                  </button>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Rounds in this tournament</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
-                    <button onClick={() => setNewHasQualifying(q => !q)}
-                      style={{
-                        padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                        background: newHasQualifying ? "#7a5a00" : "#0d0f1a",
-                        border: `1px solid ${newHasQualifying ? "#ffd966" : "#2a2d4a"}`,
-                        color: newHasQualifying ? "#ffd966" : "#8890b8",
-                      }}>Q{newHasQualifying ? " ✓" : ""}</button>
-                    <span style={{ fontSize: 12, color: "#666" }}>+</span>
-                    {[1, 2, 3, 4].map(n => (
-                      <button key={n} onClick={() => setNewNumRounds(n)}
-                        style={{
-                          width: 34, height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15,
-                          background: newNumRounds === n ? "#1a4a8a" : "#0d0f1a",
-                          border: `1px solid ${newNumRounds === n ? "#4e9af1" : "#2a2d4a"}`,
-                          color: newNumRounds === n ? "#fff" : "#8890b8",
-                        }}>{n}</button>
-                    ))}
-                    <span style={{ fontSize: 11, color: "#8890b8" }}>rounds</span>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={handleSaveTournament} disabled={!newName.trim() || busy}
-                    style={{ flex: 1, padding: "10px 0", borderRadius: 8, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a2a", border: "1px solid #6effa066", color: "#6effa0" }}>
-                    {editingTournamentId ? "✓ Save changes" : "✓ Create tournament"}
-                  </button>
-                  {(tournaments.length > 0 || editingTournamentId) && (
-                    <button onClick={() => { setShowCreate(false); resetForm(); }}
-                      style={{ padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7" }}>
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => { resetForm(); setShowCreate(true); }}
-                style={{ marginTop: tournaments.length ? 12 : 0, width: "100%", padding: "10px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#0d0f1a", border: "1px dashed #4e9af166", color: "#4e9af1" }}>
-                + New tournament
-              </button>
-            )
-          )}
         </div>
 
       </div>
+
+      {/* Create / edit a tournament */}
+      {showCreate && isAdmin && (
+        <div onClick={() => { setShowCreate(false); resetForm(); }} style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1100, padding: 16, overflowY: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#141626", border: "1px solid #4e9af166", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #000", marginTop: 24 }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#4e9af1", marginBottom: 16 }}>
+              {editingTournamentId ? "✏️ Edit tournament" : "+ New tournament"}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Tournament name"
+                style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
+              <input value={newVenue} onChange={e => setNewVenue(e.target.value)} placeholder="Host venue"
+                style={{ background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
+
+              {/* Year drives the Year dropdown people search by */}
+              <div>
+                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Year</label>
+                <input value={newYear} onChange={e => setNewYear(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                  inputMode="numeric" placeholder={String(new Date().getFullYear())}
+                  style={{ width: "100%", marginTop: 6, background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#eee", borderRadius: 8, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setNewFormat("stroke")}
+                  style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    background: newFormat === "stroke" ? "#1a4a8a" : "#0d0f1a", border: `1px solid ${newFormat === "stroke" ? "#4e9af1" : "#2a2d4a"}`, color: newFormat === "stroke" ? "#fff" : "#8890b8" }}>
+                  Stroke Play
+                </button>
+                <button disabled title="Match Play — coming soon"
+                  style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#0d0f1a", border: "1px solid #2a2d4a", color: "#444" }}>
+                  Match Play 🔒
+                </button>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11, color: "#8890b8", letterSpacing: 1 }}>Rounds in this tournament</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                  <button onClick={() => setNewHasQualifying(q => !q)}
+                    style={{
+                      padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                      background: newHasQualifying ? "#7a5a00" : "#0d0f1a",
+                      border: `1px solid ${newHasQualifying ? "#ffd966" : "#2a2d4a"}`,
+                      color: newHasQualifying ? "#ffd966" : "#8890b8",
+                    }}>Q{newHasQualifying ? " ✓" : ""}</button>
+                  <span style={{ fontSize: 12, color: "#666" }}>+</span>
+                  {[1, 2, 3, 4].map(n => (
+                    <button key={n} onClick={() => setNewNumRounds(n)}
+                      style={{
+                        width: 34, height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15,
+                        background: newNumRounds === n ? "#1a4a8a" : "#0d0f1a",
+                        border: `1px solid ${newNumRounds === n ? "#4e9af1" : "#2a2d4a"}`,
+                        color: newNumRounds === n ? "#fff" : "#8890b8",
+                      }}>{n}</button>
+                  ))}
+                  <span style={{ fontSize: 11, color: "#8890b8" }}>rounds</span>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button onClick={handleSaveTournament} disabled={!newName.trim() || busy}
+                  style={{ flex: 1, padding: "11px 0", borderRadius: 8, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#1a4a2a", border: "1px solid #6effa066", color: "#6effa0" }}>
+                  {editingTournamentId ? "✓ Save changes" : "✓ Create tournament"}
+                </button>
+                <button onClick={() => { setShowCreate(false); resetForm(); }}
+                  style={{ padding: "11px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#1e2135", border: "1px solid #2a2d4a", color: "#9aa2c7" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Round picker — opened by the Select button on a tournament row */}
       {roundPickerFor && (
@@ -1786,7 +1718,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, tournamentRunState, onToggleStarted }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
   const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
@@ -1810,7 +1742,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     setTPickerList(
       all.filter(t =>
         t.status !== "closed" &&
-        (isTrueAdmin || t.run_state === "started")
+        true
       )
     );
     setTPickerLoading(false);
@@ -2082,26 +2014,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             <div style={{ padding: "14px 20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#eee" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
-                {tournamentRunState && (
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: tournamentRunState === "started" ? "#6effa0" : "#8890b8", background: tournamentRunState === "started" ? "#0a2a10" : "#0d0f1a", border: `1px solid ${tournamentRunState === "started" ? "#6effa055" : "#8890b844"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
-                    {tournamentRunState === "started" ? "● STARTED" : "DRAFT"}
-                  </span>
-                )}
               </div>
               {hostVenue && <div style={{ fontSize: 12, color: "#8890b8", marginTop: 2 }}>{hostVenue}</div>}
-
-              {/* TD/CR and admins run the event, so they start and pause it here */}
-              {isAdmin && onToggleStarted && (
-                <button onClick={onToggleStarted}
-                  style={{
-                    marginTop: 10, width: "100%", height: 34, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                    color: tournamentRunState === "started" ? "#ffd966" : "#6effa0",
-                    background: tournamentRunState === "started" ? "#1a1a0a" : "#0a2a10",
-                    border: `1px solid ${tournamentRunState === "started" ? "#ffd96666" : "#6effa066"}`,
-                  }}>
-                  {tournamentRunState === "started" ? "⏸ Pause competition" : "▶ Start competition"}
-                </button>
-              )}
 
               {isAdmin && onSwitchTournament && (
                 <button onClick={openTournamentPicker}
@@ -4346,6 +4260,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   const [busy, setBusy] = useState(false);
 
   const yearOf = (t) => {
+    if (t.year) return String(t.year);
     const m = (t.name || "").match(/(20\d{2})/);
     if (m) return m[1];
     return t.created_at ? String(new Date(t.created_at).getFullYear()) : String(new Date().getFullYear());
@@ -6289,18 +6204,18 @@ async function fetchRoundById(id) {
   if (error) return null;
   return data;
 }
-async function createTournament({ name, hostVenue, format, hasQualifying, numRounds }) {
+async function createTournament({ name, hostVenue, format, hasQualifying, numRounds, year }) {
   try {
     const { data, error } = await supabase.from("tournaments")
-      .insert({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4 })
+      .insert({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear() })
       .select().maybeSingle();
     if (error) return null;
     return data;
   } catch { return null; }
 }
-async function updateTournament(id, { name, hostVenue, format, hasQualifying, numRounds }) {
+async function updateTournament(id, { name, hostVenue, format, hasQualifying, numRounds, year }) {
   try {
-    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4 }).eq("id", id);
+    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear() }).eq("id", id);
   } catch {}
 }
 async function deleteTournament(id) {
@@ -6578,11 +6493,8 @@ export default function App() {
           const roles = await fetchAllRoles();
           setRolesMap(roles);
           const mayReopen = !!tournament;
-          // A paused or closed event isn't live work, so don't drop straight back
-          // into it — show the list instead. The tournament stays remembered, so
-          // whoever is preparing it is one tap away from opening it again.
-          const notRunning = tournament && (tournament.status === "closed" || tournament.run_state !== "started");
-          const blocked = notRunning && !savedIsAdmin;
+          const notRunning = false;
+          const blocked = false;
 
           if (tournament && round && mayReopen && !blocked && !notRunning) {
             setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
@@ -7016,19 +6928,6 @@ export default function App() {
   // label within the CURRENT tournament, then load it.
   // Quick switch from the Setup page: open the chosen tournament at its live
   // round (or the most recent one) without going via the Tournament screen.
-  // Start / pause the current competition straight from the Setup page.
-  const handleToggleStartedFromSetup = async () => {
-    const t = currentTournament;
-    if (!t) return;
-    const starting = t.run_state !== "started";
-    const msg = starting
-      ? `Start competition "${t.name}"?\n\nAssigned referees will be able to enter as soon as they log in.`
-      : `Pause competition "${t.name}"?\n\nReferees stay logged in, but anyone logging in again cannot enter until it is started once more.`;
-    if (!window.confirm(msg)) return;
-    await setTournamentRunState(t.id, starting ? "started" : "draft");
-    setCurrentTournament(prev => prev ? { ...prev, run_state: starting ? "started" : "draft" } : prev);
-  };
-
   const handlePickTournamentFromSetup = async (t) => {
     if (!t) return;
     const rs = await fetchRounds(t.id);
@@ -7163,8 +7062,6 @@ export default function App() {
       tournamentId={currentTournament?.id || null}
       onPickRound={handlePickRoundFromSetup}
       onPickTournament={handlePickTournamentFromSetup}
-      tournamentRunState={currentTournament?.run_state || "draft"}
-      onToggleStarted={handleToggleStartedFromSetup}
     />
   </>
   );
