@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-l (beta · light)";
+const APP_BUILD = "2026-08-03-m (beta · light)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -3232,11 +3232,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         <div style={{
           position: "relative",
           background: "#ffffff",
-          border: `1px solid ${group.color}44`,
+          border: `1px solid ${GROUP_NEUTRAL}44`,
           borderRadius: 14,
           padding: compact ? 16 : 24,
           marginBottom: compact ? 0 : 20,
-          boxShadow: `0 0 40px ${group.color}11`,
+          boxShadow: `0 0 40px ${GROUP_NEUTRAL}11`,
         }}>
           {compact && (
             <button onClick={onBack} style={{ position: "absolute", top: 14, right: 14, background: "#e9edf6", border: "1px solid #1565c044", color: "#1565c0", cursor: "pointer", fontSize: 15, fontWeight: 700, borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>{closeLabel || "✕"}</button>
@@ -3246,7 +3246,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             {compact ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3f4763", flexShrink: 0 }} />
                   <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, flexShrink: 0 }}>{group.name}</div>
                 </div>
                 <StatusBadge status={status} />
@@ -3264,16 +3264,16 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
               disabled={currentSlot === 0}
               title="Previous hole"
-              style={{ background: "#f4f6fb", border: `1px solid ${group.color}44`, color: currentSlot === 0 ? "#cccccc" : group.color, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#f4f6fb", border: `1px solid ${GROUP_NEUTRAL}44`, color: currentSlot === 0 ? "#cccccc" : GROUP_NEUTRAL, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >‹</button>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 30 : 72, lineHeight: 1, color: group.color }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 30 : 72, lineHeight: 1, color: "#1b1f30" }}>
               {currentHole + 1}
             </div>
             <button
               onClick={() => setCurrentSlot(Math.min(17, currentSlot + 1))}
               disabled={currentSlot === 17}
               title="Next hole"
-              style={{ background: "#f4f6fb", border: `1px solid ${group.color}44`, color: currentSlot === 17 ? "#cccccc" : group.color, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              style={{ background: "#f4f6fb", border: `1px solid ${GROUP_NEUTRAL}44`, color: currentSlot === 17 ? "#cccccc" : GROUP_NEUTRAL, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 10, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >›</button>
             {compact && (
               <div style={{ marginLeft: 6 }}>
@@ -3478,7 +3478,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             <button onClick={markHole}
               style={{
                 width: "100%",
-                background: `linear-gradient(135deg, ${group.color}88, ${group.color})`,
+                background: `linear-gradient(135deg, ${GROUP_NEUTRAL}88, ${GROUP_NEUTRAL})`,
                 border: "none", color: "#ffffff", borderRadius: 10, padding: "16px",
                 cursor: "pointer",
                 fontFamily: "'Bebas Neue'", letterSpacing: 3, fontSize: 22, fontWeight: 700,
@@ -3661,15 +3661,15 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                     <tr key={i}
                       onClick={jumpToSlot}
                       style={{
-                        background: isEditing ? "#eef1f8" : isActive ? `${group.color}11` : "transparent",
+                        background: isEditing ? "#eef1f8" : isActive ? `${GROUP_NEUTRAL}11` : "transparent",
                         transition: "background 0.15s",
-                        borderLeft: isActive ? `3px solid ${group.color}` : "3px solid transparent",
+                        borderLeft: isActive ? `3px solid ${GROUP_NEUTRAL}` : "3px solid transparent",
                         cursor: isEditing ? "default" : "pointer",
                       }}
                       onMouseEnter={e => { if (!isEditing && !isActive) e.currentTarget.style.background = "#ffffff07"; }}
                       onMouseLeave={e => { if (!isEditing && !isActive) e.currentTarget.style.background = "transparent"; }}
                     >
-                      <td style={{ padding: "6px 8px", textAlign: "center", color: isActive ? group.color : "#8888aa", fontWeight: isActive ? 700 : 600 }}>
+                      <td style={{ padding: "6px 8px", textAlign: "center", color: isActive ? "#1b1f30" : "#8888aa", fontWeight: isActive ? 700 : 600 }}>
                         {i + 1}{isActive ? " ◀" : ""}
                       </td>
                       <td style={{ padding: "6px 8px", textAlign: "center", color: "#ccc" }}>Par {pars[i]}</td>
@@ -4871,18 +4871,18 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const tmTarget = gd?.tmTarget ?? "";
             return (
               <div key={g.id} onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })} style={{
-                background: "#ffffff", border: `1px solid ${g.color}44`, borderRadius: 12,
+                background: "#ffffff", border: `1px solid ${GROUP_NEUTRAL}44`, borderRadius: 12,
                 padding: "8px 10px", cursor: "pointer", transition: "box-shadow 0.15s",
                 boxShadow: status === "late" ? `0 0 14px #ff707022` : "none",
                 minWidth: 0, overflow: "hidden",
               }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 18px ${g.color}22`; }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 18px ${GROUP_NEUTRAL}22`; }}
                 onMouseLeave={e => { e.currentTarget.style.boxShadow = status === "late" ? `0 0 14px #ff707022` : "none"; }}
               >
                 {/* One compact row: dot · name · progress · last hole diff · status */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
-                  <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>{g.name}</div>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3f4763", flexShrink: 0 }} />
+                  <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0, color: "#1b1f30" }}>{g.name}</div>
                   <div style={{ fontSize: 11, color: "#5c6480", whiteSpace: "nowrap", flexShrink: 0 }}>H{hole}/18</div>
                   {nowDiff !== null ? (
                     <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -5051,8 +5051,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         return (
                           <tr key={g.id}>
                             <td onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })}
-                              style={{ ...td, color: g.color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 1, background: "#ffffff", width: nameColW, minWidth: nameColW }}
-                              onMouseEnter={e => e.currentTarget.style.background = `${g.color}22`}
+                              style={{ ...td, color: "#1b1f30", fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 1, background: "#ffffff", width: nameColW, minWidth: nameColW }}
+                              onMouseEnter={e => e.currentTarget.style.background = `${GROUP_NEUTRAL}22`}
                               onMouseLeave={e => e.currentTarget.style.background = "#ffffff"}
                             >
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: fitAllHoles ? 0 : 5 }}>
