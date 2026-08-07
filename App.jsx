@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-v (beta · roles)";
+const APP_BUILD = "2026-08-02-w (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -6827,12 +6827,25 @@ export default function App() {
     const [allT, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
     setRolesMap(roles);
     // TD/CR can go in before the start so they can prepare; everyone else waits.
-    const mine = allT.find(t => {
+    const mineAll = allT.filter(t => {
       if (t.status === "closed") return false;
       const role = positionOf(roles, t.id, username);
       if (!role) return false;
       return t.run_state === "started" || SETUP_EDIT_POSITIONS.includes(role);
     });
+    // A TD/CR may run several events, so let them choose rather than guessing.
+    // Referees only ever have one, so they still go straight in.
+    if (mineAll.length > 1) {
+      setCurrentTournament(null);
+      setCurrentRound(null);
+      try {
+        localStorage.removeItem("pop_tournament_id");
+        localStorage.removeItem("pop_round_id");
+      } catch {}
+      setScreen("tournament");
+      return;
+    }
+    const mine = mineAll[0];
     if (mine) {
       const rs = await fetchRounds(mine.id);
       // Prefer the round already running, otherwise the most recent one
