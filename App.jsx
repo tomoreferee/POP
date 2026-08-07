@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-f (beta)";
+const APP_BUILD = "2026-08-03-g (beta)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1290,14 +1290,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     setRoundPickerFor(t);
   };
 
-  const reloadTournaments = async () => {
-    const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
-    setRolesMap(roles);
-    // Referees only see the tournament they hold a position in
-    const visible = t.filter(x => canUserSeeTournament(x, roles, currentUser, isAdmin));
-    setTournaments(visible);
-    return visible;
-  };
 
   useEffect(() => {
     (async () => {
