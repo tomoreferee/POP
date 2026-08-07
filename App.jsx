@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-02-w (beta · roles)";
+const APP_BUILD = "2026-08-02-x (beta · roles)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -6577,8 +6577,14 @@ export default function App() {
         // A round that was deleted, or belongs to another tournament, is ignored
         if (round && tournament && round.tournament_id !== tournament.id) round = null;
         // If the TD/CR has since moved the event to a different round, follow it
-        // rather than reopening on the stale one this device remembered.
-        if (round && tournament && round.status !== "live") {
+        // rather than reopening on the stale one this device remembered. People
+        // who run the event pick their own round, so they're left where they were.
+        const savedUserForRound = (() => { try { return localStorage.getItem("pop_app_user"); } catch { return null; } })();
+        const savedAdminForRound = (() => { try { return localStorage.getItem("pop_app_is_admin") === "true"; } catch { return false; } })();
+        const rolesForRound = tournament ? await fetchAllRoles() : {};
+        const runsEventOnRestore = savedAdminForRound ||
+          SETUP_EDIT_POSITIONS.includes(positionOf(rolesForRound, tournament?.id, savedUserForRound));
+        if (round && tournament && !runsEventOnRestore && round.status !== "live") {
           const rs = await fetchRounds(tournament.id);
           const active = rs.find(r => r.status === "live");
           if (active && active.id !== round.id) round = active;
@@ -6626,18 +6632,19 @@ export default function App() {
           setCurrentUser(savedUser);
           setIsAdmin(savedIsAdmin);
 
-          // Same rule as a fresh login: you only reopen straight into a tournament
-          // if you actually hold a position in it. Otherwise pick one — a tournament
-          // left over on this device must not decide it for you.
+          // Reopen where this device left off. Admins may work in any tournament,
+          // so they don't need a position there — everyone else must hold one,
+          // otherwise a leftover tournament could put them somewhere they don't
+          // belong.
           const roles = await fetchAllRoles();
           setRolesMap(roles);
-          const holdsPosition = tournament && positionOf(roles, tournament.id, savedUser) !== null;
+          const mayReopen = !!tournament && (savedIsAdmin || positionOf(roles, tournament.id, savedUser) !== null);
           const blocked = tournament?.status === "closed" && !savedIsAdmin;
 
-          if (tournament && round && holdsPosition && !blocked) {
+          if (tournament && round && mayReopen && !blocked) {
             setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
           } else {
-            if (!holdsPosition) {
+            if (!mayReopen) {
               setCurrentTournament(null);
               setCurrentRound(null);
               try {
