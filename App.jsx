@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-c (beta)";
+const APP_BUILD = "2026-08-03-d (beta)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1259,6 +1259,168 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
+
+  const reloadTournaments = async () => {
+    const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+    setRolesMap(roles);
+    const visible = t.filter(x => canUserSeeTournament(x, roles, currentUser, isAdmin));
+    setTournaments(visible);
+    return { visible, roles };
+  };
+
+  useEffect(() => {
+    (async () => {
+      const { visible } = await reloadTournaments();
+      if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
+      if (!visible.length && isAdmin) setShowCreate(true);
+      setLoading(false);
+    })();
+  }, []);
+
+  const openRoundPicker = (t) => {
+    setSelectedTournamentId(t.id);
+    setShowCreate(false);
+    setRoundPickerFor(t);
+  };
+
+  const reloadTournaments = async () => {
+    const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+    setRolesMap(roles);
+    // Referees only see the tournament they hold a position in
+    const visible = t.filter(x => canUserSeeTournament(x, roles, currentUser, isAdmin));
+    setTournaments(visible);
+    return visible;
+  };
+
+  useEffect(() => {
+    (async () => {
+      const visible = await reloadTournaments();
+      if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
+      if (!visible.length && isAdmin) setShowCreate(true);
+      setLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedTournamentId) { setRounds([]); return; }
+    (async () => setRounds(await fetchRounds(selectedTournamentId)))();
+  }, [selectedTournamentId]);
+
+  const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
+  // Which round slots to offer. Prefer the tournament's saved configuration, but
+  // tournaments created before that setting existed have it blank — for those,
+  // infer the list from the rounds that actually exist instead of assuming Q+4.
+  const availableRoundLabels = (() => {
+    if (!selectedTournament) return ROUND_LABELS;
+    const existing = rounds.map(r => r.label);
+    const configured = selectedTournament.num_rounds != null || selectedTournament.has_qualifying != null;
+
+    if (configured) {
+      const list = [
+        ...(selectedTournament.has_qualifying !== false ? ["Q"] : []),
+        ...ROUND_LABELS.filter(l => l !== "Q").slice(0, selectedTournament.num_rounds ?? 4),
+      ];
+      // Never hide a round that already holds data
+      existing.forEach(l => { if (!list.includes(l)) list.push(l); });
+      return ROUND_LABELS.filter(l => list.includes(l));
+    }
+
+    // Unconfigured: show what exists (plus the next round so it can be started)
+    if (existing.length === 0) return ROUND_LABELS;
+    const numbered = existing.filter(l => l !== "Q").map(Number).filter(n => !isNaN(n));
+    const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
+    const list = [...existing];
+    if (nextNum <= 4 && !list.includes(String(nextNum))) list.push(String(nextNum));
+    return ROUND_LABELS.filter(l => list.includes(l));
+  })();
+
+  const resetForm = () => {
+    setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
+    setEditingTournamentId(null);
+  };
+
+  const handleStartEdit = (t) => {
+    setNewName(t.name || "");
+    setNewVenue(t.host_venue || "");
+    setNewFormat(t.format || "stroke");
+    setNewHasQualifying(t.has_qualifying !== false);
+    setNewNumRounds(t.num_rounds ?? 4);
+    setEditingTournamentId(t.id);
+    setShowCreate(true);
+  };
+
+  const handleSaveTournament = async () => {
+    if (!newName.trim() || busy) return;
+    setBusy(true);
+    if (editingTournamentId) {
+      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
+      setTournaments(prev => prev.map(t => t.id === editingTournamentId
+        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds }
+        : t));
+      setBusy(false);
+      setShowCreate(false);
+      resetForm();
+    } else {
+      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds });
+      setBusy(false);
+      if (t) {
+        setTournaments(prev => [t, ...prev]);
+        setSelectedTournamentId(t.id);
+        setShowCreate(false);
+        resetForm();
+      }
+    }
+  };
+
+  const handleDeleteTournament = async (t) => {
+    if (busy) return;
+    const ok = window.confirm(`ลบ Tournament "${t.name}" ทิ้งถาวร?\n\nRound ทั้งหมดในทัวร์นาเมนต์นี้ (รวมข้อมูลที่เก็บสำรองไว้) จะถูกลบไปด้วย กู้คืนไม่ได้\n\nดำเนินการต่อหรือไม่?`);
+    if (!ok) return;
+    setBusy(true);
+    await deleteTournament(t.id);
+    setBusy(false);
+    setTournaments(prev => prev.filter(x => x.id !== t.id));
+    if (selectedTournamentId === t.id) setSelectedTournamentId(null);
+  };
+
+  // Starting the tournament opens it to the assigned referees.
+  const handleToggleStarted = async (t) => {
+    if (busy) return;
+    const starting = t.run_state !== "started";
+    if (starting) {
+      const roles = rolesMap[t.id] || {};
+      if (Object.keys(roles).length === 0) {
+        window.alert(`ยังไม่ได้กำหนดตำแหน่งให้ใครใน "${t.name}"\n\nกดปุ่ม 👥 เพื่อกำหนด TD / CR / R1-R6 ก่อนเริ่มการแข่งขัน`);
+        return;
+      }
+      const staff = Object.entries(roles).map(([p, u]) => `• ${p} — ${u}`).join("\n");
+      if (!window.confirm(`เริ่มการแข่งขัน "${t.name}"?\n\n${staff}\n\nกรรมการเหล่านี้จะเข้าทัวร์นี้ได้ทันทีเมื่อ login`)) return;
+    } else {
+      if (!window.confirm(`หยุดการแข่งขัน "${t.name}" ชั่วคราว?\n\nกรรมการจะยังไม่ถูกออกจากระบบ แต่คนที่ login ใหม่จะยังเข้าไม่ได้จนกว่าจะเริ่มอีกครั้ง`)) return;
+    }
+    setBusy(true);
+    await setTournamentRunState(t.id, starting ? "started" : "draft");
+    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, run_state: starting ? "started" : "draft" } : x));
+    setBusy(false);
+  };
+
+  const handleToggleClosed = async (t) => {
+    if (busy) return;
+    const closing = t.status !== "closed";
+    const msg = closing
+      ? `ปิดการแข่งขัน "${t.name}"?\n\n• กรรมการทุกคนจะถูกออกจากระบบทันที\n• ตำแหน่ง TD / CR / R1-R6 ทั้งหมดจะถูกล้าง\n• เปิดใหม่ต้องกำหนดตำแหน่งใหม่\n\n(admin ไม่ถูกออกจากระบบ และยังเข้าดู/แก้ไขได้)`
+      : `เปิดการแข่งขัน "${t.name}" อีกครั้ง?\n\nอย่าลืมกำหนดตำแหน่ง TD / CR / R1-R6 ใหม่ก่อนให้กรรมการเข้าใช้งาน`;
+    if (!window.confirm(msg)) return;
+    setBusy(true);
+    await setTournamentStatus(t.id, closing ? "closed" : "open");
+    // Closing wipes the roster — every event is staffed fresh.
+    if (closing) {
+      await clearTournamentRoles(t.id);
+      setRolesMap(prev => ({ ...prev, [t.id]: {} }));
+    }
+    setBusy(false);
+    setTournaments(prev => prev.map(x => x.id === t.id ? { ...x, status: closing ? "closed" : "open" } : x));
+  };
 
   const handlePickRound = async (label) => {
     if (busy) return;
