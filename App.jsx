@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-k (beta · light)";
+const APP_BUILD = "2026-08-03-l (beta · light)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1229,10 +1229,12 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
 }
 
 // ─── Setup Screen ─────────────────────────────────────────────────────────────
-// Every colour here is text on a white row, so they're all kept dark enough to
-// stay legible in sunlight — no pastels.
-const GROUP_COLORS_H1  = ["#1565c0","#c2410c","#6d28d9","#8a6500","#ad1457","#0e7a3c","#b91c1c","#4d7c0f"];
-const GROUP_COLORS_H10 = ["#0e7a3c","#b91c1c","#8a6500","#7c3aed","#c2410c","#0369a1","#be185d","#4d7c0f"];
+// Groups are no longer colour-coded — the schedule cells carry the status colour,
+// and per-group hues only added noise. One neutral tone keeps every existing
+// style rule working while showing nothing colourful.
+const GROUP_NEUTRAL = "#3f4763";
+const GROUP_COLORS_H1  = Array(8).fill(GROUP_NEUTRAL);
+const GROUP_COLORS_H10 = Array(8).fill(GROUP_NEUTRAL);
 
 function makeNextTime(groups) {
   if (!groups.length) return "06:40";
@@ -2312,17 +2314,10 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             )}
             {groups1.map(g => (
               <div key={g.id} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-                <div style={{ width: 5, height: 28, borderRadius: 3, background: g.color, flexShrink: 0 }} />
                 <input
                   value={g.name}
                   onChange={e => updateGroup1(g.id, "name", e.target.value)}
                   style={{ flex: 1, minWidth: 0, background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
-                />
-                <input
-                  type="color"
-                  value={g.color}
-                  onChange={e => updateGroup1(g.id, "color", e.target.value)}
-                  style={{ width: 40, height: 40, border: "none", borderRadius: 6, cursor: "pointer", background: "none", flexShrink: 0 }}
                 />
                 <input
                   type="time"
@@ -2356,17 +2351,10 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             )}
             {groups10.map(g => (
               <div key={g.id} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-                <div style={{ width: 5, height: 28, borderRadius: 3, background: g.color, flexShrink: 0 }} />
                 <input
                   value={g.name}
                   onChange={e => updateGroup10(g.id, "name", e.target.value)}
                   style={{ flex: 1, minWidth: 0, background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
-                />
-                <input
-                  type="color"
-                  value={g.color}
-                  onChange={e => updateGroup10(g.id, "color", e.target.value)}
-                  style={{ width: 40, height: 40, border: "none", borderRadius: 6, cursor: "pointer", background: "none", flexShrink: 0 }}
                 />
                 <input
                   type="time"
@@ -2457,12 +2445,6 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                               value={g.name}
                               onChange={e => updateGroupShotgun(g.id, "name", e.target.value)}
                               style={{ flex: 1, minWidth: 0, background: "#eef1f8", border: "1px solid #d5dbe9", color: "#1b1f30", borderRadius: 6, padding: "5px 8px", fontFamily: "inherit", fontSize: 13 }}
-                            />
-                            <input
-                              type="color"
-                              value={g.color}
-                              onChange={e => updateGroupShotgun(g.id, "color", e.target.value)}
-                              style={{ width: 40, height: 40, border: "none", borderRadius: 6, cursor: "pointer", background: "none", flexShrink: 0 }}
                             />
                             <input
                               type="time"
