@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-j (beta · light)";
+const APP_BUILD = "2026-08-03-k (beta · light)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -41,6 +41,24 @@ const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…2
 const PAR_TIMES = PAR_TIMES_BY_PLAYERS[3];
 
 const DEFAULT_PARS = [4,4,3,4,5,4,3,4,4, 4,4,3,4,5,4,3,4,4];
+
+// Solid status fills, so a cell reads at a glance in direct sunlight instead of
+// relying on a faint tint. Text flips to white once the fill is dark enough.
+const STATUS_FILL = {
+  fast: { bg: "#1565c0", fg: "#ffffff" },   // well ahead
+  ok:   { bg: "#4dc9a0", fg: "#0b3b2c" },   // in position / on time
+  warn: { bg: "#ffd84d", fg: "#4a3800" },   // slightly out of position
+  late: { bg: "#f28b8b", fg: "#5a1010" },   // out of position
+  slow: { bg: "#c62828", fg: "#ffffff" },   // badly out of position
+};
+function statusFillForDiff(d) {
+  if (d === null || d === undefined) return { bg: "transparent", fg: "#5c6480" };
+  if (d <= -10) return STATUS_FILL.fast;
+  if (d <= 0)   return STATUS_FILL.ok;
+  if (d <= 2)   return STATUS_FILL.warn;
+  if (d <= 5)   return STATUS_FILL.late;
+  return STATUS_FILL.slow;
+}
 
 const thStyle = { padding: "8px 6px", color: "#3f4763", fontWeight: 700, textAlign: "center", borderBottom: "2px solid #c2c9dc", minWidth: 38 };
 const tdStyle = { padding: "8px 6px", textAlign: "center", borderBottom: "1px solid #dfe4ef" };
@@ -1997,12 +2015,19 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
       <div style={{ padding: "16px 24px 0" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#5c6480" }}>
           <span style={{ color: "#1565c0", fontWeight: 700, letterSpacing: 1 }}>Status criteria:</span>
-          <span style={{ color: "#1560a8" }}>● In Position (Fast) (&lt; -10 min)</span>
-          <span style={{ color: "#1565c0" }}>● In Position (-9 to -1 min)</span>
-          <span style={{ color: "#0e8a43" }}>● On Time (0 min)</span>
-          <span style={{ color: "#a67c00" }}>● Less Out of Position (+1 to +2 min)</span>
-          <span style={{ color: "#ff8a80" }}>● Out of Position (+3 to +5 min)</span>
-          <span style={{ color: "#b3261e" }}>● Out of Position (Slow) (+6 min and above)</span>
+          {/* Swatches match the solid cell fills used in the schedule table */}
+          {[
+            { k: "fast", label: "In Position (Fast) (< -10 min)" },
+            { k: "ok",   label: "In Position / On Time (-9 to 0 min)" },
+            { k: "warn", label: "Less Out of Position (+1 to +2 min)" },
+            { k: "late", label: "Out of Position (+3 to +5 min)" },
+            { k: "slow", label: "Out of Position (Slow) (+6 min and above)" },
+          ].map(row => (
+            <span key={row.k} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+              <span style={{ width: 26, height: 16, borderRadius: 4, flexShrink: 0, background: STATUS_FILL[row.k].bg, border: "1px solid #00000022" }} />
+              <span style={{ color: "#3f4763" }}>{row.label}</span>
+            </span>
+          ))}
         </div>
       </div>
 
@@ -5168,20 +5193,18 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const diff = computeHoleDiff(hd, hi, parTimes);
                               const frontDiff = getFrontGroupDiffAtHole(groups, g, hi, groupData, parTimes);
                               const relativeDiff = diff === null ? null : diff - Math.max(frontDiff ?? 0, 0);
-                              const color = diffColor(relativeDiff);
-                              // Stronger tint than a dark theme needs: on white a
-                              // faint wash disappears completely in sunlight.
-                              const cellBg = `${color}30`;
-                              const cellBgHover = `${color}4d`;
+                              const fill = statusFillForDiff(relativeDiff);
+                              const color = fill.fg;
+                              const cellBg = fill.bg;
                               return (
                                 <td key={hi} onClick={handleHoleClick}
-                                  style={{ ...td, color, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", background: cellBg, ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
-                                  onMouseEnter={e => e.currentTarget.style.background = cellBgHover}
-                                  onMouseLeave={e => e.currentTarget.style.background = cellBg}
+                                  style={{ ...td, color, fontWeight: 700, cursor: "pointer", transition: "filter 0.15s", background: cellBg, ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
+                                  onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.92)"}
+                                  onMouseLeave={e => e.currentTarget.style.filter = ""}
                                 >
                                   <div style={{ fontSize: fitAllHoles ? 11 : 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
                                   {holeLogs.map((l, li) => (
-                                    <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                    <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
                                       {fitAllHoles
                                         ? shortLogLabel(l)
                                         : (l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
