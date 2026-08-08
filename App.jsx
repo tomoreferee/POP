@@ -456,7 +456,7 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
   logs.filter(l => l.type === "TM" && l.badTime).forEach(l => {
     items.push({
       key: `bt-${l.idx}`, type: "TM", sortHole: l.holeIdx,
-      label: `⚡ Bad Time ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
+      label: `Bad Time ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
     });
   });
 
@@ -688,34 +688,34 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
     if (mode === "h1only") {
       const base = (() => { const [h,m] = startH1Only.split(":").map(Number); return h*60+m; })();
       for (let i = 0; i < countH1Only; i++)
-        rows.push({ label: `Group ${i+1}`, hole: "H1", time: minToTime(base + i * gapH1Only), section: "🌅 Morning" });
+        rows.push({ label: `Group ${i+1}`, hole: "H1", time: minToTime(base + i * gapH1Only), section: "Morning" });
       if (useAfternoonH1) {
         const abase = (() => { const [h,m] = afternoonStartH1.split(":").map(Number); return h*60+m; })();
         for (let i = 0; i < afternoonCountH1; i++)
-          rows.push({ label: `Group ${countH1Only + i + 1}`, hole: "H1", time: minToTime(abase + i * gapH1Only), section: "☀️ Afternoon" });
+          rows.push({ label: `Group ${countH1Only + i + 1}`, hole: "H1", time: minToTime(abase + i * gapH1Only), section: "Afternoon" });
       }
     } else if (mode === "h10only") {
       const base = (() => { const [h,m] = startH10Only.split(":").map(Number); return h*60+m; })();
       for (let i = 0; i < countH10Only; i++)
-        rows.push({ label: `Group ${i+1}`, hole: "H10", time: minToTime(base + i * gapH10Only), section: "🌅 Morning" });
+        rows.push({ label: `Group ${i+1}`, hole: "H10", time: minToTime(base + i * gapH10Only), section: "Morning" });
       if (useAfternoonH10) {
         const abase = (() => { const [h,m] = afternoonStartH10.split(":").map(Number); return h*60+m; })();
         for (let i = 0; i < afternoonCountH10; i++)
-          rows.push({ label: `Group ${countH10Only + i + 1}`, hole: "H10", time: minToTime(abase + i * gapH10Only), section: "☀️ Afternoon" });
+          rows.push({ label: `Group ${countH10Only + i + 1}`, hole: "H10", time: minToTime(abase + i * gapH10Only), section: "Afternoon" });
       }
     } else {
       const base = (() => { const [h,m] = startBoth.split(":").map(Number); return h*60+m; })();
       for (let i = 0; i < countH1; i++)
-        rows.push({ label: `Group ${i+1}`, hole: "H1", time: minToTime(base + i * gapBoth), section: "🌅 Morning" });
+        rows.push({ label: `Group ${i+1}`, hole: "H1", time: minToTime(base + i * gapBoth), section: "Morning" });
       for (let i = 0; i < countH10; i++)
-        rows.push({ label: `Group ${countH1 + i + 1}`, hole: "H10", time: minToTime(base + i * gapBoth), section: "🌅 Morning" });
+        rows.push({ label: `Group ${countH1 + i + 1}`, hole: "H10", time: minToTime(base + i * gapBoth), section: "Morning" });
       if (useAfternoonBoth) {
         const abase = (() => { const [h,m] = afternoonStartBoth.split(":").map(Number); return h*60+m; })();
         const mOff = countH1 + countH10;
         for (let i = 0; i < afternoonCountH1B; i++)
-          rows.push({ label: `Group ${mOff + i + 1}`, hole: "H1", time: minToTime(abase + i * gapBoth), section: "☀️ Afternoon" });
+          rows.push({ label: `Group ${mOff + i + 1}`, hole: "H1", time: minToTime(abase + i * gapBoth), section: "Afternoon" });
         for (let i = 0; i < afternoonCountH10B; i++)
-          rows.push({ label: `Group ${mOff + afternoonCountH1B + i + 1}`, hole: "H10", time: minToTime(abase + i * gapBoth), section: "☀️ Afternoon" });
+          rows.push({ label: `Group ${mOff + afternoonCountH1B + i + 1}`, hole: "H10", time: minToTime(abase + i * gapBoth), section: "Afternoon" });
       }
     }
     return rows;
@@ -840,10 +840,10 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
     <div style={{ background:"#ffffff", border:"1px solid #0969da33", borderRadius:6, padding:"18px 20px", marginBottom:16 }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-        <div style={{ fontSize:12, color:"#0969da", letterSpacing:2, fontWeight:700 }}>⚡ Auto Generate Groups</div>
+        <div style={{ fontSize:12, color:"#0969da", letterSpacing:2, fontWeight:700 }}>Auto Generate Groups</div>
         {/* Mode toggle */}
         <div style={{ display:"flex", gap:6 }}>
-          {[["h1only","🟢 H1 only"],["h10only","🔵 H10 only"],["both","🟢 H1 + 🔵 H10"],["shotgun","🔫 Shotgun 4 Holes"]].map(([m,label]) => (
+          {[["h1only","🟢 H1 only"],["h10only","🔵 H10 only"],["both","🟢 H1 + 🔵 H10"],["shotgun","Shotgun 4 Holes"]].map(([m,label]) => (
             <button key={m} onClick={() => setMode(m)} style={{
               padding:"5px 12px", borderRadius:6, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
               background: mode===m ? "#ddf4ff" : "#f6f8fa",
@@ -860,7 +860,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         <div>
           {/* Morning section */}
           <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("🌅 Morning Section", "#1a7f37")}
+            {sectionLabel("Morning Section", "#1a7f37")}
             {row("Number of H1 groups", numInput(countH1Only, setCountH1Only))}
             {row("First group start time", timeInput(startH1Only, setStartH1Only, "#1a7f37"))}
             {row("Gap between groups",
@@ -877,12 +877,12 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
             color: useAfternoonH1 ? "#9a6700" : "#818b98",
             transition:"all 0.15s",
           }}>
-            {useAfternoonH1 ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
+            {useAfternoonH1 ? "Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
           </button>
 
           {useAfternoonH1 && (
             <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", border:"1px solid #9a670033" }}>
-              {sectionLabel("☀️ Afternoon Section", "#9a6700")}
+              {sectionLabel("Afternoon Section", "#9a6700")}
               {row("Number of H1 groups", numInput(afternoonCountH1, setAfternoonCountH1))}
               {row("First group start time", timeInput(afternoonStartH1, setAfternoonStartH1, "#9a6700"))}
               <div style={{ fontSize:11, color:"#59636e", marginTop:2 }}>Gap uses the same value as the morning section ({gapH1Only} min)</div>
@@ -896,7 +896,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         <div>
           {/* Morning section */}
           <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("🌅 Morning Section", "#0969da")}
+            {sectionLabel("Morning Section", "#0969da")}
             {row("Number of H10 groups", numInput(countH10Only, setCountH10Only))}
             {row("First group start time", timeInput(startH10Only, setStartH10Only, "#0969da"))}
             {row("Gap between groups",
@@ -913,12 +913,12 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
             color: useAfternoonH10 ? "#9a6700" : "#818b98",
             transition:"all 0.15s",
           }}>
-            {useAfternoonH10 ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
+            {useAfternoonH10 ? "Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
           </button>
 
           {useAfternoonH10 && (
             <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", border:"1px solid #9a670033" }}>
-              {sectionLabel("☀️ Afternoon Section", "#9a6700")}
+              {sectionLabel("Afternoon Section", "#9a6700")}
               {row("Number of H10 groups", numInput(afternoonCountH10, setAfternoonCountH10))}
               {row("First group start time", timeInput(afternoonStartH10, setAfternoonStartH10, "#9a6700"))}
               <div style={{ fontSize:11, color:"#59636e", marginTop:2 }}>Gap uses the same value as the morning section ({gapH10Only} min)</div>
@@ -932,7 +932,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         <div>
           {/* Morning section */}
           <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("🌅 Morning Section", "#1a7f37")}
+            {sectionLabel("Morning Section", "#1a7f37")}
             <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
               <div>
                 <div style={{ fontSize:11, color:"#1a7f37", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
@@ -959,12 +959,12 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
             color: useAfternoonBoth ? "#9a6700" : "#818b98",
             transition:"all 0.15s",
           }}>
-            {useAfternoonBoth ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
+            {useAfternoonBoth ? "Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
           </button>
 
           {useAfternoonBoth && (
             <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", border:"1px solid #9a670033" }}>
-              {sectionLabel("☀️ Afternoon Section", "#9a6700")}
+              {sectionLabel("Afternoon Section", "#9a6700")}
               <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
                 <div>
                   <div style={{ fontSize:11, color:"#1a7f37", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
@@ -1002,9 +1002,9 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
             <button key={String(opt.val)} onClick={() => setReplaceExisting(opt.val)}
               style={{
                 flex: 1, padding: "8px 0", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                background: replaceExisting === opt.val ? (opt.val ? "#ffebe9" : "#0969da") : "#f6f8fa",
+                background: replaceExisting === opt.val ? (opt.val ? "#ffebe9" : "#ddf4ff") : "#f6f8fa",
                 border: `1px solid ${replaceExisting === opt.val ? (opt.val ? "#bc4c00" : "#0969da") : "#d1d9e0"}`,
-                color: replaceExisting === opt.val ? (opt.val ? "#bc4c00" : "#ffffff") : "#59636e",
+                color: replaceExisting === opt.val ? (opt.val ? "#bc4c00" : "#0969da") : "#59636e",
               }}>{opt.label}</button>
           ))}
         </div>
@@ -1030,7 +1030,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
           transition:"all 0.2s",
         }}
       >
-        {generated ? "✓ Groups generated!" : `⚡ ${replaceExisting ? "Replace with" : "Generate"} ${totalNew} group(s)`}
+        {generated ? "✓ Groups generated!" : `${replaceExisting ? "Replace with" : "Generate"} ${totalNew} group(s)`}
       </button>
       )}
     </div>
@@ -1134,7 +1134,7 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
   return (
     <div style={{ background:"#fff8c5", border:"1px solid #bc4c0044", borderRadius:6, padding:"18px 20px", marginBottom:16 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-        <div style={{ fontSize:12, color:"#f1734e", letterSpacing:2, fontWeight:700 }}>🔫 SHOTGUN START — Tee off together on 4 holes</div>
+        <div style={{ fontSize:12, color:"#f1734e", letterSpacing:2, fontWeight:700 }}>SHOTGUN START — Tee off together on 4 holes</div>
       </div>
       <div style={{ fontSize:11, color:"#59636e", marginBottom:14 }}>Use only when necessary (rare) — all groups tee off at the same time from different start points</div>
 
@@ -1163,7 +1163,7 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
       )}
 
       <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-        <div style={{ fontSize:11, color:"#1a7f37", fontWeight:700, letterSpacing:1, marginBottom:10 }}>🌅 Morning Section</div>
+        <div style={{ fontSize:11, color:"#1a7f37", fontWeight:700, letterSpacing:1, marginBottom:10 }}>Morning Section</div>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
           <span style={{ fontSize:12, color:"#59636e", minWidth:110 }}>Tee-off time</span>
           <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
@@ -1190,12 +1190,12 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
         color: useAfternoon ? "#9a6700" : "#818b98",
         transition:"all 0.15s",
       }}>
-        {useAfternoon ? "☀️ Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
+        {useAfternoon ? "Afternoon Section added ✓ — click to remove" : "+ Add Afternoon Section"}
       </button>
 
       {useAfternoon && (
         <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:14, border:"1px solid #9a670033" }}>
-          <div style={{ fontSize:11, color:"#9a6700", fontWeight:700, letterSpacing:1, marginBottom:10 }}>☀️ Afternoon Section</div>
+          <div style={{ fontSize:11, color:"#9a6700", fontWeight:700, letterSpacing:1, marginBottom:10 }}>Afternoon Section</div>
           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
             <span style={{ fontSize:12, color:"#59636e", minWidth:110 }}>Tee-off time</span>
             <input type="time" value={afternoonStartTime} onChange={e => setAfternoonStartTime(e.target.value)}
@@ -1224,7 +1224,7 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
       >
         {generated
           ? "✓ Shotgun created!"
-          : `🔫 Generate Shotgun ${totalNew} group(s) (4 holes)${useAfternoon ? ` — Morning ${totalMorning} / Afternoon ${totalAfternoon}` : ""}`}
+          : `Generate Shotgun ${totalNew} group(s) (4 holes)${useAfternoon ? ` — Morning ${totalMorning} / Afternoon ${totalAfternoon}` : ""}`}
       </button>
     </div>
   );
@@ -1315,15 +1315,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     setRoundPickerFor(t);
   };
 
-
-  useEffect(() => {
-    (async () => {
-      const visible = await reloadTournaments();
-      if (!selectedTournamentId && visible.length) setSelectedTournamentId(visible[0].id);
-      if (!visible.length && isAdmin) setShowCreate(true);
-      setLoading(false);
-    })();
-  }, []);
 
   useEffect(() => {
     if (!selectedTournamentId) { setRounds([]); return; }
@@ -1614,7 +1605,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                 </button>
                 <button disabled title="Match Play — coming soon"
                   style={{ flex: 1, padding: "9px 0", borderRadius: 6, cursor: "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#444" }}>
-                  Match Play 🔒
+                  Match Play
                 </button>
               </div>
 
@@ -2097,7 +2088,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               ))}
             </div>
           ) : (
-            <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>🔒 {playersPerGroup} players</span>
+            <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>{playersPerGroup} players</span>
           )}
         </div>
 
@@ -2112,7 +2103,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               >↺ Reset ({playersPerGroup}-ball)</button>
             )}
             {!isAdmin && (
-              <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1 }}>🔒 View Only</span>
+              <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1 }}>View Only</span>
             )}
           </div>
 
@@ -2286,8 +2277,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {!isAdmin && (
             <div style={{ background: "#ffffff", border: "1px solid #9a670033", borderRadius: 6, padding: "16px 20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 20 }}>🔒</span>
-                <div style={{ fontSize: 14, color: "#9a6700", fontWeight: 700, letterSpacing: 1 }}>View-only mode (User)</div>
+                                <div style={{ fontSize: 14, color: "#9a6700", fontWeight: 700, letterSpacing: 1 }}>View-only mode (User)</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 30 }}>
                 <div style={{ fontSize: 12, color: "#59636e" }}>✗ Cannot edit Par / time per hole</div>
@@ -2386,7 +2376,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             return (
               <div style={{ background: "#fff8c5", border: "1px solid #bc4c0033", borderRadius: 6, padding: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, color: "#f1734e", letterSpacing: 0, fontWeight: 700 }}>🔫 SHOTGUN (4 holes)</div>
+                  <div style={{ fontSize: 13, color: "#f1734e", letterSpacing: 0, fontWeight: 700 }}>SHOTGUN (4 holes)</div>
                   <button
                     onClick={() => setClearModal("shotgun")}
                     style={{ background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
@@ -2478,7 +2468,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, fontSize: 20,
           }}
         >
-          {(!isAdmin && allGroups.length === 0) ? "🔒 Waiting for Admin to set up groups" : "▶ Start tracking PACE OF PLAY"}
+          {(!isAdmin && allGroups.length === 0) ? "Waiting for Admin to set up groups" : "▶ Start tracking PACE OF PLAY"}
         </button>
         )}
 
@@ -3210,7 +3200,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             background: "#ffffff", border: "1px solid #9a670033",
             borderRadius: 6, padding: "10px 16px", marginBottom: 16,
           }}>
-            <div style={{ fontSize: 11, color: "#9a6700", letterSpacing: 0, marginBottom: 8, fontWeight: 700 }}>⏱ Pause History</div>
+            <div style={{ fontSize: 11, color: "#9a6700", letterSpacing: 0, marginBottom: 8, fontWeight: 700 }}>Pause History</div>
             {suspensions.map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#59636e", marginBottom: 4 }}>
                 <span style={{ color: "#9a6700" }}>#{i + 1}</span>
@@ -3312,7 +3302,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   <div style={{ color: "#818b98", fontSize: compact ? 14 : 18 }}>+{parTimeNow}m→</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>🏁 Finish</div>
+                  <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Finish</div>
                   <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 19 : 24, color: "#1f2328", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
                 </div>
               </div>
@@ -3328,7 +3318,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
           {/* Delay input */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
-            <span style={{ fontSize: 12, color: "#cf222e" }}>⏱ Delay Time</span>
+            <span style={{ fontSize: 12, color: "#cf222e" }}>Delay Time</span>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
               <input
@@ -3371,7 +3361,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           </div>
 
           <div style={{ display: "flex", gap: 8, marginBottom: compact ? 10 : 14 }}>
-            {[["stamp", "🏁 Timestamp now"], ["manual", "✏️ Enter difference manually"]].map(([mode, label]) => (
+            {[["stamp", "Timestamp now"], ["manual", "✏️ Enter difference manually"]].map(([mode, label]) => (
               <button key={mode} onClick={() => { setInputMode(mode); setRecordedEnd(null); }}
                 style={{
                   flex: 1, padding: compact ? "7px 0" : "8px 0", borderRadius: 6, cursor: "pointer",
@@ -3400,13 +3390,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 onMouseEnter={e => { e.currentTarget.style.background = "#aceebb"; e.currentTarget.style.borderColor = "#1a7f37aa"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "#dafbe1"; e.currentTarget.style.borderColor = "#1a7f3766"; }}
               >
-                🏁 Record holed time
+                Record holed time
               </button>
             ) : (
               <div style={{ background: "#f6f8fa", borderRadius: 6, padding: "16px 20px", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#59636e", marginBottom: 4 }}>🏁 Recorded finish time</div>
+                    <div style={{ fontSize: 11, color: "#59636e", marginBottom: 4 }}>Recorded finish time</div>
                     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 36, fontWeight: 600, color: "#1f2328", lineHeight: 1 }}>{minToTime(recordedEnd)}</div>
                     <div style={{ fontSize: 14, fontWeight: 700, marginTop: 6, color: diffColor(diffDisplay) }}>
                       {diffDisplay === 0 ? "On time" : diffDisplay > 0 ? `${diffDisplay} min late` : `${Math.abs(diffDisplay)} min early`}
@@ -3497,7 +3487,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0969da", boxShadow: "0 0 8px #0969da", animation: "pulse 1.5s infinite" }} />
-              <span style={{ fontSize: 13, color: "#1f2328", fontWeight: 700, letterSpacing: 1 }}>👁 MONITORING</span>
+              <span style={{ fontSize: 13, color: "#1f2328", fontWeight: 700, letterSpacing: 1 }}>MONITORING</span>
               {mnName && <span style={{ fontSize: 12, color: "#59636e" }}>by {mnName}</span>}
               <button
                 onClick={offMN}
@@ -3510,7 +3500,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             </div>
             {currentSlot < 18 && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
+                <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>Bad Time →</span>
                 {playerNums.map(n => {
                   const label = `P${n}`;
                   const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label));
@@ -3530,7 +3520,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                         borderRadius: 6, padding: "4px 10px", cursor: usedUpInMN ? "not-allowed" : "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
-                    >{isBadTimed ? "⚡ " : ""}{label}{count >= 2 ? ` x${count}` : ""}</button>
+                    >{isBadTimed ? "BT " : ""}{label}{count >= 2 ? ` x${count}` : ""}</button>
                   );
                 })}
               </div>
@@ -3547,7 +3537,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#bf3989", boxShadow: "0 0 8px #bf3989", animation: "pulse 1.5s infinite" }} />
-              <span style={{ fontSize: 13, color: "#bf3989", fontWeight: 700, letterSpacing: 1 }}>⏱ TIMING</span>
+              <span style={{ fontSize: 13, color: "#bf3989", fontWeight: 700, letterSpacing: 1 }}>TIMING</span>
               <span style={{ fontSize: 12, color: "#ffb3e6", fontWeight: 700 }}>{tmTarget || "All"}</span>
               {tmName && <span style={{ fontSize: 12, color: "#59636e" }}>by {tmName}</span>}
               <button
@@ -3561,7 +3551,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             </div>
             {currentSlot < 18 && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>⚡ Bad Time →</span>
+                <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>Bad Time →</span>
                 {playerNums.map(n => {
                   const label = `P${n}`;
                   const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label);
@@ -3581,7 +3571,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                         borderRadius: 6, padding: "4px 10px", cursor: notYetTarget ? "not-allowed" : "pointer",
                         fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                       }}
-                    >{isBadTimed ? "⚡ " : ""}{label}{count >= 2 ? ` x${count}` : ""}</button>
+                    >{isBadTimed ? "BT " : ""}{label}{count >= 2 ? ` x${count}` : ""}</button>
                   );
                 })}
               </div>
@@ -3743,7 +3733,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                 <div key={li} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: logColor(l.type), background: `${logBg(l.type)}44`, borderRadius: 4, padding: "2px 4px", textAlign: "left", lineHeight: 1.4 }}>
                                   <span style={{ flex: 1 }}>
                                     {l.badTime ? (
-                                      <><span style={{ fontWeight: 700 }}>⚡ TM Bad Time</span> {l.target}{badTimeOccurrence.has(l) ? ` (#${badTimeOccurrence.get(l)})` : ""}{l.name ? ` - ${l.name}` : ""}</>
+                                      <><span style={{ fontWeight: 700 }}>TM Bad Time</span> {l.target}{badTimeOccurrence.has(l) ? ` (#${badTimeOccurrence.get(l)})` : ""}{l.name ? ` - ${l.name}` : ""}</>
                                     ) : l.off ? (
                                       <><span style={{ fontWeight: 700 }}>✕ Off {l.type}</span>{l.name ? ` - ${l.name}` : ""}</>
                                     ) : (
@@ -3759,12 +3749,12 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                               ))}
                               {isFutureMN && !logs.some(l => l.type === "MN") && (
                                 <div style={{ fontSize: 11, color: "#0969da", background: "#ddf4ff", border: "1px dashed #0969da44", borderRadius: 4, padding: "2px 4px", textAlign: "center", lineHeight: 1.4 }}>
-                                  👁 MN{mnName ? ` - ${mnName}` : ""}
+                                  MN{mnName ? ` - ${mnName}` : ""}
                                 </div>
                               )}
                               {isFutureTM && !logs.some(l => l.type === "TM") && (
                                 <div style={{ fontSize: 11, color: "#bf3989", background: "#ffeff7", border: "1px dashed #ff6ec744", borderRadius: 4, padding: "2px 4px", textAlign: "center", lineHeight: 1.4 }}>
-                                  ⏱ TM {tmName ? `- ${tmName}` : ""}
+                                  TM {tmName ? `- ${tmName}` : ""}
                                 </div>
                               )}
                             </div>
@@ -3779,7 +3769,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                             {(hasStart || hasEnd) && <button onClick={() => clearHole(i)} style={{ ...btnStyle("#ffebe9","#cf222e"), padding: "3px 7px", fontSize: 12 }}>Delete</button>}
                           </div>
                         ) : hasEnd ? (
-                          <button onClick={() => startEditHole(i, "end")} style={{ background: "none", border: "1px solid #bc4c0044", color: "#f16b4e", borderRadius: 6, padding: "3px 6px", cursor: "pointer", fontSize: 11, fontFamily: "inherit" }} title="Edit finish time">🏁 ✏</button>
+                          <button onClick={() => startEditHole(i, "end")} style={{ background: "none", border: "1px solid #bc4c0044", color: "#f16b4e", borderRadius: 6, padding: "3px 6px", cursor: "pointer", fontSize: 11, fontFamily: "inherit" }} title="Edit finish time">✏</button>
                         ) : null}
                       </td>
                     </tr>
@@ -3797,7 +3787,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: `1px solid ${logColor(actionModal.type)}88`, borderRadius: 6, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #1f2328" }}>
             <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: logColor(actionModal.type), marginBottom: 6 }}>
-              {actionModal.type === "WN" ? "⚠ PACE OF PLAY WARNING" : actionModal.type === "MN" ? "👁 MONITORING" : "⏱ TIMING"}
+              {actionModal.type === "WN" ? "⚠ PACE OF PLAY WARNING" : actionModal.type === "MN" ? "MONITORING" : "TIMING"}
             </div>
             <div style={{ fontSize: 12, color: "#59636e", marginBottom: 18 }}>
               Hole {actionModal.holeIdx + 1} — {minToTime(nowInMin())}
@@ -4140,7 +4130,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>⏱ TM &amp; BAD TIME SUMMARY</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>TM &amp; BAD TIME SUMMARY</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px", overflowX: "auto" }}>
           {tmGroupSummaries.length === 0 && (
             <div style={{ color: "#59636e", padding: 20, textAlign: "center", fontSize: 14 }}>No TM records yet</div>
@@ -4163,7 +4153,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
                     <span style={{ color: "#bf3989" }}>{gs.players.length} Timing</span>
-                    {gs.totalBadTime > 0 && <span style={{ color: "#9a6700" }}>⚡ {gs.totalBadTime} Bad Time</span>}
+                    {gs.totalBadTime > 0 && <span style={{ color: "#9a6700" }}>{gs.totalBadTime} Bad Time</span>}
                   </span>
                 </button>
                 {isOpen && (
@@ -4195,7 +4185,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                                       display: "inline-flex", alignItems: "center", gap: 4, padding: 0,
                                     }}
                                   >
-                                    ⚡ ×{p.badTimeCount}
+                                    BT ×{p.badTimeCount}
                                     <span style={{ fontSize: 11, transform: badTimeOpen ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform 0.15s" }}>▶</span>
                                   </button>
                                 ) : "–"}
@@ -4212,7 +4202,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                                         background: "#ffeff7", border: "1px solid #9a670066",
                                         borderRadius: 6, padding: "3px 8px", fontSize: 12, color: "#9a6700",
                                       }}>
-                                        ⚡ H{bt.holeIdx + 1} <span style={{ color: "#59636e" }}>· {bt.time} · {bt.name}</span>
+                                        BT H{bt.holeIdx + 1} <span style={{ color: "#59636e" }}>· {bt.time} · {bt.name}</span>
                                       </span>
                                     ))}
                                   </div>
@@ -4512,7 +4502,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
           <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-            <span style={{ fontSize: 13, color: "#59636e" }}>⏱ {minToTime(now)}</span>
+            <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
             {currentUser && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                 <span style={{ fontSize: 12, color: "#59636e" }}>👤</span>
@@ -4597,7 +4587,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           background: "#fff8c5", borderBottom: "1px solid #ff996633",
           padding: "8px 24px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5,
         }}>
-          <span style={{ color: "#bc4c00", fontSize: 12, fontWeight: 700 }}>⏱ Time shift</span>
+          <span style={{ color: "#bc4c00", fontSize: 12, fontWeight: 700 }}>Time shift</span>
           {suspensions.map((s, i) => (
             <span key={i}
               onClick={() => onSuspendEdit && setEditSuspension({ idx: i, stopTime: s.stopTime, resumeTime: s.resumeTime })}
@@ -4771,7 +4761,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         <div onClick={() => setEditSuspension(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #ff996688", borderRadius: 6, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #1f2328" }}>
             <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 16 }}>
-              ⏱ Edit stop #{editSuspension.idx + 1}
+              Edit stop #{editSuspension.idx + 1}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               <div>
@@ -4954,7 +4944,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               {morningAlerts.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: "#59636e", fontWeight: 700, letterSpacing: 2 }}>🌅 MORNING</div>
+                    <div style={{ fontSize: 12, color: "#59636e", fontWeight: 700, letterSpacing: 2 }}>MORNING</div>
                     <div style={{ flex: 1, height: 1, background: "#d1d9e0" }} />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -4965,7 +4955,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               {afternoonAlerts.length > 0 && (
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, letterSpacing: 2 }}>☀️ AFTERNOON</div>
+                    <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, letterSpacing: 2 }}>AFTERNOON</div>
                     <div style={{ flex: 1, height: 1, background: "#d1d9e0" }} />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -5068,16 +5058,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     }}
                                     title="Tap to undo the finished status"
                                     style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
-                                  >{fitAllHoles ? "🏁" : "🏁 FINISHED"}</span>
+                                  >{fitAllHoles ? "FIN" : "FINISHED"}</span>
                                 )}
                                 {hasWN && <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "W" : "WN"}</span>}
                                 {mnActiveNow ? (
-                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "M" : "👁 MN"}</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "M" : "MN"}</span>
                                 ) : hasMN && (
                                   <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e44", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×M" : "✕ MN"}</span>
                                 )}
                                 {tmActiveNow ? (
-                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffeff7", border: "1px solid #ff6ec744", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "T" : "⏱ TM"}</span>
+                                  <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffeff7", border: "1px solid #ff6ec744", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "T" : "TM"}</span>
                                 ) : hasTM && (
                                   <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e44", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×T" : "✕ TM"}</span>
                                 )}
@@ -5154,17 +5144,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
                                         {fitAllHoles
                                           ? shortLogLabel(l)
-                                          : (l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
+                                          : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
                                       </div>
                                     ))}
                                     {showMnPreview && (
                                       <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ddf4ff", border: "1px dashed #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
-                                        {fitAllHoles ? "M" : <>👁 MN{data?.mnName ? ` - ${data.mnName}` : ""}</>}
+                                        {fitAllHoles ? "M" : <>MN{data?.mnName ? ` - ${data.mnName}` : ""}</>}
                                       </div>
                                     )}
                                     {showTmPreview && (
                                       <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffeff7", border: "1px dashed #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
-                                        {fitAllHoles ? "T" : <>⏱ TM {data?.tmName ? `- ${data.tmName}` : ""}</>}
+                                        {fitAllHoles ? "T" : <>TM {data?.tmName ? `- ${data.tmName}` : ""}</>}
                                       </div>
                                     )}
                                   </td>
@@ -5187,7 +5177,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
                                       {fitAllHoles
                                         ? shortLogLabel(l)
-                                        : (l.badTime ? `⚡ BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
+                                        : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
                                     </div>
                                   ))}
                                 </td>
@@ -5222,7 +5212,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const secGroups = groups.filter(g => getSection(g) === sec);
             if (secGroups.length === 0) return null;
             const startHolesInSec = Array.from(new Set(secGroups.map(g => g.startHole || 1))).sort((a, b) => a - b);
-            const secLabel = sec === "morning" ? "🌅 MORNING SECTION" : "☀️ AFTERNOON SECTION";
+            const secLabel = sec === "morning" ? "MORNING SECTION" : "AFTERNOON SECTION";
             const secColor = "#59636e";
             const secBorder = "#d1d9e0";
             return (
@@ -5852,7 +5842,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                     {isBuiltInAdmin(u.username) && !isCurrentUser ? (
                       <span style={{ fontSize: 12, color: "#818b98", letterSpacing: 1 }} title="Hidden — sign in as this account to view">
-                        •••••• 🔒
+                        ••••••
                       </span>
                     ) : (
                       <>
@@ -5878,7 +5868,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                     <span
                       title="The built-in admin account cannot be changed"
                       style={{ background: "#fff8c5", border: "1px solid #9a670033", color: "#7d4e00", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "inherit", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}
-                    >🔒 Admin</span>
+                    >Admin</span>
                   ) : (
                     <button
                       onClick={() => handleToggleRole(u)}
