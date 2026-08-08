@@ -1410,7 +1410,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
   const handleDeleteTournament = async (t) => {
     if (busy) return;
-    const ok = window.confirm(`ลบ Tournament "${t.name}" ทิ้งถาวร?\n\nRound ทั้งหมดในทัวร์นาเมนต์นี้ (รวมข้อมูลที่เก็บสำรองไว้) จะถูกลบไปด้วย กู้คืนไม่ได้\n\nดำเนินการต่อหรือไม่?`);
+    const ok = window.confirm(`Delete the competition "${t.name}" permanently?\n\nEvery round in it — including any archived data — will be deleted too. This cannot be undone.\n\nContinue?`);
     if (!ok) return;
     setBusy(true);
     await deleteTournament(t.id);
