@@ -5193,12 +5193,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeLabel = meta.label;
             const tableKey = `${sectionKey}-${startHole}`;
             const isCollapsed = !!collapsedTables[tableKey];
-            // Fit views: shrink columns so the holes sit on one screen without
-            // sideways scrolling. Fit 9 has twice the room, so it stays legible.
-            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "6px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: 0 } : thStyle;
-            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "6px 0" : "3px 0" } : tdStyle;
+            // Fit views: Fit 18 squeezes all 18 columns onto one screen; Fit 9
+            // keeps columns wide enough to read a full HH:MM and scrolls/drags.
+            const holeColW = isFit9 ? 46 : 0;
+            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "6px 2px" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW } : thStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "6px 2px" : "3px 0", minWidth: holeColW } : tdStyle;
             const turnGapW = viewMode === "fit18" ? 8 : 0;
-            const nameColW = fitAllHoles ? (isFit9 ? 42 : 26) : 80;
+            const nameColW = fitAllHoles ? (isFit9 ? 44 : 26) : 80;
             const startColW = fitAllHoles ? (isFit9 ? 46 : 28) : 56;
             return (
               <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 16, overflow: "hidden" }}>
@@ -5231,12 +5232,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   </span>
                 </div>
                 {!isCollapsed && (
-                <div style={{ overflowX: fitAllHoles ? "hidden" : "auto" }}>
-                  <table style={{ borderCollapse: "collapse", fontSize: 13, ...(fitAllHoles ? { width: "100%", tableLayout: "fixed" } : {}) }}>
+                <div style={{ overflowX: viewMode === "fit18" ? "hidden" : "auto", WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain" }}>
+                  <table style={{ borderCollapse: "collapse", fontSize: 13, ...(viewMode === "fit18" ? { width: "100%", tableLayout: "fixed" } : {}) }}>
                     <thead>
                       <tr style={{ background: "#f6f8fa" }}>
-                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
-                        <th style={{ ...th, color: "#59636e", position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
+                        <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
+                        <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
                           (focusHoles.length && !focusHoles.includes(hi)) || !inNineWindow(i) ? null : (
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
@@ -5264,7 +5265,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         return (
                           <tr key={g.id}>
                             <td onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })}
-                              style={{ ...td, color: "#1f2328", fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 1, background: "#ffffff", width: nameColW, minWidth: nameColW }}
+                              style={{ ...td, color: "#1f2328", fontWeight: 700, cursor: "pointer", transition: "background 0.15s", position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 1, background: "#ffffff", width: nameColW, minWidth: nameColW }}
                               onMouseEnter={e => e.currentTarget.style.background = `${GROUP_NEUTRAL}22`}
                               onMouseLeave={e => e.currentTarget.style.background = "#ffffff"}
                             >
@@ -5300,7 +5301,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             </td>
                             <td
                               onClick={e => e.stopPropagation()}
-                              style={{ ...td, color: colColor, fontWeight: 700, position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 1, background: "#ffffff", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }}
+                              style={{ ...td, color: colColor, fontWeight: 700, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 1, background: "#ffffff", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }}
                             >
                               {fitAllHoles ? (
                                 <div style={{ fontSize: 11, lineHeight: 1.05 }}>
@@ -5418,8 +5419,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         hole each column belongs to. */}
                     <tfoot>
                       <tr style={{ background: "#f6f8fa" }}>
-                        <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Grp" : "Group"}</th>
-                        <th style={{ ...th, color: "#59636e", position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
+                        <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Grp" : "Group"}</th>
+                        <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
                           (focusHoles.length && !focusHoles.includes(hi)) || !inNineWindow(i) ? null : (
                             <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
