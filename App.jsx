@@ -3964,6 +3964,49 @@ function rainColor(pct) {
   return "#1a7f37";
 }
 
+/* Turn a venue name into coordinates. Open-Meteo's geocoder only knows
+   populated places, so a course name like "Leam Chabung International Country
+   Club" finds nothing there — OpenStreetMap is asked first because it indexes
+   the courses themselves, then we fall back to the town the name contains.
+   Results are cached so a venue is only ever looked up once per device. */
+async function geocodeVenue(name) {
+  if (!name) return null;
+  const readCache = () => { try { return JSON.parse(localStorage.getItem("pop_venue_geo") || "{}"); } catch { return {}; } };
+  const cached = readCache()[name];
+  if (cached) return cached;
+  const remember = (coords) => {
+    try {
+      const c = readCache();
+      c[name] = coords;
+      localStorage.setItem("pop_venue_geo", JSON.stringify(c));
+    } catch {}
+    return coords;
+  };
+
+  // 1. OpenStreetMap knows golf clubs and resorts by name.
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name)}`);
+    const j = await r.json();
+    if (j?.[0]?.lat) return remember({ lat: Number(j[0].lat), lng: Number(j[0].lon), label: name });
+  } catch {}
+
+  // 2. Strip the venue words and try the remaining place name as a town.
+  const simplified = name
+    .replace(/\b(golf|country|club|course|resort|links|international|national|the)\b/gi, " ")
+    .replace(/[,()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  for (const q of [name, simplified].filter(Boolean)) {
+    try {
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1`);
+      const j = await r.json();
+      const hit = j?.results?.[0];
+      if (hit) return remember({ lat: hit.latitude, lng: hit.longitude, label: hit.name });
+    } catch {}
+  }
+  return null;
+}
+
 /* Course conditions strip: light window, temperature and wind — the things
    that decide whether play can start, continue, or has to be called. */
 function WeatherBar({ hostVenue }) {
@@ -3971,25 +4014,25 @@ function WeatherBar({ hostVenue }) {
   const [wx, setWx] = useState(null);
   const [failed, setFailed] = useState(false);
 
-  // Where are we? The device knows best; fall back to geocoding the venue name.
+  // The competition's venue decides the weather — a referee checking the app
+  // from home should still see conditions at the course, not at their desk.
+  // The device's own position is only a fallback when the venue can't be found.
   useEffect(() => {
     let cancelled = false;
-    const useVenue = async () => {
-      if (!hostVenue) { if (!cancelled) setFailed(true); return; }
-      try {
-        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(hostVenue)}&count=1`);
-        const j = await r.json();
-        const hit = j?.results?.[0];
-        if (!cancelled) hit ? setCoords({ lat: hit.latitude, lng: hit.longitude }) : setFailed(true);
-      } catch { if (!cancelled) setFailed(true); }
-    };
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        p => { if (!cancelled) setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); },
-        () => useVenue(),
-        { timeout: 6000, maximumAge: 1800000 }
-      );
-    } else useVenue();
+    setFailed(false);
+    setCoords(null);   // a different venue means the old position is wrong
+    (async () => {
+      const fromVenue = await geocodeVenue(hostVenue);
+      if (cancelled) return;
+      if (fromVenue) { setCoords(fromVenue); return; }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          p => { if (!cancelled) setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+          () => { if (!cancelled) setFailed(true); },
+          { timeout: 6000, maximumAge: 1800000 }
+        );
+      } else setFailed(true);
+    })();
     return () => { cancelled = true; };
   }, [hostVenue]);
 
