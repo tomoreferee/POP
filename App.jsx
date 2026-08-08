@@ -383,9 +383,13 @@ function shortLogLabel(l) {
   return l.off ? `×${letter}` : letter;
 }
 
-function withTurnGap(cells, width, keyPrefix, Tag = "td", gapStyle = null) {
+function withTurnGap(cells, width, keyPrefix, Tag = "td", gapStyle = null, gapContent = null) {
   const out = cells.slice();
-  out.splice(9, 0, <Tag key={`turngap-${keyPrefix}`} style={{ width, minWidth: width, padding: 0, border: "none", background: "transparent", ...(gapStyle || {}) }} />);
+  out.splice(9, 0, (
+    <Tag key={`turngap-${keyPrefix}`} style={{ width, minWidth: width, padding: 0, border: "none", background: "transparent", ...(gapStyle || {}) }}>
+      {gapContent}
+    </Tag>
+  ));
   return out;
 }
 
@@ -5194,21 +5198,27 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // Fit 18 squeezes all 18 columns onto one screen. Fit 9 renders the
             // same 18 columns but each is a ninth of the viewport, so nine fill
             // the screen and the rest is a drag away.
-            // 100vw less the page padding (40), the Grp + Time columns (82) and
-            // the turn gap (8) — so nine hole columns exactly fill the screen.
-            const holeColW = isFit9 ? "calc((100vw - 132px) / 9)" : 0;
+            // 100vw less the page padding (40) and the sticky Grp + Time columns
+            // (82) — so nine hole columns exactly fill the first screen.
+            const holeColW = isFit9 ? "calc((100vw - 124px) / 9)" : 0;
             const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
             const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined } : tdStyle;
-            const turnGapW = fitAllHoles ? 8 : 0;
-            // The turn gap used to be a borderless blank cell, which cut every
-            // row rule in two. Carry the rules through it and put a single
-            // divider down the middle so the turn reads as one line, not two.
-            const gapDivider = fitAllHoles ? `2px solid ${colColor}88` : "none";
-            const gapHead = fitAllHoles ? { borderLeft: gapDivider, borderBottom: "2px solid #d1d9e0" } : null;
-            const gapBody = fitAllHoles ? { borderLeft: gapDivider, borderBottom: "1px solid #d1d9e0" } : null;
-            const gapFoot = fitAllHoles ? { borderLeft: gapDivider, borderTop: "1px solid #d1d9e0" } : null;
             const nameColW = fitAllHoles ? (isFit9 ? 40 : 26) : 80;
             const startColW = fitAllHoles ? (isFit9 ? 42 : 28) : 56;
+            // At the turn, Fit 9 repeats the group column (the second nine is a
+            // drag away from the sticky one, so you'd otherwise lose track of
+            // which row you're reading). Fit 18 just leaves a plain spacer.
+            const turnGapW = isFit9 ? nameColW : fitAllHoles ? 8 : 0;
+            const gapRule = { borderLeft: "1px solid #d1d9e0", borderRight: "1px solid #d1d9e0" };
+            const gapHead = isFit9
+              ? { ...gapRule, background: "#f6f8fa", borderBottom: "2px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#59636e", textAlign: "center" }
+              : fitAllHoles ? { borderBottom: "2px solid #d1d9e0" } : null;
+            const gapBody = isFit9
+              ? { ...gapRule, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#1f2328", textAlign: "center" }
+              : fitAllHoles ? { borderBottom: "1px solid #d1d9e0" } : null;
+            const gapFoot = isFit9
+              ? { ...gapRule, background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#59636e", textAlign: "center" }
+              : fitAllHoles ? { borderTop: "1px solid #d1d9e0" } : null;
             return (
               <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 16, overflow: "hidden" }}>
                 <div
@@ -5249,7 +5259,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
-                        )), turnGapW, `h-${tableKey}`, "th", gapHead)}
+                        )), turnGapW, `h-${tableKey}`, "th", gapHead, isFit9 ? "Grp" : null)}
                       </tr>
                     </thead>
                     <tbody>
@@ -5415,7 +5425,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   ))}
                                 </td>
                               );
-                            }), turnGapW, `b-${tableKey}-${g.id}`, "td", gapBody)}
+                            }), turnGapW, `b-${tableKey}-${g.id}`, "td", gapBody, isFit9 ? g.name.replace(/^\s*group\s*/i, "") : null)}
                           </tr>
                         );
                       })}
@@ -5431,7 +5441,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
-                        )), turnGapW, `f-${tableKey}`, "th", gapFoot)}
+                        )), turnGapW, `f-${tableKey}`, "th", gapFoot, isFit9 ? "Grp" : null)}
                       </tr>
                     </tfoot>
                   </table>
