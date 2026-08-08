@@ -5586,7 +5586,7 @@ function LoginScreen({ onLogin, users, hasSession }) {
               placeholder="Enter password"
               style={{
                 width: "100%", background: "#f6f8fa", border: `1px solid ${error ? "#cf222e66" : "#d1d9e0"}`,
-                color: "#1f2328", borderRadius: 6, padding: "10px 40px 10px 14px", fontFamily: "inherit",
+                color: "#1f2328", borderRadius: 6, padding: "10px 62px 10px 14px", fontFamily: "inherit",
                 fontSize: 14, outline: "none", boxSizing: "border-box",
                 transition: "border-color 0.2s",
               }}
@@ -5597,9 +5597,10 @@ function LoginScreen({ onLogin, users, hasSession }) {
               onClick={() => setShowPass(v => !v)}
               style={{
                 position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                background: "none", border: "none", color: "#59636e", cursor: "pointer", fontSize: 16, padding: 0,
+                background: "none", border: "none", color: "#0969da", cursor: "pointer",
+                fontSize: 12, fontWeight: 700, fontFamily: "inherit", padding: 0,
               }}
-            >{showPass ? "🙈" : "👁"}</button>
+            >{showPass ? "Hide" : "Show"}</button>
           </div>
         </div>
 
@@ -5760,12 +5761,12 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                   onChange={e => { setNewPassword(e.target.value); setAddError(""); }}
                   onKeyDown={e => e.key === "Enter" && handleAdd()}
                   placeholder="Password"
-                  style={{ ...inputStyle, width: "100%", boxSizing: "border-box", paddingRight: 36 }}
+                  style={{ ...inputStyle, width: "100%", boxSizing: "border-box", paddingRight: 58 }}
                 />
                 <button
                   onClick={() => setShowNewPass(v => !v)}
-                  style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#59636e", cursor: "pointer", fontSize: 14, padding: 0 }}
-                >{showNewPass ? "🙈" : "👁"}</button>
+                  style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#0969da", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit", padding: 0 }}
+                >{showNewPass ? "Hide" : "Show"}</button>
               </div>
               <button
                 onClick={handleAdd}
@@ -5851,9 +5852,9 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                         </span>
                         <button
                           onClick={() => setShowPassFor(s => ({ ...s, [u.username]: !s[u.username] }))}
-                          style={{ background: "none", border: "none", color: "#59636e", cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}
+                          style={{ background: "none", border: "none", color: "#0969da", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit", padding: 0, lineHeight: 1 }}
                           title="Show/hide password"
-                        >{isShowingPass ? "🙈" : "👁"}</button>
+                        >{isShowingPass ? "Hide" : "Show"}</button>
                       </>
                     )}
                   </div>
