@@ -1776,20 +1776,37 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   const [showRoundPicker, setShowRoundPicker] = useState(false);
   const [pickerRounds, setPickerRounds] = useState([]);
   const [pickerRoundsWithData, setPickerRoundsWithData] = useState({});
+  const [pickerTournament, setPickerTournament] = useState(null);
   const [pickerLoading, setPickerLoading] = useState(false);
   const openRoundPicker = async () => {
     if (!tournamentId) return;
     setShowRoundPicker(true);
     setPickerLoading(true);
-    const rs = await fetchRounds(tournamentId);
+    const [rs, t] = await Promise.all([fetchRounds(tournamentId), fetchTournamentById(tournamentId)]);
     setPickerRounds(rs);
+    setPickerTournament(t);
     setPickerRoundsWithData(await fetchRoundsWithData(rs.map(r => r.id)));
     setPickerLoading(false);
   };
   // Offer the rounds this tournament actually uses, plus the next one so a new
   // round can still be started — not a blanket Q + R1..R4.
+  // Offer exactly the rounds this competition is configured for. Without this
+  // the switcher happily invented R2/R3/R4 for a one-round event.
   const pickerLabels = (() => {
     const existing = pickerRounds.map(r => r.label);
+    const configured = pickerTournament && (pickerTournament.num_rounds != null || pickerTournament.has_qualifying != null);
+
+    if (configured) {
+      const list = [
+        ...(pickerTournament.has_qualifying !== false ? ["Q"] : []),
+        ...ROUND_LABELS.filter(l => l !== "Q").slice(0, pickerTournament.num_rounds ?? 4),
+      ];
+      // Never hide a round that already exists, even if the setting changed later
+      existing.forEach(l => { if (!list.includes(l)) list.push(l); });
+      return ROUND_LABELS.filter(l => list.includes(l));
+    }
+
+    // Unconfigured (older tournaments): what exists, plus the next one
     if (existing.length === 0) return ROUND_LABELS;
     const numbered = existing.filter(l => l !== "Q").map(Number).filter(n => !isNaN(n));
     const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
