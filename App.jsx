@@ -1510,12 +1510,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 20, marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
             <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 1, fontWeight: 700 }}>
-              {isAdmin ? "Manage tournaments" : "Your competition"}
+              {isAdmin ? "Manage Tournaments" : "Your competition"}
             </div>
             {isAdmin && (
               <button onClick={() => { resetForm(); setShowCreate(true); }}
                 style={{ marginLeft: "auto", padding: "8px 14px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#f6f8fa", border: "1px dashed #0969da66", color: "#0969da" }}>
-                + New tournament
+                + New Tournaments
               </button>
             )}
           </div>
@@ -1550,13 +1550,13 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
                         <button onClick={() => handleStartEdit(t)}
                           title="Edit competition details"
-                          style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", borderRadius: 6, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
-                          ✏️
+                          style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", borderRadius: 6, height: 32, padding: "0 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
+                          Edit
                         </button>
                         <button onClick={() => handleDeleteTournament(t)}
                           title="Delete competition"
-                          style={{ background: "#f6f8fa", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 32, width: 36, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
-                          🗑
+                          style={{ background: "#f6f8fa", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 32, padding: "0 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
+                          Delete
                         </button>
                       </div>
                     )}
@@ -1575,7 +1575,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         <div onClick={() => { setShowCreate(false); resetForm(); }} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1100, padding: 16, overflowY: "auto" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #1f2328", marginTop: 24 }}>
             <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 16 }}>
-              {editingTournamentId ? "✏️ Edit tournament" : "+ New tournament"}
+              {editingTournamentId ? "Edit Tournament" : "+ New Tournaments"}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2513,7 +2513,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               {isTrueAdmin && onSwitchTournament && (
                 <button onClick={() => { setShowTournamentPicker(false); onSwitchTournament(); }}
                   style={{ flex: 1, background: "#f6f8fa", border: "1px dashed #0969da66", color: "#0969da", borderRadius: 6, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-                  Manage tournaments
+                  Manage Tournaments
                 </button>
               )}
               <button onClick={() => setShowTournamentPicker(false)}
