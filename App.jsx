@@ -1530,8 +1530,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               {tournaments.map(t => (
                 <div key={t.id} style={{
                   padding: "12px 14px", borderRadius: 6, fontFamily: "inherit",
-                  background: selectedTournamentId === t.id && !showCreate ? "#ddf4ff" : "#f6f8fa",
-                  border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#0969da" : "#d1d9e0"}`,
+                  background: "#f6f8fa",
+                  border: "1px solid #d1d9e0",
                 }}>
                   {/* Row 1 — name + venue, full width so long names don't wrap awkwardly */}
                   <button onClick={() => openRoundPicker(t)}
