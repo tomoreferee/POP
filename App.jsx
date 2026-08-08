@@ -4557,7 +4557,11 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, 
     if (year) ys.add(year);
     return [...ys].sort((a, b) => Number(b) - Number(a));
   })();
-  const forYear = tournaments.filter(t => yearOf(t) === year);
+  // Whatever is being played is listed first — that's what people are opening
+  // this picker to find.
+  const forYear = tournaments
+    .filter(t => yearOf(t) === year)
+    .sort((a, b) => (liveMap[b.id] ? 1 : 0) - (liveMap[a.id] ? 1 : 0));
 
   const go = async () => {
     const t = tournaments.find(x => x.id === tid);
@@ -4588,23 +4592,23 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, 
 
       <select value={tid} onChange={e => setTid(e.target.value)} style={{ ...sel, flex: 1, minWidth: 120 }}>
         <option value="">— Tournament —</option>
-        {/* These are native pickers, so a dot in the label is the only marker
-            the OS will render — styling options isn't possible on iOS. */}
+        {/* Native pickers show the selected option's own text in the closed box,
+            so the marker has to be the same in both places: a trailing dot,
+            which stays out of the way of long names. Whatever is running is
+            sorted to the top of the list. */}
         {forYear.map(t => (
           <option key={t.id} value={t.id}>
-            {liveMap[t.id]
-              ? `● LIVE ${liveMap[t.id] === "Q" ? "Q" : `R${liveMap[t.id]}`} — ${t.name || "(untitled)"}`
-              : (t.name || "(untitled)")}
+            {liveMap[t.id] ? `${t.name || "(untitled)"} ●` : (t.name || "(untitled)")}
           </option>
         ))}
       </select>
 
       <select value={label} onChange={e => setLabel(e.target.value)} disabled={!tid || loadingRounds}
-        style={{ ...sel, width: 128, flexShrink: 0, opacity: tid ? 1 : 0.5 }}>
+        style={{ ...sel, width: 96, flexShrink: 0, opacity: tid ? 1 : 0.5 }}>
         <option value="">{loadingRounds ? "…" : "— Round —"}</option>
         {rounds.map(r => (
           <option key={r.id} value={r.label}>
-            {r.status === "live" ? "● " : ""}{r.label === "Q" ? "Q" : `R${r.label}`}{r.status === "live" ? " LIVE" : ""}
+            {r.label === "Q" ? "Q" : `R${r.label}`}{r.status === "live" ? " ●" : ""}
           </option>
         ))}
       </select>
