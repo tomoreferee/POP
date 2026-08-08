@@ -4579,10 +4579,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [nineHalf, setNineHalf] = useState(0);
   const fitAllHoles = viewMode !== "normal";
   const isFit9 = viewMode === "fit9";
-  // Fit 9 shows one half of the round at a time; slot indices stay absolute so
-  // every downstream calculation (turn, MN/TM preview, quick record) is unchanged.
-  const nineStart = isFit9 ? nineHalf * 9 : 0;
-  const inNineWindow = slot => !isFit9 || (slot >= nineStart && slot < nineStart + 9);
+  // Fit 9 renders the whole round but sizes columns so nine holes fill the
+  // screen; nineHalf only tracks which chip is highlighted.
   const VIEW_LABEL = { normal: "Normal View", fit9: "Fit 9 Holes", fit18: "Fit 18 Holes" };
   const cycleView = () => {
     setViewMode(v => {
@@ -5193,14 +5191,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeLabel = meta.label;
             const tableKey = `${sectionKey}-${startHole}`;
             const isCollapsed = !!collapsedTables[tableKey];
-            // Fit views: Fit 18 squeezes all 18 columns onto one screen; Fit 9
-            // keeps columns wide enough to read a full HH:MM and scrolls/drags.
-            const holeColW = isFit9 ? 46 : 0;
-            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "6px 2px" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW } : thStyle;
-            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "6px 2px" : "3px 0", minWidth: holeColW } : tdStyle;
-            const turnGapW = viewMode === "fit18" ? 8 : 0;
-            const nameColW = fitAllHoles ? (isFit9 ? 44 : 26) : 80;
-            const startColW = fitAllHoles ? (isFit9 ? 46 : 28) : 56;
+            // Fit 18 squeezes all 18 columns onto one screen. Fit 9 renders the
+            // same 18 columns but each is a ninth of the viewport, so nine fill
+            // the screen and the rest is a drag away.
+            // 100vw less the page padding (40), the Grp + Time columns (82) and
+            // the turn gap (8) — so nine hole columns exactly fill the screen.
+            const holeColW = isFit9 ? "calc((100vw - 132px) / 9)" : 0;
+            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined } : tdStyle;
+            const turnGapW = fitAllHoles ? 8 : 0;
+            const nameColW = fitAllHoles ? (isFit9 ? 40 : 26) : 80;
+            const startColW = fitAllHoles ? (isFit9 ? 42 : 28) : 56;
             return (
               <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 16, overflow: "hidden" }}>
                 <div
@@ -5211,35 +5212,34 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {isFit9 && (
                       <span onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        <button
-                          onClick={() => setNineHalf(0)}
-                          disabled={nineHalf === 0}
-                          title="Previous nine"
-                          style={{ background: nineHalf === 0 ? "#f6f8fa" : "#ddf4ff", border: `1px solid ${nineHalf === 0 ? "#d1d9e0" : "#0969da66"}`, color: nineHalf === 0 ? "#8c959f" : "#0969da", borderRadius: 4, width: 24, height: 22, cursor: nineHalf === 0 ? "default" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0 }}
-                        >‹</button>
-                        <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, minWidth: 62, textAlign: "center" }}>
-                          H{order[nineStart] + 1}–H{order[nineStart + 8] + 1}
-                        </span>
-                        <button
-                          onClick={() => setNineHalf(1)}
-                          disabled={nineHalf === 1}
-                          title="Next nine"
-                          style={{ background: nineHalf === 1 ? "#f6f8fa" : "#ddf4ff", border: `1px solid ${nineHalf === 1 ? "#d1d9e0" : "#0969da66"}`, color: nineHalf === 1 ? "#8c959f" : "#0969da", borderRadius: 4, width: 24, height: 22, cursor: nineHalf === 1 ? "default" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0 }}
-                        >›</button>
+                        {[0, 1].map(half => (
+                          <button
+                            key={half}
+                            onClick={() => {
+                              setNineHalf(half);
+                              const el = document.getElementById(`scroll-${tableKey}`);
+                              if (el) el.scrollTo({ left: half ? el.scrollWidth : 0, behavior: "smooth" });
+                            }}
+                            title={half ? "Jump to the second nine" : "Jump to the first nine"}
+                            style={{ background: nineHalf === half ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${nineHalf === half ? "#0969da66" : "#d1d9e0"}`, color: nineHalf === half ? "#0969da" : "#59636e", borderRadius: 4, height: 22, padding: "0 8px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}
+                          >
+                            {half ? "›" : "‹"} H{order[half * 9] + 1}–H{order[half * 9 + 8] + 1}
+                          </button>
+                        ))}
                       </span>
                     )}
                     <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                   </span>
                 </div>
                 {!isCollapsed && (
-                <div style={{ overflowX: viewMode === "fit18" ? "hidden" : "auto", WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain" }}>
+                <div id={`scroll-${tableKey}`} style={{ overflowX: viewMode === "fit18" ? "hidden" : "auto", WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain" }}>
                   <table style={{ borderCollapse: "collapse", fontSize: 13, ...(viewMode === "fit18" ? { width: "100%", tableLayout: "fixed" } : {}) }}>
                     <thead>
                       <tr style={{ background: "#f6f8fa" }}>
                         <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
                         <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
-                          (focusHoles.length && !focusHoles.includes(hi)) || !inNineWindow(i) ? null : (
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         )), turnGapW, `h-${tableKey}`, "th")}
@@ -5340,7 +5340,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             </td>
                             {withTurnGap(order.map((hi, slot) => {
                               if (focusHoles.length && !focusHoles.includes(hi)) return null;
-                              if (!inNineWindow(slot)) return null;
                               const hd = data?.holeData?.[hi];
                               const startTime = hd?.startTime;
                               const endTime = hd?.endTime;
@@ -5356,7 +5355,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
-                                    {fitAllHoles && !isFit9 ? (() => {
+                                    {fitAllHoles ? (() => {
                                       const t = minToTime(deadline);
                                       return (
                                         <div style={{ fontSize: 11, fontWeight: 700, color: "#59636e", lineHeight: 1.05 }}>
@@ -5422,7 +5421,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Grp" : "Group"}</th>
                         <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
-                          (focusHoles.length && !focusHoles.includes(hi)) || !inNineWindow(i) ? null : (
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         )), turnGapW, `f-${tableKey}`, "th")}
