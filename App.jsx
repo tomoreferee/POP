@@ -3786,7 +3786,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
             {TARGETED_TYPES.includes(actionModal.type) && (
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 13, color: "#59636e", marginBottom: 8 }}>{actionModal.type === "EST" ? "Players receiving EST" : "Players being timed (TM)"}</div>
+                <div style={{ fontSize: 13, color: "#59636e", marginBottom: 8 }}>{actionModal.type === "EST" ? "Player has been EST" : "Players being timed (TM)"}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   <button
                     onClick={() => toggleTarget("ALL")}
