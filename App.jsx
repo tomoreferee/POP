@@ -3903,6 +3903,21 @@ const WEATHER_TEXT = {
   95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm",
 };
 
+/* Cloud cover in the words a referee would use, and rain chance coloured by
+   how close it is to "get the horn ready". */
+function skyLabel(pct) {
+  if (pct < 10) return "Clear";
+  if (pct < 30) return "Mostly clear";
+  if (pct < 70) return "Partly cloudy";
+  if (pct < 90) return "Mostly cloudy";
+  return "Overcast";
+}
+function rainColor(pct) {
+  if (pct >= 60) return "#cf222e";
+  if (pct >= 30) return "#bc4c00";
+  return "#1a7f37";
+}
+
 /* Course conditions strip: light window, temperature and wind — the things
    that decide whether play can start, continue, or has to be called. */
 function WeatherBar({ hostVenue }) {
@@ -3938,9 +3953,18 @@ function WeatherBar({ hostVenue }) {
     let cancelled = false;
     const load = async () => {
       try {
-        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&wind_speed_unit=ms`);
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,cloud_cover,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=precipitation_probability&forecast_days=1&wind_speed_unit=ms&timezone=auto`);
         const j = await r.json();
-        if (!cancelled && j?.current) setWx(j.current);
+        if (cancelled || !j?.current) return;
+        // Rain chance is an hourly figure — line it up with the hour we're in now.
+        let rainPct = null;
+        if (j.hourly?.time?.length) {
+          const stamp = String(j.current.time).slice(0, 13);          // YYYY-MM-DDTHH
+          let idx = j.hourly.time.findIndex(t => String(t).slice(0, 13) === stamp);
+          if (idx < 0) idx = new Date().getHours();
+          rainPct = j.hourly.precipitation_probability?.[idx] ?? null;
+        }
+        setWx({ ...j.current, rainPct });
       } catch { /* keep whatever we last had rather than blanking the strip */ }
     };
     load();
@@ -3983,7 +4007,10 @@ function WeatherBar({ hostVenue }) {
 
       {wx && (
         <>
-          {cell(WEATHER_TEXT[wx.weather_code] || "Weather", `${Math.round(wx.temperature_2m)}°C`, "#cf222e")}
+          {cell("Temp", `${Math.round(wx.temperature_2m)}°C`, "#cf222e")}
+          {cell("Weather", WEATHER_TEXT[wx.weather_code] || "—")}
+          {wx.cloud_cover !== undefined && cell("Sky", `${skyLabel(wx.cloud_cover)} ${Math.round(wx.cloud_cover)}%`)}
+          {wx.rainPct !== null && wx.rainPct !== undefined && cell("Rain", `${Math.round(wx.rainPct)}%`, rainColor(wx.rainPct))}
           {wx.relative_humidity_2m !== undefined && cell("Humidity", `${Math.round(wx.relative_humidity_2m)}%`)}
           {cell("Wind", `${wx.wind_speed_10m?.toFixed(1)} m/s ${windArrow(wx.wind_direction_10m)} ${windCompass(wx.wind_direction_10m)}`, "#0969da")}
         </>
