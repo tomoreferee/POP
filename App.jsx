@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-p (beta · light)";
+const APP_BUILD = "2026-08-03-q (beta · light)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -848,7 +848,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
               padding:"5px 12px", borderRadius:7, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
               background: mode===m ? "#1565c0" : "#eef1f7",
               border: `1px solid ${mode===m ? "#1565c0" : "#d5dbe9"}`,
-              color: mode===m ? "#1565c0" : "#8a8a8a",
+              color: mode===m ? "#ffffff" : "#5c6480",
               transition:"all 0.15s",
             }}>{label}</button>
           ))}
@@ -3432,7 +3432,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   <button onClick={() => setDiffManual(d => d - 5)}
                     style={{ width: 44, height: 52, borderRadius: 10, background: "#fdeaea", border: "1px solid #c6282844", color: "#c62828", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−5</button>
                   <button onClick={() => setDiffManual(d => d - 1)}
-                    style={{ width: 44, height: 52, borderRadius: 10, background: "#fdeaea", border: "1px solid #c6282833", color: "#ff9090", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−</button>
+                    style={{ width: 44, height: 52, borderRadius: 10, background: "#fdeaea", border: "1px solid #c6282833", color: "#c62828", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−</button>
                 </div>
                 <div style={{ flex: 1, textAlign: "center" }}>
                   <input type="text" inputMode="numeric" pattern="-?[0-9]*"
