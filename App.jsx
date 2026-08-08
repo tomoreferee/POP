@@ -383,9 +383,9 @@ function shortLogLabel(l) {
   return l.off ? `×${letter}` : letter;
 }
 
-function withTurnGap(cells, width, keyPrefix, Tag = "td") {
+function withTurnGap(cells, width, keyPrefix, Tag = "td", gapStyle = null) {
   const out = cells.slice();
-  out.splice(9, 0, <Tag key={`turngap-${keyPrefix}`} style={{ width, minWidth: width, padding: 0, border: "none", background: "transparent" }} />);
+  out.splice(9, 0, <Tag key={`turngap-${keyPrefix}`} style={{ width, minWidth: width, padding: 0, border: "none", background: "transparent", ...(gapStyle || {}) }} />);
   return out;
 }
 
@@ -4828,9 +4828,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <button onClick={cycleView}
             title="Tap to cycle: Normal View → Fit 9 Holes → Fit 18 Holes"
             style={{
-              background: fitAllHoles ? "#ddf4ff" : "#f6f8fa",
-              border: `1px solid ${fitAllHoles ? "#0969da" : "#d1d9e0"}`,
-              color: fitAllHoles ? "#1f2328" : "#59636e",
+              background: "#ddf4ff",
+              border: "1px solid #0969da",
+              color: "#1f2328",
               borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
             }}>
             {VIEW_LABEL[viewMode]}<span style={{ fontSize: 10, color: "#59636e" }}>⇄</span>
@@ -5200,6 +5200,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
             const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined } : tdStyle;
             const turnGapW = fitAllHoles ? 8 : 0;
+            // The turn gap used to be a borderless blank cell, which cut every
+            // row rule in two. Carry the rules through it and put a single
+            // divider down the middle so the turn reads as one line, not two.
+            const gapDivider = fitAllHoles ? `2px solid ${colColor}88` : "none";
+            const gapHead = fitAllHoles ? { borderLeft: gapDivider, borderBottom: "2px solid #d1d9e0" } : null;
+            const gapBody = fitAllHoles ? { borderLeft: gapDivider, borderBottom: "1px solid #d1d9e0" } : null;
+            const gapFoot = fitAllHoles ? { borderLeft: gapDivider, borderTop: "1px solid #d1d9e0" } : null;
             const nameColW = fitAllHoles ? (isFit9 ? 40 : 26) : 80;
             const startColW = fitAllHoles ? (isFit9 ? 42 : 28) : 56;
             return (
@@ -5242,7 +5249,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
-                        )), turnGapW, `h-${tableKey}`, "th")}
+                        )), turnGapW, `h-${tableKey}`, "th", gapHead)}
                       </tr>
                     </thead>
                     <tbody>
@@ -5408,7 +5415,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   ))}
                                 </td>
                               );
-                            }), turnGapW, `b-${tableKey}-${g.id}`, "td")}
+                            }), turnGapW, `b-${tableKey}-${g.id}`, "td", gapBody)}
                           </tr>
                         );
                       })}
@@ -5424,7 +5431,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
-                        )), turnGapW, `f-${tableKey}`, "th")}
+                        )), turnGapW, `f-${tableKey}`, "th", gapFoot)}
                       </tr>
                     </tfoot>
                   </table>
