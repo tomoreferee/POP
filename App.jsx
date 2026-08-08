@@ -60,8 +60,8 @@ function statusFillForDiff(d) {
   return STATUS_FILL.slow;
 }
 
-const thStyle = { padding: "8px 6px", color: "#59636e", fontWeight: 700, textAlign: "center", borderBottom: "2px solid #d1d9e0", minWidth: 38 };
-const tdStyle = { padding: "8px 6px", textAlign: "center", borderBottom: "1px solid #d1d9e0" };
+const thStyle = { padding: "8px 6px", color: "#59636e", fontWeight: 700, textAlign: "center", borderBottom: "2px solid #d1d9e0", minWidth: 46 };
+const tdStyle = { padding: "9px 6px", textAlign: "center", borderBottom: "1px solid #d1d9e0" };
 
 function buildSchedule(startTimeStr, parTimes) {
   const [h, m] = startTimeStr.split(":").map(Number);
@@ -509,7 +509,7 @@ function LogoutButton({ onLogout }) {
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
       onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-    >⏏ Log out</button>
+    >⏏ Log Out</button>
   );
 }
 function useTimer() {
@@ -1503,7 +1503,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                 style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-              >⏏ Log out</button>
+              >⏏ Log Out</button>
             </div>
           </div>
         </div>
@@ -1661,7 +1661,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       {roundPickerFor && (
         <div onClick={() => setRoundPickerFor(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #1f2328" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Select round</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Select Round</div>
             <div style={{ fontSize: 12, color: "#59636e", marginBottom: 16 }}>
               {roundPickerFor.name}{roundPickerFor.host_venue ? ` · ${roundPickerFor.host_venue}` : ""}
             </div>
@@ -1992,7 +1992,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-              >⏏ Log out</button>
+              >⏏ Log Out</button>
             </div>
           </div>
         </div>
@@ -2109,10 +2109,10 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               <button
                 onClick={() => setParTimes(pars.map(p => parTimeTable(playersPerGroup)[p]))}
                 style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}
-              >↺ reset ({playersPerGroup}-ball)</button>
+              >↺ Reset ({playersPerGroup}-ball)</button>
             )}
             {!isAdmin && (
-              <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1 }}>🔒 View only</span>
+              <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1 }}>🔒 View Only</span>
             )}
           </div>
 
@@ -2409,7 +2409,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                         <span style={{ fontSize: 12, color: "#59636e" }}>
                           Set {setGroups.length > 1 ? `${firstName} – ${lastName}` : firstName}
                         </span>
-                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#59636e" }}>Switch start point for whole set →</span>
+                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#59636e" }}>Switch Start Point for Whole Set →</span>
                         <div style={{ display: "flex", gap: 4 }}>
                           {shotgunHoles.map(h => {
                             const hMeta = getStartHoleMeta(h);
@@ -3196,7 +3196,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           padding: "8px 20px", display: "flex", alignItems: "center", gap: 10,
         }}>
           <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#9a6700", boxShadow: "0 0 8px #9a6700", animation: "pulse 1.5s infinite" }} />
-          <span style={{ fontSize: 13, color: "#9a6700", fontWeight: 700 }}>⏸ Match paused</span>
+          <span style={{ fontSize: 13, color: "#9a6700", fontWeight: 700 }}>⏸ Match Paused</span>
           <span style={{ fontSize: 12, color: "#59636e" }}>Since <b style={{ color: "#1f2328" }}>{pendingStopTime}</b></span>
           <span style={{ fontSize: 12, color: "#59636e" }}>— Go back to the main screen to resume play</span>
         </div>
@@ -3210,7 +3210,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             background: "#ffffff", border: "1px solid #9a670033",
             borderRadius: 6, padding: "10px 16px", marginBottom: 16,
           }}>
-            <div style={{ fontSize: 11, color: "#9a6700", letterSpacing: 0, marginBottom: 8, fontWeight: 700 }}>⏱ Pause history</div>
+            <div style={{ fontSize: 11, color: "#9a6700", letterSpacing: 0, marginBottom: 8, fontWeight: 700 }}>⏱ Pause History</div>
             {suspensions.map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#59636e", marginBottom: 4 }}>
                 <span style={{ color: "#9a6700" }}>#{i + 1}</span>
@@ -3625,7 +3625,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   const startTime = firstHd?.startTime ?? group.startTime;
                   return (
                     <tr style={{ background: "#dafbe1", borderLeft: "3px solid #1a7f3744" }}>
-                      <td colSpan={2} style={{ padding: "6px 8px", textAlign: "center", color: "#1a7f37", fontWeight: 700, fontSize: 12, letterSpacing: 1 }}>🏌 Tee off</td>
+                      <td colSpan={2} style={{ padding: "6px 8px", textAlign: "center", color: "#1a7f37", fontWeight: 700, fontSize: 12, letterSpacing: 1 }}>🏌 Tee Off</td>
                       <td style={{ padding: "6px 8px", textAlign: "center", color: "#59636e" }}>{minToTime(schedule[holeOrder[0]] ?? 0)}</td>
                       <td style={{ padding: "6px 8px", textAlign: "center", color: "#1a7f37", fontWeight: 700 }}>
                         {minToTime((schedule[holeOrder[0]] ?? 0) - 1 + delayMin)}
@@ -3897,7 +3897,7 @@ function btnStyle(bg, color) {
   return {
     background: bg, border: `1px solid ${color}44`, color,
     borderRadius: 6, padding: "8px 14px", cursor: "pointer",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 1, fontWeight: 6004, fontWeight: 700,
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700,
   };
 }
 
@@ -4529,7 +4529,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
               onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-            >⏏ Log out</button>
+            >⏏ Log Out</button>
           </div>
         </div>
       </div>
@@ -4581,14 +4581,14 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
             borderRadius: 6, padding: "10px 0", cursor: "pointer",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
-          }}>⏸ Stopping play</button>
+          }}>⏸ Stopping Play</button>
         ) : (
           <button onClick={openResume} style={{
             flex: 1, background: "#dafbe1", border: "1px solid #1a7f3788", color: "#1a7f37",
             borderRadius: 6, padding: "10px 0", cursor: "pointer",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
             boxShadow: "0 0 12px #1a7f3733",
-          }}>▶ Resume play</button>
+          }}>▶ Resume Play</button>
         )}
       </div>
 
@@ -4642,12 +4642,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               color: fitAllHoles ? "#1f2328" : "#59636e",
               borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
-            {fitAllHoles ? "🔍 Normal view" : "⛶ Fit 18 holes"}
+            {fitAllHoles ? "🔍 Normal View" : "⛶ Fit 18 Holes"}
           </button>
           {focusHoles.length > 0 && (
             <button onClick={() => saveFocusHoles([])}
               style={{ marginLeft: "auto", background: "#f6f8fa", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
-              ✕ Show all
+              ✕ Show All
             </button>
           )}
         </div>
@@ -4682,7 +4682,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i + 9))}
               style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H10–H18</button>
             <button onClick={() => saveFocusHoles([])}
-              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show all</button>
+              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show All</button>
             <button onClick={() => setShowFocusPicker(false)}
               style={{ marginLeft: "auto", background: "#dafbe1", border: "1px solid #1a7f3766", color: "#1a7f37", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
           </div>
@@ -4745,14 +4745,14 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           padding: "10px 24px", display: "flex", alignItems: "center", gap: 12,
         }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#9a6700", boxShadow: "0 0 8px #9a6700", animation: "pulse 1.5s infinite" }} />
-          <span style={{ color: "#9a6700", fontWeight: 700, fontSize: 14 }}>⏸ Match paused</span>
+          <span style={{ color: "#9a6700", fontWeight: 700, fontSize: 14 }}>⏸ Match Paused</span>
           <span style={{ color: "#59636e", fontSize: 13 }}>Since <b style={{ color: "#1f2328" }}>{pendingStopTime}</b></span>
           <span style={{ color: "#59636e", fontSize: 12 }}>— All groups paused together</span>
           <button onClick={openResume} style={{
             marginLeft: "auto", background: "#dafbe1", border: "1px solid #1a7f3788",
             color: "#1a7f37", borderRadius: 6, padding: "5px 14px",
             cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-          }}>▶ Resume play</button>
+          }}>▶ Resume Play</button>
           {onSuspendCancel && (
             <button onClick={() => { if (window.confirm("Cancel this stoppage?\n\nUse this if it was pressed by mistake — nothing is recorded and the schedule is not shifted.")) onSuspendCancel(); }}
               title="Pressed by mistake? Cancel without recording"
@@ -5112,7 +5112,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       type="number" min="0" value={delayMin}
                                       onChange={e => setDelay(e.target.value)}
                                       onClick={e => e.stopPropagation()}
-                                      style={{ width: 28, background: "#f6f8fa", border: `1px solid ${delayMin > 0 ? "#9a670066" : "#d1d9e0"}`, color: "#9a6700", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 1, fontWeight: 6001, fontWeight: 700, textAlign: "center", borderRadius: 4, padding: "1px 0", outline: "none" }}
+                                      style={{ width: 28, background: "#f6f8fa", border: `1px solid ${delayMin > 0 ? "#9a670066" : "#d1d9e0"}`, color: "#9a6700", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 12, fontWeight: 700, textAlign: "center", borderRadius: 4, padding: "1px 0", outline: "none" }}
                                     />
                                     <button
                                       onClick={() => setDelay(delayMin + 1)}
@@ -5148,7 +5148,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                         </div>
                                       );
                                     })() : (
-                                      <div style={{ fontSize: 16, fontWeight: 700, color: "#59636e" }}>{minToTime(deadline)}</div>
+                                      <div style={{ fontSize: 13, fontWeight: 700, color: "#59636e", whiteSpace: "nowrap" }}>{minToTime(deadline)}</div>
                                     )}
                                     {holeLogs.map((l, li) => (
                                       <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
@@ -5182,7 +5182,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.92)"}
                                   onMouseLeave={e => e.currentTarget.style.filter = ""}
                                 >
-                                  <div style={{ fontSize: fitAllHoles ? 11 : 20, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
+                                  <div style={{ fontSize: fitAllHoles ? 11 : 16, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
                                   {holeLogs.map((l, li) => (
                                     <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
                                       {fitAllHoles
@@ -5244,7 +5244,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {suspendModal === "stop" && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #9a670088", borderRadius: 6, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>⏸ Stopping play</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>⏸ Stopping Play</div>
             <div style={{ fontSize: 13, color: "#59636e", marginBottom: 20 }}>All groups will be paused together; hole finish times will shift when play resumes</div>
             <div style={{ fontSize: 13, color: "#9a6700", marginBottom: 8 }}>Stop time</div>
             <TimeInput value={suspendStopInput} onChange={setSuspendStopInput} color="#9a6700" />
@@ -5264,7 +5264,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {suspendModal === "resume" && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #1a7f3788", borderRadius: 6, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>▶ Resume play</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>▶ Resume Play</div>
             <div style={{ fontSize: 13, color: "#59636e", marginBottom: 6 }}>
               Paused since <b style={{ color: "#9a6700" }}>{pendingStopTime}</b>
             </div>
@@ -5813,7 +5813,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
           <div style={{ fontSize: 11, color: "#59636e", marginTop: 10 }}>
             💡 The password is visible while typing · reset will set it back to <span style={{ color: "#9a6700" }}>{DEFAULT_RESET_PASSWORD}</span>
             <br />
-            <span style={{ color: "#0969da" }}>👤 User</span> — View only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
+            <span style={{ color: "#0969da" }}>👤 User</span> — View Only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
             <span style={{ color: "#9a6700" }}>🔑 Admin</span> — Full access to all functions
           </div>
         </div>
