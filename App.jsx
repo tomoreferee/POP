@@ -1478,36 +1478,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
             <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0, width: 170 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
             {currentUser && (
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
-                <span style={{ fontSize: 12, color: "#59636e" }}>👤</span>
-                <span style={{ fontSize: 13, color: "#59636e", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
-              </span>
+              <UserMenu
+                currentUser={currentUser}
+                onChangePassword={onChangePassword}
+                onLogout={onLogout}
+                onManageUsers={isAdmin ? onManageUsers : null}
+              />
             )}
-            <div style={{ display: "flex", gap: 8, width: "100%" }}>
-              <button onClick={onChangePassword}
-                title="Change your password"
-                style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", borderRadius: 6, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
-              >🔑</button>
-              <button onClick={onLogout}
-                style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
-                onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-              >Log Out</button>
-            </div>
           </div>
         </div>
-
-        {/* Admin actions sit in their own band below the divider */}
-        {isAdmin && onManageUsers && (
-          <div style={{ borderTop: "1px solid #d1d9e0", padding: "12px 20px" }}>
-            <button
-              onClick={onManageUsers}
-              style={{ width: "100%", minHeight: 56, background: "#fff8c5", border: "1px solid #9a670044", color: "#9a6700", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-            >Manage Users</button>
-          </div>
-        )}
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px" }}>
@@ -1959,32 +1940,27 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
           {/* Right column: user sits above Log out. Capped width so rotating to
               landscape doesn't stretch the Log out button across the screen. */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, maxWidth: 260, justifySelf: "end", width: "100%" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", minWidth: 0 }}>
             {currentUser && (
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
-                <span style={{ fontSize: 12, color: "#59636e" }}>👤</span>
-                <span style={{ fontSize: 13, color: "#59636e", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#9a6700" : "#0969da", background: isTrueAdmin ? "#fff8c5" : "#ddf4ff", border: `1px solid ${isTrueAdmin ? "#9a670044" : "#0969da44"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
-                  {isTrueAdmin ? "ADMIN" : "USER"}
-                </span>
-                {myPosition && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1, flexShrink: 0 }}>
-                    {myPosition}
-                  </span>
-                )}
-              </span>
+              <UserMenu
+                currentUser={currentUser}
+                onChangePassword={onChangePassword}
+                onLogout={onLogout}
+                onManageUsers={isTrueAdmin ? onManageUsers : null}
+                badges={
+                  <>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#9a6700" : "#0969da", background: isTrueAdmin ? "#fff8c5" : "#ddf4ff", border: `1px solid ${isTrueAdmin ? "#9a670044" : "#0969da44"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1 }}>
+                      {isTrueAdmin ? "ADMIN" : "USER"}
+                    </span>
+                    {myPosition && (
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1 }}>
+                        {myPosition}
+                      </span>
+                    )}
+                  </>
+                }
+              />
             )}
-            <div style={{ display: "flex", gap: 8, width: "100%" }}>
-              <button onClick={onChangePassword}
-                title="Change your password"
-                style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", borderRadius: 6, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
-              >🔑</button>
-              <button onClick={onLogout}
-                style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
-                onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-              >Log Out</button>
-            </div>
           </div>
         </div>
       </div>
@@ -1993,11 +1969,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           Account management and wiping the session are system-admin only —
           TD/CR may edit this tournament's setup, not the whole system. */}
       {isTrueAdmin && (
-        <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "12px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <button onClick={onManageUsers}
-            style={{ minHeight: 56, background: "#fff8c5", border: "1px solid #9a670044", color: "#9a6700", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-          >Manage Users</button>
-
+        <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "12px 20px", display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
           <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
             style={{ minHeight: 56, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
           >🗑<br />Clear Data in Dashboard</button>
@@ -3883,6 +3855,80 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   );
 }
 
+/* Supabase-style account menu: tap the user chip, get a panel with
+   Change Password / Manage Users / Log Out instead of loose header buttons. */
+function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, badges = null, align = "right" }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = e => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const item = (label, onClick, tone) => (
+    <button
+      onClick={() => { setOpen(false); onClick && onClick(); }}
+      style={{
+        display: "block", width: "100%", textAlign: "left", background: "none", border: "none",
+        padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13,
+        fontWeight: tone === "danger" ? 700 : 500, color: tone === "danger" ? "#cf222e" : "#1f2328",
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = tone === "danger" ? "#ffebe9" : "#f6f8fa"}
+      onMouseLeave={e => e.currentTarget.style.background = "none"}
+    >{label}</button>
+  );
+
+  return (
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        title="Account"
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 6, maxWidth: 170,
+          background: open ? "#eaeef2" : "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328",
+          borderRadius: 20, padding: "5px 10px 5px 6px", cursor: "pointer", fontFamily: "inherit",
+        }}
+      >
+        <span style={{
+          width: 22, height: 22, borderRadius: "50%", background: "#0969da", color: "#ffffff",
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, fontWeight: 700, flexShrink: 0,
+        }}>{(currentUser || "?").slice(0, 2).toUpperCase()}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#59636e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
+        <span style={{ fontSize: 9, color: "#59636e", flexShrink: 0 }}>▾</span>
+      </button>
+
+      {open && (
+        <>
+          {/* Click anywhere else to dismiss */}
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1190 }} />
+          <div style={{
+            position: "absolute", top: "calc(100% + 6px)", [align]: 0, zIndex: 1200,
+            minWidth: 210, background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8,
+            boxShadow: "0 12px 32px #1f232826", overflow: "hidden", textAlign: "left",
+          }}>
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid #d1d9e0" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2328", overflow: "hidden", textOverflow: "ellipsis" }}>{currentUser}</div>
+              {badges && <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>{badges}</div>}
+            </div>
+
+            <div style={{ padding: "4px 0" }}>
+              {item("Change Password", onChangePassword)}
+              {onManageUsers && item("Manage Users", onManageUsers)}
+            </div>
+
+            <div style={{ borderTop: "1px solid #d1d9e0", padding: "4px 0" }}>
+              {item("Log Out", onLogout, "danger")}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function btnStyle(bg, color) {
   return {
     background: bg, border: `1px solid ${color}44`, color,
@@ -4496,31 +4542,18 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             )}
           </div>
         </div>
-        {/* Right side: clock + user on top, Log out underneath — same layout as Setup.
-            Capped width so rotating to landscape doesn't stretch the button. */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, width: 170, alignItems: "flex-end" }}>
+        {/* Right side: clock sits beside the account menu. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, justifyContent: "flex-end" }}>
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-            <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
-            {currentUser && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontSize: 12, color: "#59636e" }}>👤</span>
-                <span style={{ fontSize: 13, color: "#59636e", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
-              </span>
-            )}
-          </span>
-          <div style={{ display: "flex", gap: 8, width: "100%" }}>
-            <button onClick={onChangePassword}
-              title="Change your password"
-              style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", borderRadius: 6, height: 42, width: 46, cursor: "pointer", fontFamily: "inherit", fontSize: 15, flexShrink: 0 }}
-            >🔑</button>
-            <button onClick={onLogout}
-              style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-            >Log Out</button>
-          </div>
+          <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
+          {currentUser && (
+            <UserMenu
+              currentUser={currentUser}
+              onChangePassword={onChangePassword}
+              onLogout={onLogout}
+            />
+          )}
         </div>
       </div>
 
