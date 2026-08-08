@@ -4564,7 +4564,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             style={{
               flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
               borderRadius: 6, padding: "10px 0", cursor: "pointer",
-              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 1, fontWeight: 6003, fontWeight: 700, letterSpacing: 1,
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
             }}
           >📈 Summary</button>
         )}
@@ -4573,20 +4573,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           style={{
             flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
             borderRadius: 6, padding: "10px 0", cursor: "pointer",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 1, fontWeight: 6003, fontWeight: 700, letterSpacing: 1,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
           }}
         >⬇ Export Data</button>
         {!isSuspended ? (
           <button onClick={openStop} style={{
             flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
             borderRadius: 6, padding: "10px 0", cursor: "pointer",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 1, fontWeight: 6003, fontWeight: 700, letterSpacing: 1,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
           }}>⏸ Stopping play</button>
         ) : (
           <button onClick={openResume} style={{
             flex: 1, background: "#dafbe1", border: "1px solid #1a7f3788", color: "#1a7f37",
             borderRadius: 6, padding: "10px 0", cursor: "pointer",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 1, fontWeight: 6003, fontWeight: 700, letterSpacing: 1,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
             boxShadow: "0 0 12px #1a7f3733",
           }}>▶ Resume play</button>
         )}
