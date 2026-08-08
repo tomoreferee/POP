@@ -3855,6 +3855,143 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   );
 }
 
+/* ── Sun times ──────────────────────────────────────────────────────────────
+   NOAA sunrise equation, accurate to a minute or two anywhere on the course.
+   altitude −0.833° = sunrise/sunset (allowing for refraction and the sun's
+   disc), −6° = civil twilight, i.e. the first and last usable light for play. */
+function sunTimes(date, lat, lng, altDeg) {
+  const rad = Math.PI / 180, deg = 180 / Math.PI;
+  const JD = Math.floor(date.getTime() / 86400000) + 2440587.5;
+  const lw = -lng;                                     // west longitude positive
+  const n = Math.round(JD - 2451545.0 + 0.0008 - lw / 360);
+  const Jstar = n - 0.0008 + lw / 360;
+  const M = (357.5291 + 0.98560028 * Jstar) % 360;
+  const C = 1.9148 * Math.sin(M * rad) + 0.0200 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const lam = (M + C + 180 + 102.9372) % 360;
+  const Jtr = 2451545.0 + Jstar + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * lam * rad);
+  const sinDec = Math.sin(lam * rad) * Math.sin(23.4397 * rad);
+  const dec = Math.asin(sinDec);
+  const cosW = (Math.sin(altDeg * rad) - Math.sin(lat * rad) * sinDec) / (Math.cos(lat * rad) * Math.cos(dec));
+  if (cosW > 1 || cosW < -1) return { rise: null, set: null };   // midnight sun / polar night
+  const w = deg * Math.acos(cosW);
+  return { rise: Jtr - w / 360, set: Jtr + w / 360 };
+}
+
+/* Julian date → the viewer's own local HH:MM. */
+function julianToLocal(J) {
+  if (J === null || J === undefined) return "—";
+  const d = new Date((J - 2440587.5) * 86400000);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+const WIND_ARROWS = ["↓", "↙", "←", "↖", "↑", "↗", "→", "↘"];
+function windArrow(deg) {
+  // Meteorological direction = where the wind blows FROM, so the arrow points the way it travels.
+  if (deg === null || deg === undefined) return "";
+  return WIND_ARROWS[Math.round(((deg % 360) / 45)) % 8];
+}
+function windCompass(deg) {
+  if (deg === null || deg === undefined) return "";
+  return ["N","NE","E","SE","S","SW","W","NW"][Math.round(((deg % 360) / 45)) % 8];
+}
+
+const WEATHER_TEXT = {
+  0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast",
+  45: "Fog", 48: "Rime fog", 51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+  61: "Light rain", 63: "Rain", 65: "Heavy rain", 66: "Freezing rain", 67: "Freezing rain",
+  71: "Light snow", 73: "Snow", 75: "Heavy snow", 80: "Showers", 81: "Showers", 82: "Heavy showers",
+  95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm",
+};
+
+/* Course conditions strip: light window, temperature and wind — the things
+   that decide whether play can start, continue, or has to be called. */
+function WeatherBar({ hostVenue }) {
+  const [coords, setCoords] = useState(null);
+  const [wx, setWx] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  // Where are we? The device knows best; fall back to geocoding the venue name.
+  useEffect(() => {
+    let cancelled = false;
+    const useVenue = async () => {
+      if (!hostVenue) { if (!cancelled) setFailed(true); return; }
+      try {
+        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(hostVenue)}&count=1`);
+        const j = await r.json();
+        const hit = j?.results?.[0];
+        if (!cancelled) hit ? setCoords({ lat: hit.latitude, lng: hit.longitude }) : setFailed(true);
+      } catch { if (!cancelled) setFailed(true); }
+    };
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        p => { if (!cancelled) setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+        () => useVenue(),
+        { timeout: 6000, maximumAge: 1800000 }
+      );
+    } else useVenue();
+    return () => { cancelled = true; };
+  }, [hostVenue]);
+
+  // Conditions, refreshed every 10 minutes.
+  useEffect(() => {
+    if (!coords) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&wind_speed_unit=ms`);
+        const j = await r.json();
+        if (!cancelled && j?.current) setWx(j.current);
+      } catch { /* keep whatever we last had rather than blanking the strip */ }
+    };
+    load();
+    const id = setInterval(load, 600000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [coords]);
+
+  if (failed && !coords) return null;
+
+  const now = new Date();
+  let sun = null;
+  if (coords) {
+    const day = sunTimes(now, coords.lat, coords.lng, -0.833);
+    const civil = sunTimes(now, coords.lat, coords.lng, -6);
+    sun = {
+      dawn: julianToLocal(civil.rise),
+      sunrise: julianToLocal(day.rise),
+      sunset: julianToLocal(day.set),
+      dusk: julianToLocal(civil.set),
+    };
+  }
+
+  const cell = (label, value, color) => (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 5, padding: "5px 10px", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, whiteSpace: "nowrap" }}>
+      <span style={{ fontSize: 10, color: "#59636e", letterSpacing: 0.5 }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 700, color: color || "#1f2328" }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "12px 16px 0" }}>
+      {sun ? (
+        <>
+          {cell("Dawn", sun.dawn, "#9a6700")}
+          {cell("Sunrise", sun.sunrise, "#bc4c00")}
+          {cell("Sunset", sun.sunset, "#bc4c00")}
+          {cell("Dusk", sun.dusk, "#9a6700")}
+        </>
+      ) : cell("Light", "locating…")}
+
+      {wx && (
+        <>
+          {cell(WEATHER_TEXT[wx.weather_code] || "Weather", `${Math.round(wx.temperature_2m)}°C`, "#cf222e")}
+          {wx.relative_humidity_2m !== undefined && cell("Humidity", `${Math.round(wx.relative_humidity_2m)}%`)}
+          {cell("Wind", `${wx.wind_speed_10m?.toFixed(1)} m/s ${windArrow(wx.wind_direction_10m)} ${windCompass(wx.wind_direction_10m)}`, "#0969da")}
+        </>
+      )}
+    </div>
+  );
+}
+
 /* Supabase-style account menu: tap the user chip, get a panel with
    Change Password / Manage Users / Log Out instead of loose header buttons. */
 function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, badges = null, align = "right" }) {
@@ -4523,23 +4660,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <button onClick={onBack} style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", cursor: "pointer", fontSize: 18, fontWeight: 700, borderRadius: 6, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-          {/* BETA sits above the title, right edge flush with the final "D".
-              The subtitle wraps rather than truncating, so it always reads fully. */}
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, marginBottom: 2 }}>BETA</span>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap" }}>DASHBOARD</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>DASHBOARD</div>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
             </div>
-            {tournamentName ? (
-              <div style={{ fontSize: 11, color: "#1f2328", lineHeight: 1.4, marginTop: 2, fontWeight: 700 }}>
-                {tournamentName}
-                {roundLabel && (
-                  <span style={{ color: "#59636e" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>
-                )}
-              </div>
-            ) : (
-              <div style={{ fontSize: 10, color: "#59636e", lineHeight: 1.4, marginTop: 2 }}>Golf Referee · Pace of Play System</div>
-            )}
+            <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
           </div>
         </div>
         {/* Right side: clock sits beside the account menu. */}
@@ -4556,6 +4682,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           )}
         </div>
       </div>
+
+      <WeatherBar hostVenue={hostVenue} />
 
       {/* Where you are, and how to get somewhere else without leaving this page */}
       <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, margin: "12px 16px 0", padding: "10px 14px" }}>
