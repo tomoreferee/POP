@@ -1299,10 +1299,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
+  const [liveByTournament, setLiveByTournament] = useState({}); // { tournamentId: roundLabel } — what's playing right now
 
   const reloadTournaments = async () => {
-    const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+    const [t, roles, live] = await Promise.all([fetchTournaments(), fetchAllRoles(), fetchLiveRoundByTournament()]);
     setRolesMap(roles);
+    setLiveByTournament(live);
     const visible = t.filter(x => canUserSeeTournament(x, roles, currentUser, isAdmin));
     setTournaments(visible);
     return { visible, roles };
@@ -1522,7 +1524,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
           {tournaments.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: showCreate ? 16 : 0 }}>
-              {tournaments.map(t => (
+              {tournaments
+                .slice()
+                // Whatever is being played right now goes first — that's what
+                // almost everyone opening this screen is looking for.
+                .sort((a, b) => (liveByTournament[b.id] ? 1 : 0) - (liveByTournament[a.id] ? 1 : 0))
+                .map(t => (
                 <div key={t.id} style={{
                   padding: "12px 14px", borderRadius: 6, fontFamily: "inherit",
                   background: selectedTournamentId === t.id && !showCreate ? "#ddf4ff" : "#f6f8fa",
@@ -1535,6 +1542,13 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>{t.name || "(untitled tournament)"}</span>
                       {t.year && (
                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>{t.year}</span>
+                      )}
+                      {/* Say what's actually running, so nobody has to open each
+                          competition in turn to find the one being played. */}
+                      {liveByTournament[t.id] && (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
+                          ● LIVE — {liveByTournament[t.id] === "Q" ? "ROUND Q" : `ROUND ${liveByTournament[t.id]}`}
+                        </span>
                       )}
                     </div>
                     {t.host_venue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{t.host_venue}</div>}
@@ -1654,7 +1668,11 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
               {availableRoundLabels.map(label => {
                 const r = rounds.find(rr => rr.label === label);
-                const isLive = r && r.id === liveRoundId;
+                // LIVE means "the round this competition is being played on",
+                // which is the round's own status — not whichever round this
+                // device happens to have open (opening is view-only).
+                const isLive = !!r && r.status === "live";
+                const isOpenHere = !!r && r.id === liveRoundId;
                 // Every round keeps its own data now, so the old "finished" flag no
                 // longer locks anything — it just means the round has been used.
                 const hasData = !!r && (r.status === "finished" || r.status === "live");
@@ -1669,8 +1687,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 26, fontWeight: 600, letterSpacing: 0, color: isLive ? "#1a7f37" : "#1f2328" }}>
                       {label === "Q" ? "Q" : `R${label}`}
                     </div>
-                    <div style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#1a7f37" : hasData ? "#0969da" : "#59636e" }}>
-                      {isLive ? "● LIVE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
+                    <div style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#1a7f37" : isOpenHere ? "#0969da" : hasData ? "#0969da" : "#59636e" }}>
+                      {isLive ? "● LIVE" : isOpenHere ? "OPEN HERE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
                     </div>
                   </button>
                 );
@@ -2538,7 +2556,11 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
                 {pickerLabels.map(label => {
                   const r = pickerRounds.find(rr => rr.label === label);
+                  // "Open here" is this device's round; LIVE is the round the
+                  // whole competition is being played on. They're not the same
+                  // thing any more, so label them separately.
                   const isCurrent = label === roundLabel;
+                  const isLive = !!r && r.status === "live";
                   // Rounds keep their own data now, so this only signals "already used"
                   const hasData = !!r && (r.status === "finished" || r.status === "live");
                   return (
@@ -2553,8 +2575,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                       <span style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 1, color: isCurrent ? "#1a7f37" : "#1f2328" }}>
                         {label === "Q" ? "Q" : `R${label}`}
                       </span>
-                      <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#1a7f37" : hasData ? "#0969da" : "#59636e" }}>
-                        {isCurrent ? "● LIVE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
+                      <span style={{ fontSize: 9, letterSpacing: 1, color: isLive ? "#1a7f37" : isCurrent ? "#0969da" : hasData ? "#0969da" : "#59636e" }}>
+                        {isLive ? "● LIVE" : isCurrent ? "OPEN HERE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
                       </span>
                     </button>
                   );
@@ -6539,6 +6561,18 @@ async function fetchRounds(tournamentId) {
   const { data, error } = await supabase.from("tournament_rounds").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true });
   if (error || !data) return [];
   return data;
+}
+// Which round (if any) each competition is currently playing, in one query, so
+// the tournament list can say what's running instead of making people guess.
+async function fetchLiveRoundByTournament() {
+  try {
+    const { data, error } = await supabase
+      .from("tournament_rounds").select("tournament_id, label, status").eq("status", "live");
+    if (error || !data) return {};
+    const map = {};
+    data.forEach(r => { if (r.tournament_id) map[r.tournament_id] = r.label; });
+    return map;
+  } catch { return {}; }
 }
 // Recovers the course setup (pars / par times / transit time) from the most recent
 // earlier round of the same tournament. Used as a fallback so a new round still
