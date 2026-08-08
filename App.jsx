@@ -4579,7 +4579,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, isRoundLive, onSetLiveRound, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4753,6 +4753,24 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               {roundLabel && <span style={{ color: "#59636e" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
             </div>
             {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
+            {/* Opening a round is view-only; promoting it moves every referee
+                onto it, so that stays an explicit, confirmed action. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              {isRoundLive ? (
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "2px 8px" }}>● LIVE</span>
+              ) : (
+                <>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 4, padding: "2px 8px" }}>VIEWING</span>
+                  {isTrueAdmin && onSetLiveRound && (
+                    <button
+                      onClick={onSetLiveRound}
+                      title="Make this the round everyone else is recording on"
+                      style={{ background: "#dafbe1", border: "1px solid #1a7f3788", color: "#1a7f37", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}
+                    >Set as Live Round</button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
         {onOpenRound && (
@@ -7131,19 +7149,48 @@ export default function App() {
     }
   };
 
+  const handleSetLiveRound = async () => {
+    if (!currentTournament?.id || !currentRound?.id) return;
+    const rs = await fetchRounds(currentTournament.id);
+    const active = rs.find(r => r.status === "live");
+    if (active && active.id === currentRound.id) {
+      setCurrentRound(r => ({ ...r, status: "live" }));
+      return;
+    }
+    const label = l => (l === "Q" ? "Round Q" : `Round ${l}`);
+    const warning = active
+      ? `Move LIVE from ${label(active.label)} to ${label(currentRound.label)}?\n\nEveryone else recording on this competition will be switched to ${label(currentRound.label)}.`
+      : `Mark ${label(currentRound.label)} as the live round?\n\nEveryone else recording on this competition will be switched to it.`;
+    if (!window.confirm(warning)) return;
+    await setActiveRound(currentTournament.id, currentRound.id);
+    setCurrentRound(r => ({ ...r, status: "live" }));
+  };
+
   // Loads a round (and its tournament) into the app. Shared by the Tournament
   // picker screen and the Switch Round popup on the Setup screen, so both paths
   // behave identically.
   const loadRound = async (tournament, round, action, rolesOverride) => {
       // Every round now owns its data, so switching is simply "load that round".
       // Nothing belonging to the round we're leaving is ever cleared.
-      // TD/CR/admin decide which round the whole event is on; referees just follow.
+      // Opening a round is deliberately view-only: it never moves the LIVE
+      // marker, because doing so drags every referee in the field onto this
+      // round. Promoting a round is an explicit act — see handleSetLiveRound.
       // rolesOverride lets callers pass a freshly fetched map — right after login
       // the rolesMap state hasn't been applied yet.
       const rolesNow = rolesOverride || rolesMap;
-      const runsEvent = isAdmin;
-      if (runsEvent) await setActiveRound(tournament?.id, round.id);
-      const loadedRound = runsEvent ? { ...round, status: "live" } : round;
+      let loadedRound = round;
+      // If nothing in this competition is live yet, the first round an admin
+      // opens becomes live on its own: there's no one to drag off anything, and
+      // it saves a pointless confirmation at the start of an event.
+      if (isAdmin && tournament?.id && round?.status !== "live") {
+        try {
+          const rs = await fetchRounds(tournament.id);
+          if (!rs.some(r => r.status === "live")) {
+            await setActiveRound(tournament.id, round.id);
+            loadedRound = { ...round, status: "live" };
+          }
+        } catch {}
+      }
 
       const state = await fetchAppState(round.id);
       const gd = await fetchAllGroupData(round.id);
@@ -7353,6 +7400,8 @@ export default function App() {
       onChangePassword={() => setShowChangePassword(true)}
       tournamentId={currentTournament?.id || null}
       isTrueAdmin={isAdmin}
+      isRoundLive={currentRound?.status === "live"}
+      onSetLiveRound={handleSetLiveRound}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
