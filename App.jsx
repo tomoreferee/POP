@@ -1299,6 +1299,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
+  const [roundsWithData, setRoundsWithData] = useState({});   // { roundId: true } — rounds that actually hold groups
 
   const reloadTournaments = async () => {
     const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
@@ -1331,8 +1332,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
 
   useEffect(() => {
-    if (!selectedTournamentId) { setRounds([]); return; }
-    (async () => setRounds(await fetchRounds(selectedTournamentId)))();
+    if (!selectedTournamentId) { setRounds([]); setRoundsWithData({}); return; }
+    (async () => {
+      const rs = await fetchRounds(selectedTournamentId);
+      setRounds(rs);
+      setRoundsWithData(await fetchRoundsWithData(rs.map(r => r.id)));
+    })();
   }, [selectedTournamentId]);
 
   const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
@@ -1657,7 +1662,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                 // This device's own round — the app no longer tracks a shared
                 // "live" round, so open-here is the only state worth marking.
                 const isOpenHere = !!r && r.id === openRoundId;
-                const hasData = !!r && (r.status === "finished" || r.status === "live");
+                const hasData = !!r && !!roundsWithData[r.id];
                 return (
                   <button key={label} onClick={() => handlePickRound(label)} disabled={busy}
                     style={{
@@ -1760,12 +1765,15 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   // Round switcher popup — loads this tournament's rounds on demand
   const [showRoundPicker, setShowRoundPicker] = useState(false);
   const [pickerRounds, setPickerRounds] = useState([]);
+  const [pickerRoundsWithData, setPickerRoundsWithData] = useState({});
   const [pickerLoading, setPickerLoading] = useState(false);
   const openRoundPicker = async () => {
     if (!tournamentId) return;
     setShowRoundPicker(true);
     setPickerLoading(true);
-    setPickerRounds(await fetchRounds(tournamentId));
+    const rs = await fetchRounds(tournamentId);
+    setPickerRounds(rs);
+    setPickerRoundsWithData(await fetchRoundsWithData(rs.map(r => r.id)));
     setPickerLoading(false);
   };
   // Offer the rounds this tournament actually uses, plus the next one so a new
@@ -2539,8 +2547,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 {pickerLabels.map(label => {
                   const r = pickerRounds.find(rr => rr.label === label);
                   const isCurrent = label === roundLabel;
-                  // Rounds keep their own data now, so this only signals "already used"
-                  const hasData = !!r && (r.status === "finished" || r.status === "live");
+                  // Real data presence, not the round's status column.
+                  const hasData = !!r && !!pickerRoundsWithData[r.id];
                   return (
                     <button key={label}
                       onClick={() => { setShowRoundPicker(false); if (!isCurrent) onPickRound?.(label); }}
@@ -6538,6 +6546,20 @@ async function fetchRounds(tournamentId) {
   const { data, error } = await supabase.from("tournament_rounds").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true });
   if (error || !data) return [];
   return data;
+}
+// Which of these rounds actually hold data. The round's `status` column says
+// nothing useful about that — it only ever recorded which round was opened last
+// — so ask the state table itself.
+async function fetchRoundsWithData(roundIds) {
+  if (!roundIds || roundIds.length === 0) return {};
+  try {
+    const { data, error } = await supabase
+      .from("round_state").select("round_id, groups").in("round_id", roundIds);
+    if (error || !data) return {};
+    const map = {};
+    data.forEach(r => { if ((r.groups?.length ?? 0) > 0) map[r.round_id] = true; });
+    return map;
+  } catch { return {}; }
 }
 // Recovers the course setup (pars / par times / transit time) from the most recent
 // earlier round of the same tournament. Used as a fallback so a new round still
