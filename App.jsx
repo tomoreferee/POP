@@ -444,7 +444,11 @@ const LOG_TYPE_META = {
   WN: { color: "#9a6700", darkBg: "#fff8c5" },
   MN: { color: "#0969da", darkBg: "#ddf4ff" },
   TM: { color: "#bf3989", darkBg: "#ffeff7" },
+  EST: { color: "#bc4c00", darkBg: "#fff1e5" },
 };
+// EST names players the way TM does, but it's a one-off record like WN —
+// nothing stays running afterwards.
+const TARGETED_TYPES = ["TM", "EST"];
 function logColor(type) { return (LOG_TYPE_META[type] || LOG_TYPE_META.MN).color; }
 function logBg(type) { return (LOG_TYPE_META[type] || LOG_TYPE_META.MN).darkBg; }
 
@@ -456,6 +460,12 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
 
   logs.filter(l => l.type === "WN").forEach(l => {
     items.push({ key: `wn-${l.idx}`, type: "WN", sortHole: l.holeIdx, label: `WN @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx });
+  });
+  logs.filter(l => l.type === "EST").forEach(l => {
+    items.push({
+      key: `est-${l.idx}`, type: "EST", sortHole: l.holeIdx,
+      label: `EST ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
+    });
   });
   logs.filter(l => l.type === "TM" && l.badTime).forEach(l => {
     items.push({
@@ -2755,11 +2765,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
   const confirmAction = () => {
     if (!actionModal) return;
-    if (actionModal.type === "TM" && actionTargets.length === 0) return; // must pick a player or "All" first
+    if (TARGETED_TYPES.includes(actionModal.type) && actionTargets.length === 0) return; // must pick a player or "All" first
     const holeIdx = actionModal.holeIdx;
     const deadline = (adjustedSchedule[holeIdx] ?? 0) + (parTimes?.[holeIdx] ?? 14);
     const diffAtLog = nowInMin() - deadline + 1;
-    const target = actionModal.type === "TM" ? targetLabel(actionTargets) : undefined;
+    const target = TARGETED_TYPES.includes(actionModal.type) ? targetLabel(actionTargets) : undefined;
     const log = {
       holeIdx,
       type: actionModal.type,
@@ -3313,7 +3323,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14 }}>
-            <span style={{ fontSize: 12, color: "#59636e", fontWeight: 700 }}>Flag:</span>
+            <span style={{ fontSize: 12, color: "#59636e", fontWeight: 700 }}>Whistle:</span>
             {(() => {
               const wnDisabled = (actionLogs.some(l => l.type === "WN" && l.holeIdx === currentHole)) || mnActive || tmActive;
               const mnDisabledHere = actionLogs.some(l => l.type === "MN" && !l.badTime && !l.off && l.holeIdx === currentHole);
@@ -3331,6 +3341,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                     style={{ flex: 1, background: mnDisabled ? "#f6f8fa" : "#ddf4ff", border: `1px solid ${mnDisabled ? "#d1d9e0" : "#0969da88"}`, color: mnDisabled ? "#818b98" : "#0969da", borderRadius: 6, padding: compact ? "7px 0" : "10px 0", cursor: mnDisabled ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                   <button onClick={() => openActionModal("TM", currentHole)}
                     style={{ flex: 1, background: "#ffeff7", border: "1px solid #bf3989aa", color: "#bf3989", borderRadius: 6, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+                  <button onClick={() => openActionModal("EST", currentHole)}
+                    title="Record EST against one or more players — a one-off record, nothing keeps running afterwards"
+                    style={{ flex: 1, background: "#fff1e5", border: "1px solid #bc4c00aa", color: "#bc4c00", borderRadius: 6, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>EST</button>
                 </>
               );
             })()}
@@ -3704,6 +3717,8 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                   style={{ background: mnDisabledRow ? "#f6f8fa" : "#ddf4ff", border: `1px solid ${mnDisabledRow ? "#d1d9e0" : "#0969da88"}`, color: mnDisabledRow ? "#818b98" : "#0969da", borderRadius: 6, padding: "3px 7px", cursor: mnDisabledRow ? "not-allowed" : "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>MN</button>
                                 <button onClick={() => openActionModal("TM", i)}
                                   style={{ background: "#ffeff7", border: "1px solid #bf3989aa", color: "#bf3989", borderRadius: 6, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>TM</button>
+                                <button onClick={() => openActionModal("EST", i)}
+                                  style={{ background: "#fff1e5", border: "1px solid #bc4c00aa", color: "#bc4c00", borderRadius: 6, padding: "3px 7px", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>EST</button>
                               </div>
                               {logs.map((l, li) => (
                                 <div key={li} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: logColor(l.type), background: `${logBg(l.type)}44`, borderRadius: 4, padding: "2px 4px", textAlign: "left", lineHeight: 1.4 }}>
@@ -3763,22 +3778,22 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: `1px solid ${logColor(actionModal.type)}88`, borderRadius: 6, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #1f2328" }}>
             <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: logColor(actionModal.type), marginBottom: 6 }}>
-              {actionModal.type === "WN" ? "⚠ PACE OF PLAY WARNING" : actionModal.type === "MN" ? "MONITORING" : "TIMING"}
+              {actionModal.type === "WN" ? "⚠ PACE OF PLAY WARNING" : actionModal.type === "MN" ? "MONITORING" : actionModal.type === "EST" ? "EST" : "TIMING"}
             </div>
             <div style={{ fontSize: 12, color: "#59636e", marginBottom: 18 }}>
               Hole {actionModal.holeIdx + 1} — {minToTime(nowInMin())}
             </div>
 
-            {actionModal.type === "TM" && (
+            {TARGETED_TYPES.includes(actionModal.type) && (
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 13, color: "#59636e", marginBottom: 8 }}>Players being timed (TM)</div>
+                <div style={{ fontSize: 13, color: "#59636e", marginBottom: 8 }}>{actionModal.type === "EST" ? "Players receiving EST" : "Players being timed (TM)"}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   <button
                     onClick={() => toggleTarget("ALL")}
                     style={{
-                      background: actionTargets.includes("ALL") ? "#bf3989" : "#f6f8fa",
-                      color: actionTargets.includes("ALL") ? "#ffeff7" : "#bf3989",
-                      border: "1px solid #bf3989aa", borderRadius: 6, padding: "6px 12px",
+                      background: actionTargets.includes("ALL") ? logColor(actionModal.type) : "#f6f8fa",
+                      color: actionTargets.includes("ALL") ? logBg(actionModal.type) : logColor(actionModal.type),
+                      border: `1px solid ${logColor(actionModal.type)}aa`, borderRadius: 6, padding: "6px 12px",
                       cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                     }}
                   >All</button>
@@ -3787,9 +3802,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       key={n}
                       onClick={() => toggleTarget(n)}
                       style={{
-                        background: actionTargets.includes(n) ? "#bf3989" : "#f6f8fa",
-                        color: actionTargets.includes(n) ? "#ffeff7" : "#bf3989",
-                        border: "1px solid #bf3989aa", borderRadius: 6, padding: "6px 12px",
+                        background: actionTargets.includes(n) ? logColor(actionModal.type) : "#f6f8fa",
+                        color: actionTargets.includes(n) ? logBg(actionModal.type) : logColor(actionModal.type),
+                        border: `1px solid ${logColor(actionModal.type)}aa`, borderRadius: 6, padding: "6px 12px",
                         cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                       }}
                     >P{n}</button>
@@ -3810,14 +3825,14 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             />
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={confirmAction}
-                disabled={actionModal.type === "TM" && actionTargets.length === 0}
+                disabled={TARGETED_TYPES.includes(actionModal.type) && actionTargets.length === 0}
                 style={{
                   flex: 1,
-                  background: (actionModal.type === "TM" && actionTargets.length === 0) ? "#f6f8fa" : logBg(actionModal.type),
-                  border: `1px solid ${(actionModal.type === "TM" && actionTargets.length === 0) ? "#d1d9e0" : logColor(actionModal.type)}`,
-                  color: (actionModal.type === "TM" && actionTargets.length === 0) ? "#818b98" : logColor(actionModal.type),
+                  background: (TARGETED_TYPES.includes(actionModal.type) && actionTargets.length === 0) ? "#f6f8fa" : logBg(actionModal.type),
+                  border: `1px solid ${(TARGETED_TYPES.includes(actionModal.type) && actionTargets.length === 0) ? "#d1d9e0" : logColor(actionModal.type)}`,
+                  color: (TARGETED_TYPES.includes(actionModal.type) && actionTargets.length === 0) ? "#818b98" : logColor(actionModal.type),
                   borderRadius: 6, padding: "10px",
-                  cursor: (actionModal.type === "TM" && actionTargets.length === 0) ? "not-allowed" : "pointer",
+                  cursor: (TARGETED_TYPES.includes(actionModal.type) && actionTargets.length === 0) ? "not-allowed" : "pointer",
                   fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 16, fontWeight: 600, letterSpacing: 0,
                 }}>
                 ✓ Save {actionModal.type}
@@ -5290,6 +5305,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         const hasWN = allLogs.some(l => l.type === "WN");
                         const hasMN = allLogs.some(l => l.type === "MN");
                         const hasTM = allLogs.some(l => l.type === "TM");
+                        const hasEST = allLogs.some(l => l.type === "EST");
                         const mnActiveNow = data?.mnActive === true;
                         const tmActiveNow = data?.tmActive === true;
                         // Slot where the MN/TM "coming up" preview should be shown: exactly one
@@ -5334,6 +5350,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 ) : hasTM && (
                                   <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e44", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "×T" : "✕ TM"}</span>
                                 )}
+                                {hasEST && <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bc4c00", background: "#fff1e5", border: "1px solid #bc4c0044", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "E" : "EST"}</span>}
                               </div>
                             </td>
                             <td
@@ -5407,7 +5424,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
                                         {fitAllHoles
                                           ? shortLogLabel(l)
-                                          : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
+                                          : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.target ? ` ${l.target}` : ""}{l.name ? ` - ${l.name}` : ""}</>)}
                                       </div>
                                     ))}
                                     {showMnPreview && (
@@ -5440,7 +5457,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
                                       {fitAllHoles
                                         ? shortLogLabel(l)
-                                        : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.name ? ` - ${l.name}` : ""}</>)}
+                                        : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.target ? ` ${l.target}` : ""}{l.name ? ` - ${l.name}` : ""}</>)}
                                     </div>
                                   ))}
                                 </td>
