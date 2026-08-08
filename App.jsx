@@ -4006,34 +4006,44 @@ function WeatherBar({ hostVenue }) {
     };
   }
 
-  const cell = (label, value, color) => (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 5, padding: "5px 10px", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, whiteSpace: "nowrap" }}>
-      <span style={{ fontSize: 10, color: "#59636e", letterSpacing: 0.5 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: color || "#1f2328" }}>{value}</span>
+  // Fixed rows rather than a wrapping blob: light window on one line, then the
+  // two conditions lines. Label sits above the value so four cells still fit
+  // across a phone without truncating.
+  const cell = (key, label, value, color) => (
+    <div key={key} style={{
+      flex: 1, minWidth: 0, padding: "4px 6px", background: "#f6f8fa",
+      border: "1px solid #d1d9e0", borderRadius: 6, textAlign: "center",
+    }}>
+      <div style={{ fontSize: 9, color: "#59636e", letterSpacing: 0.5, lineHeight: 1.4 }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: color || "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
     </div>
+  );
+  const row = (cells) => (
+    <div style={{ display: "flex", gap: 6 }}>{cells}</div>
   );
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "12px 16px 0" }}>
-      {sun ? (
-        <>
-          {cell("Dawn", sun.dawn, "#9a6700")}
-          {cell("Sunrise", sun.sunrise, "#bc4c00")}
-          {cell("Sunset", sun.sunset, "#bc4c00")}
-          {cell("Dusk", sun.dusk, "#9a6700")}
-        </>
-      ) : cell("Light", "locating…")}
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, margin: "12px 16px 0" }}>
+      {sun
+        ? row([
+            cell("dawn", "Dawn", sun.dawn, "#9a6700"),
+            cell("sunrise", "Sunrise", sun.sunrise, "#bc4c00"),
+            cell("sunset", "Sunset", sun.sunset, "#bc4c00"),
+            cell("dusk", "Dusk", sun.dusk, "#9a6700"),
+          ])
+        : row([cell("light", "Light", "locating…")])}
 
-      {wx && (
-        <>
-          {cell("Temp", `${Math.round(wx.temperature_2m)}°C`, "#cf222e")}
-          {cell("Weather", WEATHER_TEXT[wx.weather_code] || "—")}
-          {wx.cloud_cover !== undefined && cell("Sky", `${skyLabel(wx.cloud_cover)} ${Math.round(wx.cloud_cover)}%`)}
-          {wx.rainPct !== null && wx.rainPct !== undefined && cell("Rain", `${Math.round(wx.rainPct)}%`, rainColor(wx.rainPct))}
-          {wx.relative_humidity_2m !== undefined && cell("Humidity", `${Math.round(wx.relative_humidity_2m)}%`)}
-          {cell("Wind", `${wx.wind_speed_10m?.toFixed(1)} m/s ${windArrow(wx.wind_direction_10m)} ${windCompass(wx.wind_direction_10m)}`, "#0969da")}
-        </>
-      )}
+      {wx && row([
+        cell("sky", "Sky", wx.cloud_cover === undefined ? "—" : `${skyLabel(wx.cloud_cover)} ${Math.round(wx.cloud_cover)}%`),
+        cell("weather", "Weather", WEATHER_TEXT[wx.weather_code] || "—"),
+        cell("rain", "Rain", (wx.rainPct === null || wx.rainPct === undefined) ? "—" : `${Math.round(wx.rainPct)}%`, rainColor(wx.rainPct ?? 0)),
+      ])}
+
+      {wx && row([
+        cell("temp", "Temp", `${Math.round(wx.temperature_2m)}°C`, "#cf222e"),
+        cell("humidity", "Humidity", wx.relative_humidity_2m === undefined ? "—" : `${Math.round(wx.relative_humidity_2m)}%`),
+        cell("wind", "Wind", `${wx.wind_speed_10m?.toFixed(1)} m/s ${windArrow(wx.wind_direction_10m)}${windCompass(wx.wind_direction_10m)}`, "#0969da"),
+      ])}
     </div>
   );
 }
