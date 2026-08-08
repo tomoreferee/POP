@@ -1733,9 +1733,16 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 }
 
 function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
-  const [groups1, setGroups1] = useState(() => loadSetup()?.groups1 ?? []);
-  const [groups10, setGroups10] = useState(() => loadSetup()?.groups10 ?? []);
-  const [groupsShotgun, setGroupsShotgun] = useState(() => loadSetup()?.groupsShotgun ?? []);
+  // The local draft is per round. It used to be one global blob, so creating a
+  // new tournament inherited whatever groups were last typed anywhere.
+  const roundKey = `${tournamentId || ""}:${roundLabel || ""}`;
+  const draft = (() => {
+    const d = loadSetup();
+    return d && d.roundKey === roundKey ? d : null;
+  })();
+  const [groups1, setGroups1] = useState(() => draft?.groups1 ?? []);
+  const [groups10, setGroups10] = useState(() => draft?.groups10 ?? []);
+  const [groupsShotgun, setGroupsShotgun] = useState(() => draft?.groupsShotgun ?? []);
   const [pars, setPars] = useState(() => savedPars ?? loadSetup()?.pars ?? [...DEFAULT_PARS]);
   const [parTimes, setParTimes] = useState(() => savedParTimes ?? loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
@@ -1796,12 +1803,21 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   // shows the real group list (and so pressing the start/update button can't wipe
   // a live session just because this device's local draft happens to be empty).
   const liveGroupsKey = (liveGroups || []).map(g => `${g.id}:${g.name}:${g.startTime}:${g.startHole}:${g.section || ""}`).join("|");
+  const lastRoundKey = useRef(roundKey);
   useEffect(() => {
-    if (!liveGroups || liveGroups.length === 0) return;
+    const roundChanged = lastRoundKey.current !== roundKey;
+    lastRoundKey.current = roundKey;
+    if (!liveGroups || liveGroups.length === 0) {
+      // Only blank the lists when we've actually moved to another round —
+      // within the same round an empty list may just mean "not loaded yet",
+      // and wiping the draft there could destroy unsaved work.
+      if (roundChanged) { setGroups1([]); setGroups10([]); setGroupsShotgun([]); }
+      return;
+    }
     setGroups1(liveGroups.filter(g => (g.startHole || 1) === 1));
     setGroups10(liveGroups.filter(g => (g.startHole || 1) === 10));
     setGroupsShotgun(liveGroups.filter(g => (g.startHole || 1) !== 1 && (g.startHole || 1) !== 10));
-  }, [liveGroupsKey]);
+  }, [liveGroupsKey, roundKey]);
 
   // Whatever the live round is actually running takes priority over the tournament
   // default — otherwise this screen could show stale values (e.g. opened on another
@@ -1832,8 +1848,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
   // ─── Save to memoryStorage every time the data changes ───────────────────────
   useEffect(() => {
-    saveSetup({ groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime, turnTimeBack });
-  }, [groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime, turnTimeBack]);
+    saveSetup({ roundKey, groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime, turnTimeBack });
+  }, [roundKey, groups1, groups10, groupsShotgun, pars, parTimes, playersPerGroup, turnTime, turnTimeBack]);
 
   const addGroup1 = () => {
     const n = nextNum.current++;
