@@ -4580,25 +4580,24 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, 
 
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      {/* A native picker puts the selected option's own text in the closed box,
+          so the marker is left off whichever option is currently selected. The
+          dot then only ever appears in the open list, never in the field. */}
       <select value={year}
         onChange={e => { setYear(e.target.value); const first = tournaments.find(t => yearOf(t) === e.target.value); setTid(first?.id || ""); }}
         style={{ ...sel, width: 84, flexShrink: 0 }}>
         {years.map(y => (
           <option key={y} value={y}>
-            {tournaments.some(t => yearOf(t) === y && liveMap[t.id]) ? `${y} ●` : y}
+            {y !== year && tournaments.some(t => yearOf(t) === y && liveMap[t.id]) ? `${y} ·` : y}
           </option>
         ))}
       </select>
 
       <select value={tid} onChange={e => setTid(e.target.value)} style={{ ...sel, flex: 1, minWidth: 120 }}>
         <option value="">— Tournament —</option>
-        {/* Native pickers show the selected option's own text in the closed box,
-            so the marker has to be the same in both places: a trailing dot,
-            which stays out of the way of long names. Whatever is running is
-            sorted to the top of the list. */}
         {forYear.map(t => (
           <option key={t.id} value={t.id}>
-            {liveMap[t.id] ? `${t.name || "(untitled)"} ●` : (t.name || "(untitled)")}
+            {t.name || "(untitled)"}{liveMap[t.id] && t.id !== tid ? " ·" : ""}
           </option>
         ))}
       </select>
@@ -4608,7 +4607,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, 
         <option value="">{loadingRounds ? "…" : "— Round —"}</option>
         {rounds.map(r => (
           <option key={r.id} value={r.label}>
-            {r.label === "Q" ? "Q" : `R${r.label}`}{r.status === "live" ? " ●" : ""}
+            {r.label === "Q" ? "Q" : `R${r.label}`}{r.status === "live" && r.label !== label ? " ·" : ""}
           </option>
         ))}
       </select>
