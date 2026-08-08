@@ -1536,13 +1536,15 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                   {/* Row 1 — name + venue, full width so long names don't wrap awkwardly */}
                   <button onClick={() => openRoundPicker(t)}
                     style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, rowGap: 5, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>{t.name || "(untitled tournament)"}</span>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>{t.name || "(untitled tournament)"}</div>
+                    {/* Year sits with the venue rather than beside the name, so a
+                        long competition name keeps the whole first line. */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, rowGap: 4, flexWrap: "wrap", marginTop: 3 }}>
                       {t.year && (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>{t.year}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>{t.year}</span>
                       )}
+                      {t.host_venue && <span style={{ fontSize: 12, color: "#59636e" }}>{t.host_venue}</span>}
                     </div>
-                    {t.host_venue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{t.host_venue}</div>}
                   </button>
 
                   {/* Row 2 — Select on the left, admin tools on the right, all same height */}
@@ -1636,7 +1638,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <button onClick={handleSaveTournament} disabled={!newName.trim() || busy}
                   style={{ flex: 1, padding: "11px 0", borderRadius: 6, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#dafbe1", border: "1px solid #1a7f3766", color: "#1a7f37" }}>
-                  {editingTournamentId ? "✓ Save changes" : "✓ Create tournament"}
+                  {editingTournamentId ? "✓ Save Changes" : "✓ Create Tournament"}
                 </button>
                 <button onClick={() => { setShowCreate(false); resetForm(); }}
                   style={{ padding: "11px 16px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e" }}>
@@ -1663,15 +1665,16 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                 // "live" round, so open-here is the only state worth marking.
                 const isOpenHere = !!r && r.id === openRoundId;
                 const hasData = !!r && !!roundsWithData[r.id];
+                const isQ = label === "Q";
                 return (
                   <button key={label} onClick={() => handlePickRound(label)} disabled={busy}
                     style={{
                       padding: "16px 0", borderRadius: 6, cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
-                      background: isOpenHere ? "#ddf4ff" : "#f6f8fa",
-                      border: `1px solid ${isOpenHere ? "#0969da" : hasData ? "#0969da55" : "#d1d9e0"}`,
+                      background: isOpenHere ? "#ddf4ff" : isQ ? "#faf2ff" : "#f6f8fa",
+                      border: `1px solid ${isOpenHere ? "#0969da" : isQ ? "#8250df55" : hasData ? "#0969da55" : "#d1d9e0"}`,
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}>
-                    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 26, fontWeight: 600, letterSpacing: 0, color: isOpenHere ? "#0969da" : "#1f2328" }}>
+                    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 26, fontWeight: 600, letterSpacing: 0, color: isOpenHere ? "#0969da" : isQ ? "#8250df" : "#1f2328" }}>
                       {label === "Q" ? "Q" : `R${label}`}
                     </div>
                     <div style={{ fontSize: 9, letterSpacing: 1, color: isOpenHere ? "#0969da" : hasData ? "#0969da" : "#59636e" }}>
@@ -2570,11 +2573,11 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                       onClick={() => { setShowRoundPicker(false); if (!isCurrent) onPickRound?.(label); }}
                       style={{
                         padding: "14px 0", borderRadius: 6, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
-                        background: isCurrent ? "#ddf4ff" : "#f6f8fa",
-                        border: `1px solid ${isCurrent ? "#0969da" : hasData ? "#0969da55" : "#d1d9e0"}`,
+                        background: isCurrent ? "#ddf4ff" : label === "Q" ? "#faf2ff" : "#f6f8fa",
+                        border: `1px solid ${isCurrent ? "#0969da" : label === "Q" ? "#8250df55" : hasData ? "#0969da55" : "#d1d9e0"}`,
                         display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                       }}>
-                      <span style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 1, color: isCurrent ? "#0969da" : "#1f2328" }}>
+                      <span style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 1, color: isCurrent ? "#0969da" : label === "Q" ? "#8250df" : "#1f2328" }}>
                         {label === "Q" ? "Q" : `R${label}`}
                       </span>
                       <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#0969da" : hasData ? "#0969da" : "#59636e" }}>
@@ -3374,7 +3377,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           </div>
 
           <div style={{ display: "flex", gap: 8, marginBottom: compact ? 10 : 14 }}>
-            {[["stamp", "Timestamp now"], ["manual", "✏️ Enter difference manually"]].map(([mode, label]) => (
+            {[["stamp", "Timestamp Now"], ["manual", "Enter Difference Manually"]].map(([mode, label]) => (
               <button key={mode} onClick={() => { setInputMode(mode); setRecordedEnd(null); }}
                 style={{
                   flex: 1, padding: compact ? "7px 0" : "8px 0", borderRadius: 6, cursor: "pointer",
@@ -3403,13 +3406,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 onMouseEnter={e => { e.currentTarget.style.background = "#aceebb"; e.currentTarget.style.borderColor = "#1a7f37aa"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "#dafbe1"; e.currentTarget.style.borderColor = "#1a7f3766"; }}
               >
-                Record holed time
+                Record Holed Time
               </button>
             ) : (
               <div style={{ background: "#f6f8fa", borderRadius: 6, padding: "16px 20px", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#59636e", marginBottom: 4 }}>Recorded finish time</div>
+                    <div style={{ fontSize: 11, color: "#59636e", marginBottom: 4 }}>Recorded Finish Time</div>
                     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 36, fontWeight: 600, color: "#1f2328", lineHeight: 1 }}>{minToTime(recordedEnd)}</div>
                     <div style={{ fontSize: 14, fontWeight: 700, marginTop: 6, color: diffColor(diffDisplay) }}>
                       {diffDisplay === 0 ? "On time" : diffDisplay > 0 ? `${diffDisplay} min late` : `${Math.abs(diffDisplay)} min early`}
