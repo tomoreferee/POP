@@ -1537,14 +1537,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                   <button onClick={() => openRoundPicker(t)}
                     style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>{t.name || "(untitled tournament)"}</div>
-                    {/* Year sits with the venue rather than beside the name, so a
-                        long competition name keeps the whole first line. */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, rowGap: 4, flexWrap: "wrap", marginTop: 3 }}>
-                      {t.year && (
-                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>{t.year}</span>
-                      )}
-                      {t.host_venue && <span style={{ fontSize: 12, color: "#59636e" }}>{t.host_venue}</span>}
-                    </div>
+                    {t.host_venue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 3 }}>{t.host_venue}</div>}
+                    {t.year && (
+                      <div style={{ marginTop: 5 }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>{t.year}</span>
+                      </div>
+                    )}
                   </button>
 
                   {/* Row 2 — Select on the left, admin tools on the right, all same height */}
