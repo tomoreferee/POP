@@ -4566,13 +4566,28 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
   const [quickRecord, setQuickRecord] = useState(null); // { groupId, targetSlot } or null
-  const [fitAllHoles, setFitAllHoles] = useState(() => {
-    try { return localStorage.getItem("pop_fit_all_holes") === "1"; } catch { return false; }
+  // Table density cycles Normal → Fit 9 → Fit 18 → Normal.
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pop_view_mode");
+      if (saved === "normal" || saved === "fit9" || saved === "fit18") return saved;
+      // Migrate the old on/off setting
+      return localStorage.getItem("pop_fit_all_holes") === "1" ? "fit18" : "normal";
+    } catch { return "normal"; }
   });
-  const toggleFitAll = () => {
-    setFitAllHoles(v => {
-      const next = !v;
-      try { localStorage.setItem("pop_fit_all_holes", next ? "1" : "0"); } catch {}
+  // Which half of the round Fit 9 is showing: 0 = first nine, 1 = second nine.
+  const [nineHalf, setNineHalf] = useState(0);
+  const fitAllHoles = viewMode !== "normal";
+  const isFit9 = viewMode === "fit9";
+  // Fit 9 shows one half of the round at a time; slot indices stay absolute so
+  // every downstream calculation (turn, MN/TM preview, quick record) is unchanged.
+  const nineStart = isFit9 ? nineHalf * 9 : 0;
+  const inNineWindow = slot => !isFit9 || (slot >= nineStart && slot < nineStart + 9);
+  const VIEW_LABEL = { normal: "Normal View", fit9: "Fit 9 Holes", fit18: "Fit 18 Holes" };
+  const cycleView = () => {
+    setViewMode(v => {
+      const next = v === "normal" ? "fit9" : v === "fit9" ? "fit18" : "normal";
+      try { localStorage.setItem("pop_view_mode", next); } catch {}
       return next;
     });
   };
@@ -4812,15 +4827,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             }}>
             My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
           </button>
-          <button onClick={toggleFitAll}
-            title="Shrink columns to fit all 18 holes on one screen (for TD / CR)"
+          <button onClick={cycleView}
+            title="Tap to cycle: Normal View → Fit 9 Holes → Fit 18 Holes"
             style={{
               background: fitAllHoles ? "#ddf4ff" : "#f6f8fa",
               border: `1px solid ${fitAllHoles ? "#0969da" : "#d1d9e0"}`,
               color: fitAllHoles ? "#1f2328" : "#59636e",
-              borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
+              borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
             }}>
-            {fitAllHoles ? "Normal View" : "Fit 18 Holes"}
+            {VIEW_LABEL[viewMode]}<span style={{ fontSize: 10, color: "#59636e" }}>⇄</span>
           </button>
           {focusHoles.length > 0 && (
             <button onClick={() => saveFocusHoles([])}
@@ -5178,12 +5193,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeLabel = meta.label;
             const tableKey = `${sectionKey}-${startHole}`;
             const isCollapsed = !!collapsedTables[tableKey];
-            // Fit-18 view: shrink every column so all 18 holes sit on one screen.
-            const th = fitAllHoles ? { ...thStyle, padding: "4px 0", fontSize: 9, minWidth: 0 } : thStyle;
-            const td = fitAllHoles ? { ...tdStyle, padding: "3px 0" } : tdStyle;
-            const turnGapW = fitAllHoles ? 8 : 0;
-            const nameColW = fitAllHoles ? 26 : 80;
-            const startColW = fitAllHoles ? 28 : 56;
+            // Fit views: shrink columns so the holes sit on one screen without
+            // sideways scrolling. Fit 9 has twice the room, so it stays legible.
+            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "6px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: 0 } : thStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "6px 0" : "3px 0" } : tdStyle;
+            const turnGapW = viewMode === "fit18" ? 8 : 0;
+            const nameColW = fitAllHoles ? (isFit9 ? 42 : 26) : 80;
+            const startColW = fitAllHoles ? (isFit9 ? 46 : 28) : 56;
             return (
               <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 16, overflow: "hidden" }}>
                 <div
@@ -5191,7 +5207,28 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
                 >
                   <span>{holeLabel}</span>
-                  <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {isFit9 && (
+                      <span onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <button
+                          onClick={() => setNineHalf(0)}
+                          disabled={nineHalf === 0}
+                          title="Previous nine"
+                          style={{ background: nineHalf === 0 ? "#f6f8fa" : "#ddf4ff", border: `1px solid ${nineHalf === 0 ? "#d1d9e0" : "#0969da66"}`, color: nineHalf === 0 ? "#8c959f" : "#0969da", borderRadius: 4, width: 24, height: 22, cursor: nineHalf === 0 ? "default" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0 }}
+                        >‹</button>
+                        <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, minWidth: 62, textAlign: "center" }}>
+                          H{order[nineStart] + 1}–H{order[nineStart + 8] + 1}
+                        </span>
+                        <button
+                          onClick={() => setNineHalf(1)}
+                          disabled={nineHalf === 1}
+                          title="Next nine"
+                          style={{ background: nineHalf === 1 ? "#f6f8fa" : "#ddf4ff", border: `1px solid ${nineHalf === 1 ? "#d1d9e0" : "#0969da66"}`, color: nineHalf === 1 ? "#8c959f" : "#0969da", borderRadius: 4, width: 24, height: 22, cursor: nineHalf === 1 ? "default" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0 }}
+                        >›</button>
+                      </span>
+                    )}
+                    <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+                  </span>
                 </div>
                 {!isCollapsed && (
                 <div style={{ overflowX: fitAllHoles ? "hidden" : "auto" }}>
@@ -5201,8 +5238,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
                         <th style={{ ...th, color: "#59636e", position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
-                          focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
+                          (focusHoles.length && !focusHoles.includes(hi)) || !inNineWindow(i) ? null : (
+                            <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         )), turnGapW, `h-${tableKey}`, "th")}
                       </tr>
@@ -5302,6 +5339,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             </td>
                             {withTurnGap(order.map((hi, slot) => {
                               if (focusHoles.length && !focusHoles.includes(hi)) return null;
+                              if (!inNineWindow(slot)) return null;
                               const hd = data?.holeData?.[hi];
                               const startTime = hd?.startTime;
                               const endTime = hd?.endTime;
@@ -5317,7 +5355,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                   >
-                                    {fitAllHoles ? (() => {
+                                    {fitAllHoles && !isFit9 ? (() => {
                                       const t = minToTime(deadline);
                                       return (
                                         <div style={{ fontSize: 11, fontWeight: 700, color: "#59636e", lineHeight: 1.05 }}>
@@ -5360,7 +5398,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.92)"}
                                   onMouseLeave={e => e.currentTarget.style.filter = ""}
                                 >
-                                  <div style={{ fontSize: fitAllHoles ? 11 : 16, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
+                                  <div style={{ fontSize: isFit9 ? 14 : fitAllHoles ? 11 : 16, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
                                   {holeLogs.map((l, li) => (
                                     <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
                                       {fitAllHoles
@@ -5383,8 +5421,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         <th style={{ ...th, position: fitAllHoles ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Grp" : "Group"}</th>
                         <th style={{ ...th, color: "#59636e", position: fitAllHoles ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
                         {withTurnGap(order.map((hi, i) => (
-                          focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{fitAllHoles ? hi + 1 : `H${hi + 1}`}</th>
+                          (focusHoles.length && !focusHoles.includes(hi)) || !inNineWindow(i) ? null : (
+                            <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         )), turnGapW, `f-${tableKey}`, "th")}
                       </tr>
