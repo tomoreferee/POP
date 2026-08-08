@@ -1762,11 +1762,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   // roles, access, delete) still lives on the Tournament screen.
   const [showTournamentPicker, setShowTournamentPicker] = useState(false);
   const [tPickerList, setTPickerList] = useState([]);
+  const [tPickerLive, setTPickerLive] = useState({});
   const [tPickerLoading, setTPickerLoading] = useState(false);
   const openTournamentPicker = async () => {
     setShowTournamentPicker(true);
     setTPickerLoading(true);
-    const [all, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
+    const [all, roles, live] = await Promise.all([fetchTournaments(), fetchAllRoles(), fetchLiveRoundByTournament()]);
+    setTPickerLive(live);
     // Only offer what this person may actually open
     setTPickerList(
       all.filter(t =>
@@ -2520,7 +2522,12 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                       }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>{t.name || "(untitled)"}</span>
-                        {isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>● CURRENT</span>}
+                        {isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da55", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>OPEN HERE</span>}
+                        {tPickerLive[t.id] && (
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
+                            ● LIVE — {tPickerLive[t.id] === "Q" ? "ROUND Q" : `ROUND ${tPickerLive[t.id]}`}
+                          </span>
+                        )}
                       </div>
                       {t.host_venue && <div style={{ fontSize: 11, color: "#59636e", marginTop: 2 }}>{t.host_venue}</div>}
                     </button>
@@ -4501,7 +4508,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 // Year → Tournament → Round → Search. Used on both the tournament screen and the
 // dashboard, so switching rounds never means walking back through another page.
-function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }) {
+function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, refreshKey }) {
   const [tournaments, setTournaments] = useState([]);
   const [year, setYear] = useState("");
   const [tid, setTid] = useState(tournamentId || "");
@@ -4541,7 +4548,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
       setLoadingRounds(false);
     })();
     return () => { cancelled = true; };
-  }, [tid]);
+  }, [tid, refreshKey]);
 
   const years = (() => {
     const ys = new Set(tournaments.map(yearOf));
@@ -4603,7 +4610,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, isRoundLive, onSetLiveRound, onClearLiveRound, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, isRoundLive, onSetLiveRound, onClearLiveRound, liveTick, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4812,6 +4819,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             roundLabel={roundLabel}
             isAdmin={isTrueAdmin}
             onOpen={onOpenRound}
+            refreshKey={liveTick}
             compact
           />
         )}
@@ -6573,14 +6581,6 @@ async function fetchRounds(tournamentId) {
   if (error || !data) return [];
   return data;
 }
-// Stand a round down: the competition is no longer being played on it, and
-// nothing else takes its place until someone starts a round again.
-async function clearActiveRound(roundId) {
-  if (!roundId) return;
-  try {
-    await supabase.from("tournament_rounds").update({ status: "idle" }).eq("id", roundId);
-  } catch {}
-}
 // Which round (if any) each competition is currently playing, in one query, so
 // the tournament list can say what's running instead of making people guess.
 async function fetchLiveRoundByTournament() {
@@ -6624,15 +6624,28 @@ async function createRound({ tournamentId, label, isQualifying }) {
 // demotes the others, so every device — and every later login — agrees on which
 // round is being played.
 async function setActiveRound(tournamentId, roundId) {
-  if (!tournamentId || !roundId) return;
+  if (!tournamentId || !roundId) return { ok: false, error: "Missing tournament or round" };
   try {
-    await supabase.from("tournament_rounds")
+    const demote = await supabase.from("tournament_rounds")
       .update({ status: "idle" })
       .eq("tournament_id", tournamentId)
       .eq("status", "live")
       .neq("id", roundId);
-    await supabase.from("tournament_rounds").update({ status: "live" }).eq("id", roundId);
-  } catch {}
+    if (demote.error) return { ok: false, error: demote.error.message };
+    const promote = await supabase.from("tournament_rounds").update({ status: "live" }).eq("id", roundId);
+    if (promote.error) return { ok: false, error: promote.error.message };
+    return { ok: true };
+  } catch (e) { return { ok: false, error: String(e?.message || e) }; }
+}
+// Stand a round down: the competition is no longer being played on it, and
+// nothing else takes its place until someone starts a round again.
+async function clearActiveRound(roundId) {
+  if (!roundId) return { ok: false, error: "Missing round" };
+  try {
+    const { error } = await supabase.from("tournament_rounds").update({ status: "idle" }).eq("id", roundId);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) { return { ok: false, error: String(e?.message || e) }; }
 }
 async function fetchRoundArchive(roundId) {
   const { data, error } = await supabase.from("tournament_rounds").select("*").eq("id", roundId).maybeSingle();
@@ -6679,6 +6692,7 @@ export default function App() {
   const [onlineUsers, setOnlineUsers] = useState([]); // [{ username, isAdmin, since }] — live presence
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
   const [currentRound, setCurrentRound] = useState(null);           // { id, tournament_id, label, status, is_qualifying }
+  const [liveTick, setLiveTick] = useState(0);                      // bumped when the live round changes, to re-read cached round lists
   const [baseSchedules, setBaseSchedules] = useState({}); // original schedules
   const [schedules, setSchedules] = useState({});         // adjusted schedules
   const [groupData, setGroupData] = useState({});
@@ -7237,16 +7251,34 @@ export default function App() {
       ? `Move LIVE from ${label(active.label)} to ${label(currentRound.label)}?\n\nEveryone else recording on this competition will be switched to ${label(currentRound.label)}.`
       : `Mark ${label(currentRound.label)} as the live round?\n\nEveryone else recording on this competition will be switched to it.`;
     if (!window.confirm(warning)) return;
-    await setActiveRound(currentTournament.id, currentRound.id);
+    const res = await setActiveRound(currentTournament.id, currentRound.id);
+    if (!res?.ok) {
+      window.alert(`Could not set the live round.\n\n${res?.error || "The database rejected the change."}`);
+      return;
+    }
+    // Read it back rather than assuming — if the write silently didn't stick,
+    // the badge must not claim otherwise while every other screen disagrees.
+    const after = await fetchRounds(currentTournament.id);
+    const nowLive = after.find(r => r.id === currentRound.id)?.status === "live";
+    if (!nowLive) {
+      window.alert("The live round did not save. Please check the connection and try again.");
+      return;
+    }
     setCurrentRound(r => ({ ...r, status: "live" }));
+    setLiveTick(t => t + 1);
   };
 
   const handleClearLiveRound = async () => {
     if (!currentRound?.id) return;
     const label = currentRound.label === "Q" ? "Round Q" : `Round ${currentRound.label}`;
     if (!window.confirm(`End live play on ${label}?\n\nThe competition will show as not running. Recorded times are kept — nothing is deleted.`)) return;
-    await clearActiveRound(currentRound.id);
+    const res = await clearActiveRound(currentRound.id);
+    if (!res?.ok) {
+      window.alert(`Could not end live play.\n\n${res?.error || "The database rejected the change."}`);
+      return;
+    }
     setCurrentRound(r => ({ ...r, status: "idle" }));
+    setLiveTick(t => t + 1);
   };
 
   // Loads a round (and its tournament) into the app. Shared by the Tournament
@@ -7477,6 +7509,7 @@ export default function App() {
       isRoundLive={currentRound?.status === "live"}
       onSetLiveRound={handleSetLiveRound}
       onClearLiveRound={handleClearLiveRound}
+      liveTick={liveTick}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
