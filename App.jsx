@@ -1276,9 +1276,9 @@ function saveSetup(data) {
 
 // ─── Tournament / Round picker ──────────────────────────────────────────────
 // Gate before Setup: pick or create a Tournament, then pick or create a Round
-// (Q, 1, 2, 3, 4) within it. Only one round is ever "live" at a time — picking
-// a different round than the one currently live archives the current round's
-// data first, then starts the new one fresh.
+// (Q, 1, 2, 3, 4) within it. Each round keeps its own data, so switching between
+// them just loads that round — nothing is archived or cleared. One round per
+// tournament is marked "live" to show where play currently is.
 const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
 
 function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePassword, onManageUsers, onRoundSelected, liveTournamentId, liveRoundId, hasLiveGroups, allUsers }) {
@@ -6259,19 +6259,20 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 // ─── Supabase-backed persistence (shared realtime state for all judges) ────────
-// `app_state`         → 1 row ("main") holding groups/pars/schedules/suspensions
-//                        for the CURRENT live round (tournament_id/round_id point
-//                        at which tournament + round it belongs to)
-// `group_data`        → 1 row per group, holding that group's live scoring data
-//                        for the CURRENT live round
+// `round_state`       → 1 row per ROUND, holding that round's groups/pars/
+//                        schedules/suspensions
+// `group_data`        → 1 row per group, holding that group's scoring data,
+//                        scoped to the round it belongs to
 // `tournaments`       → tournament metadata (name/venue/format)
-// `tournament_rounds` → one row per round (Q,1,2,3,4) — when a round is finished/
-//                        replaced, a snapshot of app_state + group_data is archived
-//                        onto its row before the live tables are cleared for the next round
+// `tournament_rounds` → one row per round (Q,1,2,3,4), carrying its status
 // `app_users`         → login accounts, shared across every judge/device
-// Live state is stored per ROUND, so several tournaments can run at the same
-// time without overwriting each other. Every read/write below is scoped by
-// roundId — passing a null roundId is treated as "no round selected" and is a
+// Every round owns its own state, so rounds and tournaments never overwrite each
+// other and switching between them is simply "load that round" — nothing
+// belonging to the round being left is archived or cleared. Round status is only
+// a pointer: `live` marks the round the event is currently on (one per
+// tournament) so every device and every later login agrees on where play is, and
+// it drives the LIVE badge plus the default round selection. Every read/write
+// below is scoped by roundId — a null roundId means "no round selected" and is a
 // no-op, which prevents a half-loaded screen from clobbering real data.
 async function fetchAppState(roundId) {
   if (!roundId) return null;
@@ -6548,19 +6549,6 @@ async function createRound({ tournamentId, label, isQualifying }) {
     return data;
   } catch { return null; }
 }
-// Snapshot the current live app_state + group_data onto the given round's row (so the
-// record isn't lost), mark it finished, then wipe the live tables so the next round
-// starts clean. This app only ever works with ONE live round at a time by design.
-async function archiveAndFinishRound(roundId, appStateSnapshot, groupDataSnapshot) {
-  try {
-    await supabase.from("tournament_rounds").update({
-      status: "finished",
-      archived_app_state: appStateSnapshot,
-      archived_group_data: groupDataSnapshot,
-      finished_at: new Date().toISOString(),
-    }).eq("id", roundId);
-  } catch {}
-}
 // A tournament has exactly one active round at a time. Marking one live also
 // demotes the others, so every device — and every later login — agrees on which
 // round is being played.
@@ -6574,9 +6562,6 @@ async function setActiveRound(tournamentId, roundId) {
       .neq("id", roundId);
     await supabase.from("tournament_rounds").update({ status: "live" }).eq("id", roundId);
   } catch {}
-}
-async function markRoundStatus(roundId, status) {
-  try { await supabase.from("tournament_rounds").update({ status }).eq("id", roundId); } catch {}
 }
 async function fetchRoundArchive(roundId) {
   const { data, error } = await supabase.from("tournament_rounds").select("*").eq("id", roundId).maybeSingle();
