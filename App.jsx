@@ -6712,6 +6712,14 @@ export default function App() {
   // Which round this device is working on is remembered locally, so two devices
   // can be in different tournaments at the same time.
   useEffect(() => {
+    // Read what this device had open BEFORE any await. The "remember" effect
+    // below also runs on mount, while state is still null, and would otherwise
+    // clear these keys before this restore ever got to look at them.
+    let savedTid = null, savedRid = null;
+    try {
+      savedTid = localStorage.getItem("pop_tournament_id");
+      savedRid = localStorage.getItem("pop_round_id");
+    } catch {}
     (async () => {
       try {
         const u = await fetchUsers();
@@ -6727,8 +6735,6 @@ export default function App() {
 
       let tournament = null, round = null, state = null;
       try {
-        let savedTid = localStorage.getItem("pop_tournament_id");
-        let savedRid = localStorage.getItem("pop_round_id");
         // First run after upgrading from the single-tournament build: nothing is
         // saved on this device yet, so fall back to the old app_state pointer.
         if (!savedTid && !savedRid) {
@@ -6822,7 +6828,11 @@ export default function App() {
   }, []);
 
   // Remember this device's tournament/round so it reopens straight into it.
+  // Skipped on the very first run: at mount both values are still null while the
+  // restore above is loading, and writing that null would erase the memory.
+  const rememberedOnce = useRef(false);
   useEffect(() => {
+    if (!rememberedOnce.current) { rememberedOnce.current = true; return; }
     try {
       if (currentTournament?.id) localStorage.setItem("pop_tournament_id", currentTournament.id);
       else localStorage.removeItem("pop_tournament_id");
