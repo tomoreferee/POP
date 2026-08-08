@@ -7005,35 +7005,57 @@ export default function App() {
     return () => { supabase.removeChannel(channel); };
   }, [currentUser, isAdmin, currentTournament?.id]);
 
-  // Referees follow whichever round the TD/CR has made active, so a device that
-  // was left on an old round doesn't quietly record against the wrong one.
+  // Two jobs here, and they're separate on purpose:
+  //  1. Keep this device's view of its OWN round's status honest, so the
+  //     LIVE / VIEWING badge is right for everyone — including the referee who
+  //     is already sitting on the round that just got promoted.
+  //  2. Pull referees onto whichever round has been made live, so a device left
+  //     on an old round doesn't quietly record against the wrong one. Admins are
+  //     exempt: they're the ones choosing, so they're never yanked around.
   useEffect(() => {
     if (!currentUser || !currentTournament?.id || !currentRound?.id) return;
     const runsEvent = isAdmin;
-    if (runsEvent) return; // they're the ones choosing — don't yank them around
+    let cancelled = false;
+
+    const syncOwnStatus = (status) => {
+      if (!status) return;
+      setCurrentRound(prev => (prev && prev.id === currentRound.id && prev.status !== status)
+        ? { ...prev, status }
+        : prev);
+    };
+
+    const applyRounds = async (rounds) => {
+      if (cancelled || !rounds) return;
+      syncOwnStatus(rounds.find(r => r.id === currentRound.id)?.status);
+      const active = rounds.find(r => r.status === "live");
+      if (!runsEvent && active && active.id !== currentRound.id) {
+        await loadRound(currentTournament, active, "resume");
+      }
+    };
+
+    // Don't wait for the first poll — get the badge right straight away.
+    (async () => { try { await applyRounds(await fetchRounds(currentTournament.id)); } catch {} })();
+
     const channel = supabase
       .channel(`active_round_${currentTournament.id}`)
       .on("postgres_changes",
         { event: "UPDATE", schema: "public", table: "tournament_rounds", filter: `tournament_id=eq.${currentTournament.id}` },
         async (payload) => {
           const r = payload.new;
-          if (!r || r.status !== "live" || r.id === currentRound.id) return;
-          await loadRound(currentTournament, r, "resume");
+          if (cancelled || !r) return;
+          if (r.id === currentRound.id) { syncOwnStatus(r.status); return; }
+          // A different round went live — referees follow it, admins don't.
+          if (!runsEvent && r.status === "live") await loadRound(currentTournament, r, "resume");
         })
       .subscribe();
+
     // Belt and braces: realtime can be blocked by a flaky connection, so also
-    // check periodically. Without this a referee could sit on the wrong round.
+    // check periodically.
     const poll = setInterval(async () => {
-      try {
-        const rs = await fetchRounds(currentTournament.id);
-        const active = rs.find(r => r.status === "live");
-        if (active && active.id !== currentRound.id) {
-          await loadRound(currentTournament, active, "resume");
-        }
-      } catch {}
+      try { await applyRounds(await fetchRounds(currentTournament.id)); } catch {}
     }, 20000);
 
-    return () => { supabase.removeChannel(channel); clearInterval(poll); };
+    return () => { cancelled = true; supabase.removeChannel(channel); clearInterval(poll); };
   }, [currentUser, isAdmin, currentTournament?.id, currentRound?.id, rolesMap]);
 
   const handleLogout = () => {
