@@ -1545,10 +1545,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                       )}
                       {/* Say what's actually running, so nobody has to open each
                           competition in turn to find the one being played. */}
-                      {liveByTournament[t.id] && (
+                      {liveByTournament[t.id] ? (
                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
                           ● LIVE — {liveByTournament[t.id] === "Q" ? "ROUND Q" : `ROUND ${liveByTournament[t.id]}`}
                         </span>
+                      ) : (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>NOT RUNNING</span>
                       )}
                     </div>
                     {t.host_venue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{t.host_venue}</div>}
@@ -4601,7 +4603,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, isRoundLive, onSetLiveRound, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, isRoundLive, onSetLiveRound, onClearLiveRound, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4779,7 +4781,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 onto it, so that stays an explicit, confirmed action. */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               {isRoundLive ? (
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "2px 8px" }}>● LIVE</span>
+                <>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "2px 8px" }}>● LIVE</span>
+                  {isTrueAdmin && onClearLiveRound && (
+                    <button
+                      onClick={onClearLiveRound}
+                      title="Stop showing this competition as being played — recorded times are kept"
+                      style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}
+                    >End Live</button>
+                  )}
+                </>
               ) : (
                 <>
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 4, padding: "2px 8px" }}>VIEWING</span>
@@ -6562,6 +6573,14 @@ async function fetchRounds(tournamentId) {
   if (error || !data) return [];
   return data;
 }
+// Stand a round down: the competition is no longer being played on it, and
+// nothing else takes its place until someone starts a round again.
+async function clearActiveRound(roundId) {
+  if (!roundId) return;
+  try {
+    await supabase.from("tournament_rounds").update({ status: "idle" }).eq("id", roundId);
+  } catch {}
+}
 // Which round (if any) each competition is currently playing, in one query, so
 // the tournament list can say what's running instead of making people guess.
 async function fetchLiveRoundByTournament() {
@@ -7222,6 +7241,14 @@ export default function App() {
     setCurrentRound(r => ({ ...r, status: "live" }));
   };
 
+  const handleClearLiveRound = async () => {
+    if (!currentRound?.id) return;
+    const label = currentRound.label === "Q" ? "Round Q" : `Round ${currentRound.label}`;
+    if (!window.confirm(`End live play on ${label}?\n\nThe competition will show as not running. Recorded times are kept — nothing is deleted.`)) return;
+    await clearActiveRound(currentRound.id);
+    setCurrentRound(r => ({ ...r, status: "idle" }));
+  };
+
   // Loads a round (and its tournament) into the app. Shared by the Tournament
   // picker screen and the Switch Round popup on the Setup screen, so both paths
   // behave identically.
@@ -7234,19 +7261,10 @@ export default function App() {
       // rolesOverride lets callers pass a freshly fetched map — right after login
       // the rolesMap state hasn't been applied yet.
       const rolesNow = rolesOverride || rolesMap;
-      let loadedRound = round;
-      // If nothing in this competition is live yet, the first round an admin
-      // opens becomes live on its own: there's no one to drag off anything, and
-      // it saves a pointless confirmation at the start of an event.
-      if (isAdmin && tournament?.id && round?.status !== "live") {
-        try {
-          const rs = await fetchRounds(tournament.id);
-          if (!rs.some(r => r.status === "live")) {
-            await setActiveRound(tournament.id, round.id);
-            loadedRound = { ...round, status: "live" };
-          }
-        } catch {}
-      }
+      // Opening a round never marks it live — not even the first one. LIVE has
+      // to mean "an admin started play here", otherwise merely browsing into a
+      // competition that hasn't begun would flag it as running.
+      const loadedRound = round;
 
       const state = await fetchAppState(round.id);
       const gd = await fetchAllGroupData(round.id);
@@ -7458,6 +7476,7 @@ export default function App() {
       isTrueAdmin={isAdmin}
       isRoundLive={currentRound?.status === "live"}
       onSetLiveRound={handleSetLiveRound}
+      onClearLiveRound={handleClearLiveRound}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
