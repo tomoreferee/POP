@@ -5219,6 +5219,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const gapFoot = isFit9
               ? { ...gapRule, background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#59636e", textAlign: "center" }
               : fitAllHoles ? { borderTop: "1px solid #d1d9e0" } : null;
+            // Par sits in its own quieter row above the first group and below the
+            // last, so it reads as reference data rather than another hole line.
+            const parTh = { ...th, color: "#59636e", fontWeight: 500, borderBottom: "1px solid #d1d9e0", ...(fitAllHoles ? {} : { padding: "5px 6px", fontSize: 12 }) };
+            const gapPar = isFit9
+              ? { ...gapRule, background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 500, color: "#59636e", textAlign: "center" }
+              : fitAllHoles ? { borderBottom: "1px solid #d1d9e0" } : null;
+            const gapParFoot = isFit9
+              ? { ...gapRule, background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 500, color: "#59636e", textAlign: "center" }
+              : fitAllHoles ? { borderTop: "1px solid #d1d9e0" } : null;
             return (
               <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 16, overflow: "hidden" }}>
                 <div
@@ -5260,6 +5269,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
                           )
                         )), turnGapW, `h-${tableKey}`, "th", gapHead, isFit9 ? "Grp" : null)}
+                      </tr>
+                      {/* Par for each hole, so a pace figure can be read against
+                          the hole it belongs to without leaving the table. */}
+                      <tr style={{ background: "#f6f8fa" }}>
+                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>Par</th>
+                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }} />
+                        {withTurnGap(order.map((hi, i) => (
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
+                            <th key={hi} style={!fitAllHoles && i === 9 ? { ...parTh, borderLeft: `2px solid ${colColor}88` } : parTh}>{pars?.[hi] ?? "—"}</th>
+                          )
+                        )), turnGapW, `hp-${tableKey}`, "th", gapPar, isFit9 ? "Par" : null)}
                       </tr>
                     </thead>
                     <tbody>
@@ -5434,6 +5454,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         the header scrolls out of view, so this keeps it obvious which
                         hole each column belongs to. */}
                     <tfoot>
+                      <tr style={{ background: "#f6f8fa" }}>
+                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderTop: "1px solid #d1d9e0" }}>Par</th>
+                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderTop: "1px solid #d1d9e0" }} />
+                        {withTurnGap(order.map((hi, i) => (
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
+                            <th key={hi} style={{ ...parTh, borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{pars?.[hi] ?? "—"}</th>
+                          )
+                        )), turnGapW, `fp-${tableKey}`, "th", gapParFoot, isFit9 ? "Par" : null)}
+                      </tr>
                       <tr style={{ background: "#f6f8fa" }}>
                         <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Grp" : "Group"}</th>
                         <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
