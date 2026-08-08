@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-q (beta · light)";
+const APP_BUILD = "2026-08-03-r (beta · light)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -846,9 +846,9 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
           {[["h1only","🟢 H1 only"],["h10only","🔵 H10 only"],["both","🟢 H1 + 🔵 H10"],["shotgun","🔫 Shotgun 4 Holes"]].map(([m,label]) => (
             <button key={m} onClick={() => setMode(m)} style={{
               padding:"5px 12px", borderRadius:7, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
-              background: mode===m ? "#1565c0" : "#eef1f7",
+              background: mode===m ? "#dbeafe" : "#eef1f7",
               border: `1px solid ${mode===m ? "#1565c0" : "#d5dbe9"}`,
-              color: mode===m ? "#ffffff" : "#5c6480",
+              color: mode===m ? "#1b1f30" : "#5c6480",
               transition:"all 0.15s",
             }}>{label}</button>
           ))}
@@ -1540,7 +1540,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               {tournaments.map(t => (
                 <div key={t.id} style={{
                   padding: "12px 14px", borderRadius: 8, fontFamily: "inherit",
-                  background: selectedTournamentId === t.id && !showCreate ? "#1565c0" : "#eef1f7",
+                  background: selectedTournamentId === t.id && !showCreate ? "#dbeafe" : "#eef1f7",
                   border: `1px solid ${selectedTournamentId === t.id && !showCreate ? "#1565c0" : "#d5dbe9"}`,
                 }}>
                   {/* Row 1 — name + venue, full width so long names don't wrap awkwardly */}
@@ -1610,7 +1610,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setNewFormat("stroke")}
                   style={{ flex: 1, padding: "9px 0", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                    background: newFormat === "stroke" ? "#1565c0" : "#eef1f7", border: `1px solid ${newFormat === "stroke" ? "#1565c0" : "#d5dbe9"}`, color: newFormat === "stroke" ? "#ffffff" : "#666d8a" }}>
+                    background: newFormat === "stroke" ? "#dbeafe" : "#eef1f7", border: `1px solid ${newFormat === "stroke" ? "#1565c0" : "#d5dbe9"}`, color: newFormat === "stroke" ? "#1b1f30" : "#666d8a" }}>
                   Stroke Play
                 </button>
                 <button disabled title="Match Play — coming soon"
@@ -1634,9 +1634,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                     <button key={n} onClick={() => setNewNumRounds(n)}
                       style={{
                         width: 34, height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 15,
-                        background: newNumRounds === n ? "#1565c0" : "#eef1f7",
+                        background: newNumRounds === n ? "#dbeafe" : "#eef1f7",
                         border: `1px solid ${newNumRounds === n ? "#1565c0" : "#d5dbe9"}`,
-                        color: newNumRounds === n ? "#ffffff" : "#666d8a",
+                        color: newNumRounds === n ? "#1b1f30" : "#666d8a",
                       }}>{n}</button>
                   ))}
                   <span style={{ fontSize: 11, color: "#666d8a" }}>rounds</span>
@@ -2092,9 +2092,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 }}
                   style={{
                     width: 36, height: 36, borderRadius: 8, cursor: "pointer", fontFamily: "'Bebas Neue'", fontSize: 16, flexShrink: 0,
-                    background: playersPerGroup === n ? "#1565c0" : "#eef1f7",
+                    background: playersPerGroup === n ? "#dbeafe" : "#eef1f7",
                     border: `1px solid ${playersPerGroup === n ? "#1565c0" : "#d5dbe9"}`,
-                    color: playersPerGroup === n ? "#ffffff" : "#666d8a",
+                    color: playersPerGroup === n ? "#1b1f30" : "#666d8a",
                   }}>{n}</button>
               ))}
             </div>
@@ -2521,7 +2521,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                       onClick={() => { setShowTournamentPicker(false); if (!isCurrent) onPickTournament?.(t); }}
                       style={{
                         textAlign: "left", padding: "11px 13px", borderRadius: 9, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
-                        background: isCurrent ? "#1565c0" : "#eef1f7",
+                        background: isCurrent ? "#dbeafe" : "#eef1f7",
                         border: `1px solid ${isCurrent ? "#1565c0" : "#d5dbe9"}`,
                       }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -4631,9 +4631,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => setShowFocusPicker(v => !v)}
             style={{
-              background: focusHoles.length ? "#1565c0" : "#eef1f7",
+              background: focusHoles.length ? "#dbeafe" : "#eef1f7",
               border: `1px solid ${focusHoles.length ? "#1565c0" : "#d5dbe9"}`,
-              color: focusHoles.length ? "#ffffff" : "#666d8a",
+              color: focusHoles.length ? "#1b1f30" : "#666d8a",
               borderRadius: 7, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
             🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
@@ -4641,9 +4641,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <button onClick={toggleFitAll}
             title="Shrink columns to fit all 18 holes on one screen (for TD / CR)"
             style={{
-              background: fitAllHoles ? "#1565c0" : "#eef1f7",
+              background: fitAllHoles ? "#dbeafe" : "#eef1f7",
               border: `1px solid ${fitAllHoles ? "#1565c0" : "#d5dbe9"}`,
-              color: fitAllHoles ? "#ffffff" : "#666d8a",
+              color: fitAllHoles ? "#1b1f30" : "#666d8a",
               borderRadius: 7, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
             {fitAllHoles ? "🔍 Normal view" : "⛶ Fit 18 holes"}
@@ -4673,9 +4673,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   onClick={() => saveFocusHoles(on ? focusHoles.filter(x => x !== hi) : [...focusHoles, hi])}
                   style={{
                     width: "100%", height: 34, borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0,
-                    background: on ? "#1565c0" : "#ffffff",
+                    background: on ? "#dbeafe" : "#ffffff",
                     border: `1px solid ${on ? "#1565c0" : "#d5dbe9"}`,
-                    color: on ? "#ffffff" : "#666d8a",
+                    color: on ? "#1b1f30" : "#666d8a",
                   }}>H{hi + 1}</button>
               );
             })}
