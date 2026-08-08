@@ -1617,9 +1617,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                   <button onClick={() => setNewHasQualifying(q => !q)}
                     style={{
                       padding: "8px 14px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                      background: newHasQualifying ? "#7a5a00" : "#f6f8fa",
-                      border: `1px solid ${newHasQualifying ? "#9a6700" : "#d1d9e0"}`,
-                      color: newHasQualifying ? "#9a6700" : "#59636e",
+                      background: newHasQualifying ? "#faf2ff" : "#f6f8fa",
+                      border: `1px solid ${newHasQualifying ? "#8250df" : "#d1d9e0"}`,
+                      color: newHasQualifying ? "#8250df" : "#59636e",
                     }}>Q{newHasQualifying ? " ✓" : ""}</button>
                   <span style={{ fontSize: 12, color: "#818b98" }}>+</span>
                   {[1, 2, 3, 4].map(n => (
