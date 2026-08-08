@@ -33,7 +33,7 @@ function parTimeTable(playersPerGroup) {
 }
 // Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
 // you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-o (beta · light)";
+const APP_BUILD = "2026-08-03-p (beta · light)";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -1482,7 +1482,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", gap: 10 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#3f4763", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#1b1f30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
             </div>
             <div style={{ fontSize: 11, color: "#666d8a", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
@@ -1524,7 +1524,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         {/* Tournament picker */}
         <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: 20, marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 1, fontWeight: 700 }}>
+            <div style={{ fontSize: 13, color: "#1b1f30", letterSpacing: 1, fontWeight: 700 }}>
               {isAdmin ? "Manage tournaments" : "Your competition"}
             </div>
             {isAdmin && (
@@ -1589,7 +1589,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       {showCreate && isAdmin && (
         <div onClick={() => { setShowCreate(false); resetForm(); }} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1100, padding: 16, overflowY: "auto" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #0b1020", marginTop: 24 }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 16 }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1b1f30", marginBottom: 16 }}>
               {editingTournamentId ? "✏️ Edit tournament" : "+ New tournament"}
             </div>
 
@@ -1662,7 +1662,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       {roundPickerFor && (
         <div onClick={() => setRoundPickerFor(null)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #0b1020" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 2 }}>Select round</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1b1f30", marginBottom: 2 }}>Select round</div>
             <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 16 }}>
               {roundPickerFor.name}{roundPickerFor.host_venue ? ` · ${roundPickerFor.host_venue}` : ""}
             </div>
@@ -1962,7 +1962,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {/* Left column: title */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 28, fontFamily: "'Bebas Neue'", letterSpacing: 4, color: "#1565c0" }}>⛳ SETUP</div>
+              <div style={{ fontSize: 28, fontFamily: "'Bebas Neue'", letterSpacing: 4, color: "#1b1f30" }}>⛳ SETUP</div>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
             </div>
             <div style={{ fontSize: 11, color: "#666d8a", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
@@ -2078,7 +2078,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
         {/* ─── Players per group ─────────────────────────────────────────────── */}
         <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
-          <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>👥 PLAYERS PER GROUP</div>
+          <div style={{ fontSize: 13, color: "#1b1f30", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>👥 PLAYERS PER GROUP</div>
           {isAdmin ? (
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
               {[2, 3, 4].map(n => (
@@ -2106,7 +2106,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         {/* Par Setup */}
         <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, gap: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12, color: "#1565c0", letterSpacing: 1, fontWeight: 700 }}>📋 HOLE SETUP — PAR & TIME</div>
+            <div style={{ fontSize: 12, color: "#1b1f30", letterSpacing: 1, fontWeight: 700 }}>📋 HOLE SETUP — PAR & TIME</div>
             {isAdmin && (
               <button
                 onClick={() => setParTimes(pars.map(p => parTimeTable(playersPerGroup)[p]))}
@@ -2340,7 +2340,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {isAdmin && genMode !== "shotgun" && (
           <div style={{ background: "#ffffff", border: "1px solid #1565c033", borderRadius: 12, padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 2, fontWeight: 700 }}>🔵 Start hole 10 → 18 → 1 → 9</div>
+              <div style={{ fontSize: 13, color: "#1b1f30", letterSpacing: 2, fontWeight: 700 }}>🔵 Start hole 10 → 18 → 1 → 9</div>
               {groups10.length > 0 && (
                 <button
                   onClick={() => setClearModal("h10")}
@@ -2506,7 +2506,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
       {showTournamentPicker && (
         <div onClick={() => setShowTournamentPicker(false)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, padding: 16, overflowY: "auto" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 14 }}>⇄ Switch Tournament</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1b1f30", marginBottom: 14 }}>⇄ Switch Tournament</div>
 
             {tPickerLoading ? (
               <div style={{ padding: 24, textAlign: "center", color: "#666d8a", fontSize: 13 }}>Loading…</div>
@@ -2555,7 +2555,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
       {showRoundPicker && (
         <div onClick={() => setShowRoundPicker(false)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0e8a4366", borderRadius: 14, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#0e8a43", marginBottom: 2 }}>⇄ Switch Round</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1b1f30", marginBottom: 2 }}>⇄ Switch Round</div>
             <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 16 }}>{tournamentName}</div>
 
             {pickerLoading ? (
@@ -2599,7 +2599,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
       {clearModal && (
         <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#c62828", marginBottom: 12 }}>🗑 Clear all groups</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#1b1f30", marginBottom: 12 }}>🗑 Clear all groups</div>
             <div style={{ fontSize: 14, color: "#555555", marginBottom: 6 }}>
               Delete groups <span style={{ color: "#1b1f30", fontWeight: 700 }}>
                 {clearModal === "h1" ? `All ${groups1.length} H1 group(s)`
@@ -3308,7 +3308,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "#666d8a", marginBottom: 2 }}>🏌️ Start</div>
-                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#1565c0", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
+                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#1b1f30", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
                 </div>
                 <div style={{ flex: 1, textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: "#666d8a", marginBottom: 2 }}>Par Time</div>
@@ -3316,7 +3316,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "#666d8a", marginBottom: 2 }}>🏁 Finish</div>
-                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#3f4763", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
+                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: compact ? 19 : 24, color: "#1b1f30", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
                 </div>
               </div>
             </div>
@@ -3500,7 +3500,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1565c0", boxShadow: "0 0 8px #1565c0", animation: "pulse 1.5s infinite" }} />
-              <span style={{ fontSize: 13, color: "#1565c0", fontWeight: 700, letterSpacing: 1 }}>👁 MONITORING</span>
+              <span style={{ fontSize: 13, color: "#1b1f30", fontWeight: 700, letterSpacing: 1 }}>👁 MONITORING</span>
               {mnName && <span style={{ fontSize: 12, color: "#3f4763" }}>by {mnName}</span>}
               <button
                 onClick={offMN}
@@ -3599,7 +3599,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
         {done && (
           <div style={{ background: "#ffffff", border: "1px solid #0e8a4344", borderRadius: 14, padding: 32, marginBottom: 20, textAlign: "center" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 48, color: "#0e8a43", letterSpacing: 4 }}>✓ All 18 holes complete</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 48, color: "#1b1f30", letterSpacing: 4 }}>✓ All 18 holes complete</div>
             <div style={{ color: "#5c6480", marginTop: 8 }}>{group.name} has finished all holes</div>
           </div>
         )}
@@ -3608,7 +3608,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         {!hideLog && (
         /* Hole Log Table */
         <div style={{ background: "#ffffff", border: "1px solid #d5dbe9", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: "14px 16px", borderBottom: "1px solid #d5dbe9", fontSize: 12, color: "#1565c0", letterSpacing: 2, fontWeight: 700 }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #d5dbe9", fontSize: 12, color: "#1b1f30", letterSpacing: 2, fontWeight: 700 }}>
             📊 HOLE LOG — <span style={{ color: "#666d8a", fontWeight: 400 }}>press ✏ to edit</span>
           </div>
           <div style={{ overflowX: "auto" }}>
@@ -3874,7 +3874,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         return (
           <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
             <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #0b1020" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#c62828", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#1b1f30", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
               <div style={{ fontSize: 13, color: "#555555", marginBottom: 20, lineHeight: 1.6 }}>
                 Are you sure?
               </div>
@@ -4040,7 +4040,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     <div style={{ minHeight: "100vh", background: "#eaeef7", color: "#1b1f30", fontFamily: "'IBM Plex Mono', monospace" }}>
       <div style={{ padding: "16px 24px", borderBottom: "1px solid #e9edf6", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={onBack} style={btnStyle("#ffffff", "#3f4763")}>← Back</button>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 2, color: "#1565c0" }}>📈 SUMMARY REPORT</div>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 2, color: "#1b1f30" }}>📈 SUMMARY REPORT</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, color: "#5c6480" }}>{currentUser}</span>
           <LogoutButton onLogout={onLogout} />
@@ -4496,7 +4496,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end" }}>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, marginBottom: 2 }}>BETA</span>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#1565c0", whiteSpace: "nowrap" }}>⛳ DASHBOARD</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 4, color: "#1b1f30", whiteSpace: "nowrap" }}>⛳ DASHBOARD</div>
             </div>
             {tournamentName ? (
               <div style={{ fontSize: 11, color: "#1b1f30", lineHeight: 1.4, marginTop: 2, fontWeight: 700 }}>
@@ -4706,7 +4706,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0" }}>📊 EXPORT DATA</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1b1f30" }}>📊 EXPORT DATA</div>
               <button onClick={() => setExportModal(false)} style={{ background: "none", border: "none", color: "#5c6480", cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ fontSize: 12, color: "#6e6e6e", marginBottom: 18, lineHeight: 1.5 }}>
@@ -4774,7 +4774,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {editSuspension && (
         <div onClick={() => setEditSuspension(null)} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #ff996688", borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #0b1020" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#d84315", marginBottom: 16 }}>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1b1f30", marginBottom: 16 }}>
               ⏱ Edit stop #{editSuspension.idx + 1}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
@@ -5248,7 +5248,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {suspendModal === "stop" && (
         <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #a67c0088", borderRadius: 14, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#a67c00", marginBottom: 6 }}>⏸ Stopping play</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#1b1f30", marginBottom: 6 }}>⏸ Stopping play</div>
             <div style={{ fontSize: 13, color: "#6e6e6e", marginBottom: 20 }}>All groups will be paused together; hole finish times will shift when play resumes</div>
             <div style={{ fontSize: 13, color: "#a67c00", marginBottom: 8 }}>Stop time</div>
             <TimeInput value={suspendStopInput} onChange={setSuspendStopInput} color="#a67c00" />
@@ -5268,7 +5268,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {suspendModal === "resume" && (
         <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #0e8a4388", borderRadius: 14, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#0e8a43", marginBottom: 6 }}>▶ Resume play</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3, color: "#1b1f30", marginBottom: 6 }}>▶ Resume play</div>
             <div style={{ fontSize: 13, color: "#6e6e6e", marginBottom: 6 }}>
               Paused since <b style={{ color: "#a67c00" }}>{pendingStopTime}</b>
             </div>
@@ -5307,7 +5307,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         return (
           <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
             <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #0b1020" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#c62828", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#1b1f30", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
               <div style={{ fontSize: 13, color: "#555555", marginBottom: 20, lineHeight: 1.6 }}>
                 {gName && <>{gName} — </>}Are you sure?
               </div>
@@ -5391,7 +5391,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         return (
           <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
             <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #0b1020" }}>
-              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#c62828", marginBottom: 10 }}>Clear {clearStatusConfirm.type} status?</div>
+              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, color: "#1b1f30", marginBottom: 10 }}>Clear {clearStatusConfirm.type} status?</div>
               <div style={{ fontSize: 13, color: "#555555", marginBottom: 20, lineHeight: 1.6 }}>
                 {gName && <>{gName} — </>}Are you sure?
               </div>
@@ -5490,7 +5490,7 @@ function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1565c066", borderRadius: 14, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace", marginTop: 24 }}>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1565c0", marginBottom: 2 }}>🔑 Change Password</div>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, color: "#1b1f30", marginBottom: 2 }}>🔑 Change Password</div>
         <div style={{ fontSize: 12, color: "#666d8a", marginBottom: 16 }}>{currentUser}</div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
@@ -5557,7 +5557,7 @@ function LoginScreen({ onLogin, users, hasSession }) {
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 38, letterSpacing: 5, color: "#1565c0" }}>⛳ POP APP</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 38, letterSpacing: 5, color: "#1b1f30" }}>⛳ POP APP</div>
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#a67c00", background: "#fff4d9", border: "1px solid #a67c0055", borderRadius: 5, padding: "2px 7px" }}>BETA</span>
           </div>
           <div style={{ fontSize: 12, color: "#666d8a", marginTop: 4, letterSpacing: 2 }}>Golf Referee · Pace of Play System</div>
@@ -5718,7 +5718,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {/* Header */}
       <div style={{ background: "#ffffff", borderBottom: "1px solid #d5dbe9", padding: "16px 24px", display: "flex", alignItems: "center", gap: 16 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: "#1565c0", cursor: "pointer", fontSize: 18 }}>←</button>
-        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 4, color: "#1565c0" }}>👤 Manage Users</div>
+        <div style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 4, color: "#1b1f30" }}>👤 Manage Users</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, color: "#a67c00", fontWeight: 700 }}>🔑 ADMIN</span>
           <span style={{ fontSize: 13, color: "#3f4763", fontWeight: 700 }}>{currentUser}</span>
@@ -5730,7 +5730,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
         {/* Add User Card */}
         <div style={{ background: "#ffffff", border: "1px solid #1565c033", borderRadius: 14, padding: 24, marginBottom: 24 }}>
-          <div style={{ fontSize: 13, color: "#1565c0", letterSpacing: 2, fontWeight: 700, marginBottom: 18 }}>➕ Add New User</div>
+          <div style={{ fontSize: 13, color: "#1b1f30", letterSpacing: 2, fontWeight: 700, marginBottom: 18 }}>➕ Add New User</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 10 }}>
             {/* Username with autocomplete */}
             <div style={{ position: "relative" }}>
@@ -5934,7 +5934,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {resetConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #a67c0088", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#a67c00", marginBottom: 8 }}>↺ Reset Password</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#1b1f30", marginBottom: 8 }}>↺ Reset Password</div>
             <div style={{ fontSize: 14, color: "#555555", marginBottom: 6 }}>
               User: <span style={{ color: "#1b1f30", fontWeight: 700 }}>{resetConfirm}</span>
             </div>
@@ -5959,7 +5959,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {deleteConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "#0b102099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #c62828aa", borderRadius: 14, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #0b1020", fontFamily: "'IBM Plex Mono', monospace" }}>
-            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#c62828", marginBottom: 8 }}>✕ Delete User</div>
+            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#1b1f30", marginBottom: 8 }}>✕ Delete User</div>
             <div style={{ fontSize: 14, color: "#555555", marginBottom: 6 }}>
               User: <span style={{ color: "#1b1f30", fontWeight: 700 }}>{deleteConfirm}</span>
             </div>
