@@ -509,7 +509,7 @@ function LogoutButton({ onLogout }) {
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
       onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-    >⏏ Log Out</button>
+    >Log Out</button>
   );
 }
 function useTimer() {
@@ -1481,7 +1481,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", gap: 10 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🏆 TOURNAMENT</div>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>TOURNAMENT</div>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
             </div>
             <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
@@ -1503,7 +1503,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                 style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-              >⏏ Log Out</button>
+              >Log Out</button>
             </div>
           </div>
         </div>
@@ -1514,7 +1514,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
             <button
               onClick={onManageUsers}
               style={{ width: "100%", minHeight: 56, background: "#fff8c5", border: "1px solid #9a670044", color: "#9a6700", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-            >🔑<br />Manage Users</button>
+            >Manage Users</button>
           </div>
         )}
       </div>
@@ -1960,7 +1960,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {/* Left column: title */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 28, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>⛳ SETUP</div>
+              <div style={{ fontSize: 28, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>SETUP</div>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
             </div>
             <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
@@ -1992,7 +1992,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-              >⏏ Log Out</button>
+              >Log Out</button>
             </div>
           </div>
         </div>
@@ -2005,7 +2005,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "12px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <button onClick={onManageUsers}
             style={{ minHeight: 56, background: "#fff8c5", border: "1px solid #9a670044", color: "#9a6700", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-          >🔑<br />Manage Users</button>
+          >Manage Users</button>
 
           <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
             style={{ minHeight: 56, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
@@ -2042,7 +2042,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             {/* Tournament block */}
             <div style={{ padding: "14px 20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>🏆 {tournamentName || "(untitled tournament)"}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>{tournamentName || "(untitled tournament)"}</div>
               </div>
               {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
 
@@ -2076,7 +2076,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
 
         {/* ─── Players per group ─────────────────────────────────────────────── */}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
-          <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>👥 PLAYERS PER GROUP</div>
+          <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>PLAYERS PER GROUP</div>
           {isAdmin ? (
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
               {[2, 3, 4].map(n => (
@@ -2104,7 +2104,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         {/* Par Setup */}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 24, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, gap: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12, color: "#1f2328", letterSpacing: 1, fontWeight: 700 }}>📋 HOLE SETUP — PAR & TIME</div>
+            <div style={{ fontSize: 12, color: "#1f2328", letterSpacing: 1, fontWeight: 700 }}>HOLE SETUP — PAR & TIME</div>
             {isAdmin && (
               <button
                 onClick={() => setParTimes(pars.map(p => parTimeTable(playersPerGroup)[p]))}
@@ -2197,7 +2197,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {/* Transit time — the two turn walks are different distances on most
               courses, so each direction gets its own value. */}
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, marginBottom: 8 }}>🚶 Transit Time</div>
+            <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, marginBottom: 8 }}>Transit Time</div>
             {[
               { label: "H9 → H10", sub: "starting hole 1", val: turnTime, set: setTurnTime },
               { label: "H18 → H1", sub: "starting hole 10", val: turnTimeBack, set: setTurnTimeBack },
@@ -2490,7 +2490,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               color: "#ffffff", borderRadius: 6, padding: "16px", cursor: "pointer",
               fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, fontSize: 20,
             }}
-          >📊 Back to Dashboard</button>
+          >Back to Dashboard</button>
         )}
 
         {/* Build marker — bump this string whenever the file changes so it's obvious
@@ -2537,7 +2537,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               {isTrueAdmin && onSwitchTournament && (
                 <button onClick={() => { setShowTournamentPicker(false); onSwitchTournament(); }}
                   style={{ flex: 1, background: "#f6f8fa", border: "1px dashed #0969da66", color: "#0969da", borderRadius: 6, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-                  ⚙ Manage tournaments
+                  Manage tournaments
                 </button>
               )}
               <button onClick={() => setShowTournamentPicker(false)}
@@ -3177,7 +3177,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
           {/* Row 1: user + logout */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {currentUser && <span style={{ fontSize: 12, color: "#59636e" }}>👤 {currentUser}</span>}
+            {currentUser && <span style={{ fontSize: 12, color: "#59636e" }}>{currentUser}</span>}
             <LogoutButton onLogout={onLogout} />
           </div>
           {/* Row 2: hole info + status */}
@@ -3304,7 +3304,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             <div style={{ flex: 1, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 10px" : "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>🏌️ Start</div>
+                  <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Start</div>
                   <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 19 : 24, color: "#1f2328", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
                 </div>
                 <div style={{ flex: 1, textAlign: "center" }}>
@@ -3606,7 +3606,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         /* Hole Log Table */
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflow: "hidden" }}>
           <div style={{ padding: "14px 16px", borderBottom: "1px solid #d1d9e0", fontSize: 12, color: "#1f2328", letterSpacing: 0, fontWeight: 700 }}>
-            📊 HOLE LOG — <span style={{ color: "#59636e", fontWeight: 400 }}>press ✏ to edit</span>
+            HOLE LOG — <span style={{ color: "#59636e", fontWeight: 400 }}>press ✏ to edit</span>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -3625,7 +3625,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   const startTime = firstHd?.startTime ?? group.startTime;
                   return (
                     <tr style={{ background: "#dafbe1", borderLeft: "3px solid #1a7f3744" }}>
-                      <td colSpan={2} style={{ padding: "6px 8px", textAlign: "center", color: "#1a7f37", fontWeight: 700, fontSize: 12, letterSpacing: 1 }}>🏌 Tee Off</td>
+                      <td colSpan={2} style={{ padding: "6px 8px", textAlign: "center", color: "#1a7f37", fontWeight: 700, fontSize: 12, letterSpacing: 1 }}>Tee Off</td>
                       <td style={{ padding: "6px 8px", textAlign: "center", color: "#59636e" }}>{minToTime(schedule[holeOrder[0]] ?? 0)}</td>
                       <td style={{ padding: "6px 8px", textAlign: "center", color: "#1a7f37", fontWeight: 700 }}>
                         {minToTime((schedule[holeOrder[0]] ?? 0) - 1 + delayMin)}
@@ -4037,7 +4037,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
       <div style={{ padding: "16px 24px", borderBottom: "1px solid #f6f8fa", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={onBack} style={btnStyle("#ffffff", "#59636e")}>← Back</button>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>📈 SUMMARY REPORT</div>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>SUMMARY REPORT</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, color: "#59636e" }}>{currentUser}</span>
           <LogoutButton onLogout={onLogout} />
@@ -4047,7 +4047,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       <div style={{ padding: "20px 24px", maxWidth: 900, margin: "0 auto" }}>
 
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, marginBottom: 10 }}>⛳ PACE OF PLAY</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, marginBottom: 10 }}>PACE OF PLAY</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -4354,7 +4354,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
           border: `1px solid ${(!tid || !label) ? "#d1d9e0" : "#1a7f37"}`,
           color: (!tid || !label) ? "#818b98" : "#ffffff",
         }}>
-        {busy ? "…" : "🔍 Search"}
+        {busy ? "…" : "Search"}
       </button>
     </div>
   );
@@ -4492,7 +4492,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end" }}>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, marginBottom: 2 }}>BETA</span>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap" }}>⛳ DASHBOARD</div>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap" }}>DASHBOARD</div>
             </div>
             {tournamentName ? (
               <div style={{ fontSize: 11, color: "#1f2328", lineHeight: 1.4, marginTop: 2, fontWeight: 700 }}>
@@ -4529,7 +4529,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               style={{ flex: 1, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, height: 42, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
               onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-            >⏏ Log Out</button>
+            >Log Out</button>
           </div>
         </div>
       </div>
@@ -4539,7 +4539,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         {(tournamentName || roundLabel) && (
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
-              🏆 {tournamentName || "(untitled tournament)"}
+              {tournamentName || "(untitled tournament)"}
               {roundLabel && <span style={{ color: "#59636e" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
             </div>
             {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
@@ -4566,7 +4566,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               borderRadius: 6, padding: "10px 0", cursor: "pointer",
               fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
             }}
-          >📈 Summary</button>
+          >Summary</button>
         )}
         <button
           onClick={() => setExportModal(true)}
@@ -4575,7 +4575,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             borderRadius: 6, padding: "10px 0", cursor: "pointer",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
           }}
-        >⬇ Export Data</button>
+        >Export Data</button>
         {!isSuspended ? (
           <button onClick={openStop} style={{
             flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
@@ -4632,7 +4632,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               color: focusHoles.length ? "#1f2328" : "#59636e",
               borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
-            🎯 My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
+            My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
           </button>
           <button onClick={toggleFitAll}
             title="Shrink columns to fit all 18 holes on one screen (for TD / CR)"
@@ -4642,7 +4642,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               color: fitAllHoles ? "#1f2328" : "#59636e",
               borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
-            {fitAllHoles ? "🔍 Normal View" : "⛶ Fit 18 Holes"}
+            {fitAllHoles ? "Normal View" : "Fit 18 Holes"}
           </button>
           {focusHoles.length > 0 && (
             <button onClick={() => saveFocusHoles([])}
@@ -4702,7 +4702,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>📊 EXPORT DATA</div>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>EXPORT DATA</div>
               <button onClick={() => setExportModal(false)} style={{ background: "none", border: "none", color: "#59636e", cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
             <div style={{ fontSize: 12, color: "#59636e", marginBottom: 18, lineHeight: 1.5 }}>
@@ -4730,7 +4730,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                       borderRadius: 6, padding: "6px 14px", cursor: sheet.rows.length ? "pointer" : "default",
                       fontFamily: "inherit", fontSize: 12, fontWeight: 700,
                     }}
-                  >{exportCopied === sheet.label ? "✓ Copied" : "📋 Copy"}</button>
+                  >{exportCopied === sheet.label ? "✓ Copied" : "Copy"}</button>
                 </div>
               </div>
             ))}
@@ -5012,7 +5012,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   onClick={() => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
                   style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
                 >
-                  <span>📋 {holeLabel}</span>
+                  <span>{holeLabel}</span>
                   <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                 </div>
                 {!isCollapsed && (
@@ -5486,7 +5486,7 @@ function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", marginTop: 24 }}>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>🔑 Change Password</div>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Change Password</div>
         <div style={{ fontSize: 12, color: "#59636e", marginBottom: 16 }}>{currentUser}</div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
@@ -5552,7 +5552,7 @@ function LoginScreen({ onLogin, users, hasSession }) {
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 38, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>⛳ POP APP</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 38, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>POP APP</div>
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 6, padding: "2px 7px" }}>BETA</span>
           </div>
           <div style={{ fontSize: 12, color: "#59636e", marginTop: 4, letterSpacing: 2 }}>Golf Referee · Pace of Play System</div>
@@ -5712,9 +5712,9 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {/* Header */}
       <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "16px 24px", display: "flex", alignItems: "center", gap: 16 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: "#0969da", cursor: "pointer", fontSize: 18 }}>←</button>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>👤 Manage Users</div>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>Manage Users</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: "#9a6700", fontWeight: 700 }}>🔑 ADMIN</span>
+          <span style={{ fontSize: 12, color: "#9a6700", fontWeight: 700 }}>ADMIN</span>
           <span style={{ fontSize: 13, color: "#59636e", fontWeight: 700 }}>{currentUser}</span>
           <LogoutButton onLogout={onLogout} />
         </div>
@@ -5795,7 +5795,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                 color: !newIsAdmin ? "#0969da" : "#818b98",
                 transition: "all 0.15s",
               }}
-            >👤 User</button>
+            >User</button>
             <button
               onClick={() => setNewIsAdmin(true)}
               style={{
@@ -5806,15 +5806,15 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                 color: newIsAdmin ? "#9a6700" : "#818b98",
                 transition: "all 0.15s",
               }}
-            >🔑 Admin</button>
+            >Admin</button>
           </div>
           {addError && <div style={{ fontSize: 12, color: "#cf222e", marginTop: 4 }}>⚠ {addError}</div>}
           {addSuccess && <div style={{ fontSize: 12, color: "#1a7f37", marginTop: 4 }}>✓ {addSuccess}</div>}
           <div style={{ fontSize: 11, color: "#59636e", marginTop: 10 }}>
-            💡 The password is visible while typing · reset will set it back to <span style={{ color: "#9a6700" }}>{DEFAULT_RESET_PASSWORD}</span>
+            The password is visible while typing · reset will set it back to <span style={{ color: "#9a6700" }}>{DEFAULT_RESET_PASSWORD}</span>
             <br />
-            <span style={{ color: "#0969da" }}>👤 User</span> — View Only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
-            <span style={{ color: "#9a6700" }}>🔑 Admin</span> — Full access to all functions
+            <span style={{ color: "#0969da" }}>User</span> — View Only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
+            <span style={{ color: "#9a6700" }}>Admin</span> — Full access to all functions
           </div>
         </div>
 
@@ -6991,7 +6991,7 @@ export default function App() {
     <div style={{
       minHeight: "100vh", background: "#f6f8fa", color: "#59636e", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'",
       display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, letterSpacing: 0,
-    }}>⛳ Loading...</div>
+    }}>Loading...</div>
   );
 
   if (screen === "login") return <LoginScreen onLogin={handleLogin} users={users} hasSession={groups.length > 0} />;
