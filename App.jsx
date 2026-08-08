@@ -4516,6 +4516,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, 
   const [label, setLabel] = useState(roundLabel || "");
   const [loadingRounds, setLoadingRounds] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [liveMap, setLiveMap] = useState({}); // { tournamentId: liveRoundLabel }
 
   const yearOf = (t) => {
     if (t.year) return String(t.year);
@@ -4526,13 +4527,14 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, 
 
   useEffect(() => {
     (async () => {
-      const all = await fetchTournaments();
+      const [all, live] = await Promise.all([fetchTournaments(), fetchLiveRoundByTournament()]);
+      setLiveMap(live);
       const visible = all.filter(t => isAdmin || t.status !== "closed");
       setTournaments(visible);
       const current = visible.find(t => t.id === tournamentId) || visible[0];
       if (current) { setYear(yearOf(current)); setTid(current.id); }
     })();
-  }, [tournamentId, isAdmin]);
+  }, [tournamentId, isAdmin, refreshKey]);
 
   useEffect(() => {
     if (!tid) { setRounds([]); return; }
@@ -4577,20 +4579,32 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact, 
       <select value={year}
         onChange={e => { setYear(e.target.value); const first = tournaments.find(t => yearOf(t) === e.target.value); setTid(first?.id || ""); }}
         style={{ ...sel, width: 84, flexShrink: 0 }}>
-        {years.map(y => <option key={y} value={y}>{y}</option>)}
+        {years.map(y => (
+          <option key={y} value={y}>
+            {tournaments.some(t => yearOf(t) === y && liveMap[t.id]) ? `${y} ●` : y}
+          </option>
+        ))}
       </select>
 
       <select value={tid} onChange={e => setTid(e.target.value)} style={{ ...sel, flex: 1, minWidth: 120 }}>
         <option value="">— Tournament —</option>
-        {forYear.map(t => <option key={t.id} value={t.id}>{t.name || "(untitled)"}</option>)}
+        {/* These are native pickers, so a dot in the label is the only marker
+            the OS will render — styling options isn't possible on iOS. */}
+        {forYear.map(t => (
+          <option key={t.id} value={t.id}>
+            {liveMap[t.id]
+              ? `● LIVE ${liveMap[t.id] === "Q" ? "Q" : `R${liveMap[t.id]}`} — ${t.name || "(untitled)"}`
+              : (t.name || "(untitled)")}
+          </option>
+        ))}
       </select>
 
       <select value={label} onChange={e => setLabel(e.target.value)} disabled={!tid || loadingRounds}
-        style={{ ...sel, width: 96, flexShrink: 0, opacity: tid ? 1 : 0.5 }}>
+        style={{ ...sel, width: 128, flexShrink: 0, opacity: tid ? 1 : 0.5 }}>
         <option value="">{loadingRounds ? "…" : "— Round —"}</option>
         {rounds.map(r => (
           <option key={r.id} value={r.label}>
-            {r.label === "Q" ? "Q" : `R${r.label}`}
+            {r.status === "live" ? "● " : ""}{r.label === "Q" ? "Q" : `R${r.label}`}{r.status === "live" ? " LIVE" : ""}
           </option>
         ))}
       </select>
