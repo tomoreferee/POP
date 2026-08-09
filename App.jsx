@@ -4682,7 +4682,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onImportData, backupSetup, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4758,6 +4758,92 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [callHole, setCallHole] = useState(1);
   const [callArea, setCallArea] = useState("");          // Tee Off | Fairway | Putting Green
   const [openCall, setOpenCall] = useState(null);        // a call being attended to
+  const importFileRef = useRef(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importNote, setImportNote] = useState(null);
+
+  const [backupBusy, setBackupBusy] = useState(false);
+
+  const safeName = (v) => (v || "").replace(/[^\w\-]+/g, "-").replace(/^-+|-+$/g, "");
+  const saveJson = (payload, filename) => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const handleDownloadTournamentBackup = async () => {
+    if (!tournamentId) return;
+    setBackupBusy(true);
+    setImportNote(null);
+    try {
+      const payload = await buildTournamentBackup(tournamentId, { name: tournamentName, hostVenue });
+      saveJson(payload, `${safeName(tournamentName) || "tournament"}-all-rounds-backup.json`);
+      setImportNote({ ok: true, text: `Saved ${payload.rounds.length} round${payload.rounds.length === 1 ? "" : "s"}.` });
+    } catch (e) {
+      setImportNote({ ok: false, text: `Backup failed: ${e?.message || e}` });
+    }
+    setBackupBusy(false);
+  };
+
+  const handleDownloadBackup = () => {
+    const payload = {
+      format: "pop-round-backup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      tournament: { name: tournamentName || "", hostVenue: hostVenue || "" },
+      round: { label: roundLabel || "" },
+      setup: backupSetup || {},
+      groupData: groupData || {},
+    };
+    saveJson(payload, `${safeName(tournamentName) || "round"}-${safeName(roundLabel ? `R${roundLabel}` : "")}-backup.json`);
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";                       // allow re-picking the same file
+    if (!file) return;
+    setImportNote(null);
+    let payload;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch {
+      setImportNote({ ok: false, text: "That file isn't valid JSON." });
+      return;
+    }
+    if (payload?.format === "pop-tournament-backup") {
+      const rounds = payload.rounds || [];
+      const labels = rounds.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ");
+      const warning = `Import ${rounds.length} round${rounds.length === 1 ? "" : "s"} (${labels})${payload?.tournament?.name ? ` from ${payload.tournament.name}` : ""}?\n\nEach of those rounds in the competition currently open will be replaced, and any missing round will be created. This cannot be undone.`;
+      if (!window.confirm(warning)) return;
+      setImportBusy(true);
+      try {
+        const res = await restoreTournamentBackup(tournamentId, payload);
+        setImportNote({ ok: true, text: `Imported ${res.rounds} round${res.rounds === 1 ? "" : "s"}. Reopen a round to see it.` });
+      } catch (e) {
+        setImportNote({ ok: false, text: `Import failed: ${e?.message || e}` });
+      }
+      setImportBusy(false);
+      return;
+    }
+
+    if (payload?.format !== "pop-round-backup") {
+      setImportNote({ ok: false, text: "That file isn't a backup from this app." });
+      return;
+    }
+    const count = payload?.setup?.groups?.length ?? 0;
+    const from = [payload?.tournament?.name, payload?.round?.label ? `Round ${payload.round.label}` : null].filter(Boolean).join(" — ");
+    const warning = `Import ${count} group${count === 1 ? "" : "s"}${from ? ` from ${from}` : ""}?\n\nThis replaces the setup and all recorded times in the round currently open. It cannot be undone.`;
+    if (!window.confirm(warning)) return;
+    setImportBusy(true);
+    const res = await onImportData(payload);
+    setImportBusy(false);
+    setImportNote(res?.ok
+      ? { ok: true, text: `Imported ${res.groups} group${res.groups === 1 ? "" : "s"}.` }
+      : { ok: false, text: res?.error || "Import failed." });
+  };
   const actionBtn = {
     background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
     borderRadius: 6, padding: "7px 0", cursor: "pointer",
@@ -5040,6 +5126,40 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 </div>
               </div>
             ))}
+
+            {/* Full backup — unlike the sheets above (which are a report of
+                computed values), this is the round's actual data, so it can be
+                loaded straight back in. */}
+            <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 14, marginTop: 4 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>Backup File (.json)</div>
+              <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, marginBottom: 10, lineHeight: 1.5 }}>
+                Setup and every recorded time — as data, so it can be loaded back in.
+                <b> This Round</b> saves the round you're in; <b>Whole Tournament</b> saves every round of this competition (Q, R1–R4) in one file.
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={handleDownloadBackup}
+                  style={{ background: "#ddf4ff", border: "1px solid #0969da88", color: "#0969da", borderRadius: 6, padding: "8px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                  This Round
+                </button>
+                <button onClick={handleDownloadTournamentBackup}
+                  disabled={backupBusy}
+                  style={{ background: "#ddf4ff", border: "1px solid #0969da88", color: "#0969da", borderRadius: 6, padding: "8px 14px", cursor: backupBusy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                  {backupBusy ? "Collecting…" : "Whole Tournament"}
+                </button>
+                <button onClick={() => importFileRef.current && importFileRef.current.click()}
+                  disabled={importBusy}
+                  style={{ background: "#fff8c5", border: "1px solid #9a670088", color: "#9a6700", borderRadius: 6, padding: "8px 14px", cursor: importBusy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                  {importBusy ? "Importing…" : "Import Data"}
+                </button>
+                <input ref={importFileRef} type="file" accept="application/json,.json" style={{ display: "none" }}
+                  onChange={handleImportFile} />
+              </div>
+              {importNote && (
+                <div style={{ fontSize: 12, marginTop: 10, fontWeight: 700, color: importNote.ok ? "#1a7f37" : "#cf222e" }}>
+                  {importNote.text}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -6015,11 +6135,66 @@ function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
   );
 }
 
-function LoginScreen({ onLogin, users, hasSession }) {
+// What's actually being played right now. The signal is a recorded time, not a
+// setup edit: `round_group_data` is only written when a referee logs a group
+// through a hole. A competition counts as in play while its last recording is
+// under ACTIVE_WINDOW_MIN old — long enough to survive the gap between the
+// morning and afternoon waves, short enough that a finished round drops off.
+const ACTIVE_WINDOW_MIN = 180;
+async function fetchActiveCompetitions() {
+  try {
+    const since = new Date(Date.now() - ACTIVE_WINDOW_MIN * 60000).toISOString();
+    const { data: rows, error } = await supabase
+      .from("round_group_data").select("round_id, updated_at").gte("updated_at", since).limit(500);
+    if (error || !rows?.length) return [];
+
+    // Keep the most recent write per round
+    const lastByRound = {};
+    rows.forEach(r => {
+      if (!lastByRound[r.round_id] || r.updated_at > lastByRound[r.round_id]) lastByRound[r.round_id] = r.updated_at;
+    });
+    const roundIds = Object.keys(lastByRound);
+    if (!roundIds.length) return [];
+
+    const { data: rounds } = await supabase
+      .from("tournament_rounds").select("id, label, tournament_id").in("id", roundIds);
+    if (!rounds?.length) return [];
+
+    const tIds = [...new Set(rounds.map(r => r.tournament_id).filter(Boolean))];
+    const { data: tours } = await supabase.from("tournaments").select("id, name").in("id", tIds);
+    const nameById = {};
+    (tours || []).forEach(t => { nameById[t.id] = t.name; });
+
+    // One entry per competition, showing its most recently active round
+    const byTournament = {};
+    rounds.forEach(r => {
+      const at = lastByRound[r.id];
+      const key = r.tournament_id || r.id;
+      if (!byTournament[key] || at > byTournament[key].lastAt) {
+        byTournament[key] = { name: nameById[r.tournament_id] || "Competition", label: r.label, lastAt: at };
+      }
+    });
+    return Object.values(byTournament).sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
+  } catch { return []; }
+}
+
+function LoginScreen({ onLogin, users }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [active, setActive] = useState(null);   // null = still checking
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const list = await fetchActiveCompetitions();
+      if (!cancelled) setActive(list);
+    };
+    load();
+    const id = setInterval(load, 120000);       // someone may tee off while this sits open
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
 
   const handleSubmit = () => {
     const match = users.find(u => u.username === username.trim() && u.password === password);
@@ -6048,10 +6223,14 @@ function LoginScreen({ onLogin, users, hasSession }) {
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 6, padding: "2px 7px" }}>BETA</span>
           </div>
           <div style={{ fontSize: 12, color: "#59636e", marginTop: 4, letterSpacing: 2 }}>Golf Referee · Pace of Play System</div>
-          {hasSession && (
-            <div style={{ marginTop: 12, background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 6, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a7f37", boxShadow: "0 0 6px #1a7f37" }} />
-              <span style={{ fontSize: 12, color: "#1a7f37", fontWeight: 700 }}>Game in progress</span>
+          {active && active.length > 0 && (
+            <div style={{ marginTop: 12, background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 6, padding: "7px 14px", display: "inline-flex", alignItems: "center", gap: 8, maxWidth: "100%" }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a7f37", boxShadow: "0 0 6px #1a7f37", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: "#1a7f37", fontWeight: 700, textAlign: "left", lineHeight: 1.4 }}>
+                {active.length === 1
+                  ? <>Now playing<br />{active[0].name}{active[0].label ? ` — ${active[0].label === "Q" ? "Round Q" : `Round ${active[0].label}`}` : ""}</>
+                  : `${active.length} competitions now playing`}
+              </span>
             </div>
           )}
         </div>
@@ -6768,6 +6947,68 @@ async function fetchCourseSetupFromPreviousRounds(tournamentId, excludeRoundId) 
   } catch {}
   return null;
 }
+// Bundle every round of a tournament — setup and recorded times — into one
+// object. Rounds are read one at a time; a competition has at most five, so the
+// simplicity is worth more than the parallelism.
+async function buildTournamentBackup(tournamentId, tournament) {
+  const rounds = await fetchRounds(tournamentId);
+  const out = [];
+  for (const r of rounds) {
+    const setup = await fetchAppState(r.id);
+    const groupData = await fetchAllGroupData(r.id);
+    out.push({
+      label: r.label,
+      isQualifying: r.is_qualifying ?? (r.label === "Q"),
+      setup: setup || {},
+      groupData: groupData || {},
+    });
+  }
+  return {
+    format: "pop-tournament-backup",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    tournament: {
+      name: tournament?.name || "",
+      hostVenue: tournament?.hostVenue || "",
+      year: tournament?.year ?? null,
+    },
+    rounds: out,
+  };
+}
+
+// Write a whole-tournament backup back into a tournament, creating any round
+// the backup has but this competition doesn't.
+async function restoreTournamentBackup(tournamentId, payload) {
+  const existing = await fetchRounds(tournamentId);
+  let restored = 0, groupsTotal = 0;
+  for (const r of payload.rounds || []) {
+    let round = existing.find(x => x.label === r.label);
+    if (!round) {
+      round = await createRound({ tournamentId, label: r.label, isQualifying: !!r.isQualifying });
+      if (!round) continue;
+      existing.push(round);
+    }
+    const s = r.setup || {};
+    await saveAppState({
+      roundId: round.id,
+      groups: s.groups ?? [], pars: s.pars ?? [], parTimes: s.parTimes ?? [],
+      baseSchedules: s.baseSchedules ?? s.schedules ?? {}, schedules: s.schedules ?? {},
+      suspensions: s.suspensions ?? [], isSuspended: !!s.isSuspended,
+      pendingStopTime: s.pendingStopTime ?? "", playersPerGroup: s.playersPerGroup ?? 3,
+      turnTime: s.turnTime ?? 1, turnTimeBack: s.turnTimeBack ?? s.turnTime ?? 1,
+      refereeCalls: s.refereeCalls ?? [],
+    });
+    const gd = r.groupData || {};
+    const writtenAt = new Date().toISOString();
+    for (const gid of Object.keys(gd)) {
+      await saveGroupData(round.id, gid, gd[gid], writtenAt);
+      groupsTotal++;
+    }
+    restored++;
+  }
+  return { rounds: restored, groups: groupsTotal };
+}
+
 async function createRound({ tournamentId, label, isQualifying }) {
   try {
     const { data, error } = await supabase.from("tournament_rounds")
@@ -7339,6 +7580,51 @@ export default function App() {
     saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, refereeCalls: next, roundId: currentRound?.id });
   };
 
+  // Restore a backup file into the round that's currently open. This overwrites
+  // the round wholesale — it's the counterpart to the JSON export, not a merge.
+  const handleImportData = async (payload) => {
+    if (!currentRound?.id) return { ok: false, error: "No round is open." };
+    const setup = payload?.setup;
+    if (!setup || !Array.isArray(setup.groups)) return { ok: false, error: "This file doesn't contain a round backup." };
+
+    const grps = setup.groups;
+    const ps = setup.pars ?? pars;
+    const pt = setup.parTimes ?? parTimes;
+    const base = setup.baseSchedules ?? setup.schedules ?? {};
+    const sch = setup.schedules ?? base;
+    const susp = setup.suspensions ?? [];
+    const gd = payload.groupData && typeof payload.groupData === "object" ? payload.groupData : {};
+
+    setGroups(grps);
+    setPars(ps);
+    setParTimes(pt);
+    setBaseSchedules(base);
+    setSchedules(sch);
+    setSuspensions(susp);
+    setIsSuspended(!!setup.isSuspended);
+    setPendingStopTime(setup.pendingStopTime ?? "");
+    setPlayersPerGroup(setup.playersPerGroup ?? 3);
+    setTurnTime(setup.turnTime ?? 1);
+    setTurnTimeBack(setup.turnTimeBack ?? setup.turnTime ?? 1);
+    setGroupData(gd);
+
+    await saveAppState({
+      roundId: currentRound.id,
+      groups: grps, pars: ps, parTimes: pt, baseSchedules: base, schedules: sch,
+      suspensions: susp, isSuspended: !!setup.isSuspended, pendingStopTime: setup.pendingStopTime ?? "",
+      playersPerGroup: setup.playersPerGroup ?? 3, turnTime: setup.turnTime ?? 1,
+      turnTimeBack: setup.turnTimeBack ?? setup.turnTime ?? 1, refereeCalls,
+    });
+    const writtenAt = new Date().toISOString();
+    for (const g of grps) {
+      if (gd[g.id]) {
+        lastLocalWriteAt.current[g.id] = writtenAt;
+        await saveGroupData(currentRound.id, g.id, gd[g.id], writtenAt);
+      }
+    }
+    return { ok: true, groups: grps.length };
+  };
+
   // Loads a round (and its tournament) into the app. Shared by the Tournament
   // picker screen and the Switch Round popup on the Setup screen, so both paths
   // behave identically.
@@ -7465,7 +7751,7 @@ export default function App() {
     }}>Loading...</div>
   );
 
-  if (screen === "login") return <LoginScreen onLogin={handleLogin} users={users} hasSession={groups.length > 0} />;
+  if (screen === "login") return <LoginScreen onLogin={handleLogin} users={users} />;
 
   // Available on every signed-in screen, so it renders above whatever follows
   const passwordModal = showChangePassword ? (
@@ -7561,6 +7847,8 @@ export default function App() {
       isTrueAdmin={isAdmin}
       refereeCalls={refereeCalls}
       onCallReferee={handleCallReferee}
+      onImportData={handleImportData}
+      backupSetup={{ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack }}
       onClearRefereeCall={handleClearRefereeCall}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
