@@ -4682,7 +4682,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4754,6 +4754,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [suspendStopInput, setSuspendStopInput] = useState(minToTime(nowInMin()));
   const [suspendResumeInput, setSuspendResumeInput] = useState(minToTime(nowInMin()));
   const [exportModal, setExportModal] = useState(false); // false | true
+  const [callModal, setCallModal] = useState(false);     // "Call Referee" form
+  const [callHole, setCallHole] = useState(1);
+  const [callAreas, setCallAreas] = useState([]);        // Tee Off / Fairway / Putting Green
+  const [openCall, setOpenCall] = useState(null);        // a call being attended to
+  const actionBtn = {
+    background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
+    borderRadius: 6, padding: "7px 0", cursor: "pointer",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'",
+    fontSize: 13, fontWeight: 700, letterSpacing: 1,
+  };
   const [exportCopied, setExportCopied] = useState(""); // which sheet was just copied, for a brief checkmark
 
   const exportData = exportModal ? buildDashboardExportData({ groups, groupData, pars, parTimes, schedules }) : null;
@@ -4869,40 +4879,23 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         )}
       </div>
 
-      {/* Action row — Summary / Export Data / Stopping Play, equal-size buttons */}
-      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 24px", display: "flex", gap: 10 }}>
+      {/* Action grid — Summary / Export Data down the left, Stopping Play /
+          Call Referee down the right. Short rows so the whole block matches the
+          height of the conditions strip above it. */}
+      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {onNavigateSummary && (
-          <button
-            onClick={onNavigateSummary}
-            style={{
-              flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
-              borderRadius: 6, padding: "10px 0", cursor: "pointer",
-              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
-            }}
-          >Summary</button>
+          <button onClick={onNavigateSummary} style={actionBtn}>Summary</button>
         )}
-        <button
-          onClick={() => setExportModal(true)}
-          style={{
-            flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
-            borderRadius: 6, padding: "10px 0", cursor: "pointer",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
-          }}
-        >Export Data</button>
         {!isSuspended ? (
-          <button onClick={openStop} style={{
-            flex: 1, background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
-            borderRadius: 6, padding: "10px 0", cursor: "pointer",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
-          }}>⏸ Stopping Play</button>
+          <button onClick={openStop} style={actionBtn}>Stopping Play</button>
         ) : (
-          <button onClick={openResume} style={{
-            flex: 1, background: "#dafbe1", border: "1px solid #1a7f3788", color: "#1a7f37",
-            borderRadius: 6, padding: "10px 0", cursor: "pointer",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700, letterSpacing: 1,
-            boxShadow: "0 0 12px #1a7f3733",
-          }}>▶ Resume Play</button>
+          <button onClick={openResume} style={{ ...actionBtn, background: "#dafbe1", border: "1px solid #1a7f3788", color: "#1a7f37", boxShadow: "0 0 12px #1a7f3733" }}>Resume Play</button>
         )}
+        <button onClick={() => setExportModal(true)} style={actionBtn}>Export Data</button>
+        <button
+          onClick={() => { setCallHole(1); setCallAreas([]); setCallModal(true); }}
+          style={{ ...actionBtn, background: "#fff1e5", border: "1px solid #bc4c0088", color: "#bc4c00" }}
+        >Call Referee</button>
       </div>
 
       {!isSuspended && suspensions.length > 0 && (
@@ -5124,7 +5117,122 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
       )}
 
+      {/* Call Referee — pick the hole on a slider and tick where on it */}
+      {callModal && (
+        <div onClick={() => setCallModal(false)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #bc4c00", borderRadius: 10, padding: 20, width: "100%", maxWidth: 380 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#bc4c00", marginBottom: 14 }}>CALL REFEREE</div>
+
+            <div style={{ fontSize: 13, color: "#59636e", marginBottom: 6 }}>Hole</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <input type="range" min={1} max={18} step={1} value={callHole}
+                onChange={e => setCallHole(Number(e.target.value))}
+                style={{ flex: 1, accentColor: "#bc4c00" }} />
+              <div style={{ width: 54, textAlign: "center", fontSize: 20, fontWeight: 700, color: "#1f2328", background: "#fff1e5", border: "1px solid #bc4c0055", borderRadius: 6, padding: "4px 0" }}>
+                H{callHole}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 13, color: "#59636e", marginBottom: 6 }}>Area</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 18 }}>
+              {["Tee Off", "Fairway", "Putting Green"].map(area => {
+                const on = callAreas.includes(area);
+                return (
+                  <button key={area}
+                    onClick={() => setCallAreas(prev => on ? prev.filter(a => a !== area) : [...prev, area])}
+                    style={{
+                      textAlign: "left", padding: "10px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
+                      fontSize: 14, fontWeight: 700,
+                      background: on ? "#fff1e5" : "#f6f8fa",
+                      border: `1px solid ${on ? "#bc4c00" : "#d1d9e0"}`,
+                      color: on ? "#bc4c00" : "#59636e",
+                    }}>
+                    {on ? "✓ " : ""}{area}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => { onCallReferee && onCallReferee({ hole: callHole, areas: callAreas }); setCallModal(false); }}
+                disabled={callAreas.length === 0}
+                style={{
+                  flex: 1, padding: "12px 0", borderRadius: 6, fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                  cursor: callAreas.length === 0 ? "default" : "pointer",
+                  background: callAreas.length === 0 ? "#f6f8fa" : "#ffebe9",
+                  border: `1px solid ${callAreas.length === 0 ? "#d1d9e0" : "#cf222e"}`,
+                  color: callAreas.length === 0 ? "#8c959f" : "#cf222e",
+                }}>Send Call</button>
+              <button onClick={() => setCallModal(false)}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attending a call — the only way to stop the flashing */}
+      {openCall && (
+        <div onClick={() => setOpenCall(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10, padding: 20, width: "100%", maxWidth: 340 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#cf222e", marginBottom: 10 }}>REFEREE NEEDED</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>Hole {openCall.hole}</div>
+            <div style={{ fontSize: 13, color: "#59636e", marginTop: 4, marginBottom: 18, lineHeight: 1.6 }}>
+              {(openCall.areas || []).join(" · ") || "—"}
+              {openCall.name ? <><br />Called by {openCall.name}</> : null}
+              {openCall.time ? ` at ${openCall.time}` : ""}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => { onClearRefereeCall && onClearRefereeCall(openCall.id); setOpenCall(null); }}
+                style={{ flex: 1, background: "#dafbe1", border: "1px solid #1a7f37", color: "#1a7f37", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
+                Clear
+              </button>
+              <button onClick={() => setOpenCall(null)}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ padding: "16px 20px" }}>
+        {/* Open referee calls — deliberately loud. They flash until someone
+            attends and clears them, and they sit above the group alerts
+            because they're a request for a person, not a pace observation. */}
+        {refereeCalls && refereeCalls.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+            <style>{`@keyframes popCallFlash {
+              0%, 100% { background: #ffebe9; border-color: #cf222e; }
+              50%      { background: #ffffff; border-color: #cf222e55; }
+            }`}</style>
+            {refereeCalls.map(call => (
+              <div key={call.id}
+                onClick={() => setOpenCall(call)}
+                style={{
+                  border: "2px solid #cf222e", borderRadius: 8, padding: "10px 14px", cursor: "pointer",
+                  animation: "popCallFlash 1s ease-in-out infinite",
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#cf222e" }}>
+                    REFEREE NEEDED — H{call.hole}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#1f2328", marginTop: 2 }}>
+                    {(call.areas || []).join(" · ") || "—"}
+                    {call.name ? ` · by ${call.name}` : ""}
+                    {call.time ? ` · ${call.time}` : ""}
+                  </div>
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#cf222e", whiteSpace: "nowrap" }}>Tap to attend</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Alert Cards — split Morning / Afternoon */}
         {(() => {
           const alertGroups = groups.filter(g => {
@@ -6392,9 +6500,10 @@ async function fetchAppState(roundId) {
     playersPerGroup: data.players_per_group ?? 3,
     turnTime: data.turn_time ?? 1,
     turnTimeBack: data.turn_time_back ?? data.turn_time ?? 1,
+    refereeCalls: data.referee_calls ?? [],
   };
 }
-async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack }) {
+async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack, refereeCalls }) {
   if (!roundId) return;
   try {
     await supabase.from("round_state").upsert({
@@ -6409,6 +6518,7 @@ async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, sc
       ...(playersPerGroup !== undefined ? { players_per_group: playersPerGroup } : {}),
       ...(turnTime !== undefined ? { turn_time: turnTime } : {}),
       ...(turnTimeBack !== undefined ? { turn_time_back: turnTimeBack } : {}),
+      ...(refereeCalls !== undefined ? { referee_calls: refereeCalls } : {}),
       updated_at: new Date().toISOString(),
     });
   } catch {}
@@ -6720,6 +6830,7 @@ export default function App() {
   const [suspensions, setSuspensions] = useState([]);     // [{ stopTime, resumeTime, offsetMin }]
   const [isSuspended, setIsSuspended] = useState(false);
   const [pendingStopTime, setPendingStopTime] = useState(""); // holds the stop time while waiting to resume
+  const [refereeCalls, setRefereeCalls] = useState([]);       // open "referee needed" calls, shared across devices
 
   // ─── Update users list locally + push to Supabase (handles add/edit/delete) ───
   // Self-service password change, reachable from every signed-in screen.
@@ -6835,6 +6946,7 @@ export default function App() {
             setSuspensions(state.suspensions);
             setIsSuspended(state.isSuspended);
             setPendingStopTime(state.pendingStopTime);
+            setRefereeCalls(state.refereeCalls ?? []);
             setPlayersPerGroup(state.playersPerGroup ?? 3);
             setTurnTime(state.turnTime ?? 1);
             setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
@@ -6911,7 +7023,7 @@ export default function App() {
       .on("postgres_changes", { event: "*", schema: "public", table: "round_state", filter: `round_id=eq.${roundId}` }, (payload) => {
         if (payload.eventType === "DELETE") {
           setGroups([]); setPars([]); setParTimes([]); setBaseSchedules({}); setSchedules({});
-          setSuspensions([]); setIsSuspended(false); setPendingStopTime("");
+          setSuspensions([]); setIsSuspended(false); setPendingStopTime(""); setRefereeCalls([]);
           return;
         }
         const row = payload.new;
@@ -6922,6 +7034,7 @@ export default function App() {
         setSuspensions(row.suspensions ?? []);
         setIsSuspended(row.is_suspended ?? false);
         setPendingStopTime(row.pending_stop_time ?? "");
+        setRefereeCalls(row.referee_calls ?? []);
       })
       .subscribe();
 
@@ -7010,7 +7123,7 @@ export default function App() {
   const handleSuspendStop = (stopTimeStr) => {
     setPendingStopTime(stopTimeStr);
     setIsSuspended(true);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr, refereeCalls, roundId: currentRound?.id });
   };
 
   const handleSuspendResume = (resumeTimeStr) => {
@@ -7021,7 +7134,7 @@ export default function App() {
     setSuspensions(nextSuspensions);
     setIsSuspended(false);
     setPendingStopTime("");
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", refereeCalls, roundId: currentRound?.id });
   };
 
   // Cancel a stop that was pressed by mistake — nothing is recorded, the clock
@@ -7029,7 +7142,7 @@ export default function App() {
   const handleSuspendCancel = () => {
     setIsSuspended(false);
     setPendingStopTime("");
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: false, pendingStopTime: "", roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: false, pendingStopTime: "", refereeCalls, roundId: currentRound?.id });
   };
 
   // Edit an already-recorded suspension (wrong stop/resume time typed in).
@@ -7039,14 +7152,14 @@ export default function App() {
     const offsetMin = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
     const nextSuspensions = suspensions.map((s, i) => i === idx ? { stopTime: stopTimeStr, resumeTime: resumeTimeStr, offsetMin } : s);
     setSuspensions(nextSuspensions);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, refereeCalls, roundId: currentRound?.id });
   };
 
   // Remove a suspension entirely — its offset stops being applied to every schedule.
   const handleSuspendDelete = (idx) => {
     const nextSuspensions = suspensions.filter((_, i) => i !== idx);
     setSuspensions(nextSuspensions);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, refereeCalls, roundId: currentRound?.id });
   };
 
   const handleLogin = async (username, admin) => {
@@ -7158,7 +7271,7 @@ export default function App() {
       setPendingStopTime("");
     }
 
-    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, roundId: currentRound?.id });
+    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, refereeCalls, roundId: currentRound?.id });
     const seedWrittenAt = new Date().toISOString();
     grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(currentRound?.id, g.id, data[g.id], seedWrittenAt); });
   };
@@ -7184,7 +7297,7 @@ export default function App() {
     setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1, turn_time_back: ttb ?? tt ?? 1 } : prev);
     saveAppState({
       groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch,
-      suspensions, isSuspended, pendingStopTime,
+      suspensions, isSuspended, pendingStopTime, refereeCalls,
       roundId: currentRound?.id, playersPerGroup: pxg ?? 3, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1,
     });
     // Give brand-new groups a blank scorecard; existing groups keep their data untouched.
@@ -7201,6 +7314,27 @@ export default function App() {
         return next;
       });
     }
+  };
+
+  // A referee call is a shared, deliberately noisy alert: it keeps flashing on
+  // every device until someone attends and clears it.
+  const handleCallReferee = ({ hole, areas }) => {
+    const call = {
+      id: `call-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      hole,
+      areas,
+      name: currentUser || "",
+      time: minToTime(nowInMin()),
+    };
+    const next = [...refereeCalls, call];
+    setRefereeCalls(next);
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, refereeCalls: next, roundId: currentRound?.id });
+  };
+
+  const handleClearRefereeCall = (id) => {
+    const next = refereeCalls.filter(c => c.id !== id);
+    setRefereeCalls(next);
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, refereeCalls: next, roundId: currentRound?.id });
   };
 
   // Loads a round (and its tournament) into the app. Shared by the Tournament
@@ -7226,6 +7360,7 @@ export default function App() {
         setSuspensions(state.suspensions);
         setIsSuspended(state.isSuspended);
         setPendingStopTime(state.pendingStopTime);
+        setRefereeCalls(state.refereeCalls ?? []);
         setPlayersPerGroup(state.playersPerGroup ?? 3);
         setTurnTime(state.turnTime ?? 1);
         setGroupData(gd || {});
@@ -7422,6 +7557,9 @@ export default function App() {
       onChangePassword={() => setShowChangePassword(true)}
       tournamentId={currentTournament?.id || null}
       isTrueAdmin={isAdmin}
+      refereeCalls={refereeCalls}
+      onCallReferee={handleCallReferee}
+      onClearRefereeCall={handleClearRefereeCall}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
