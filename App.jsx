@@ -4756,7 +4756,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [exportModal, setExportModal] = useState(false); // false | true
   const [callModal, setCallModal] = useState(false);     // "Call Referee" form
   const [callHole, setCallHole] = useState(1);
-  const [callAreas, setCallAreas] = useState([]);        // Tee Off / Fairway / Putting Green
+  const [callArea, setCallArea] = useState("");          // Tee Off | Fairway | Putting Green
   const [openCall, setOpenCall] = useState(null);        // a call being attended to
   const actionBtn = {
     background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
@@ -4893,7 +4893,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         )}
         <button onClick={() => setExportModal(true)} style={actionBtn}>Export Data</button>
         <button
-          onClick={() => { setCallHole(1); setCallAreas([]); setCallModal(true); }}
+          onClick={() => { setCallHole(1); setCallArea(""); setCallModal(true); }}
           style={{ ...actionBtn, background: "#fff1e5", border: "1px solid #bc4c0088", color: "#bc4c00" }}
         >Call Referee</button>
       </div>
@@ -5124,30 +5124,32 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             <div style={{ fontSize: 18, fontWeight: 700, color: "#bc4c00", marginBottom: 14 }}>CALL REFEREE</div>
 
             <div style={{ fontSize: 13, color: "#59636e", marginBottom: 6 }}>Hole</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-              <input type="range" min={1} max={18} step={1} value={callHole}
-                onChange={e => setCallHole(Number(e.target.value))}
-                style={{ flex: 1, accentColor: "#bc4c00" }} />
-              <div style={{ width: 54, textAlign: "center", fontSize: 20, fontWeight: 700, color: "#1f2328", background: "#fff1e5", border: "1px solid #bc4c0055", borderRadius: 6, padding: "4px 0" }}>
-                H{callHole}
-              </div>
-            </div>
+            <select value={callHole} onChange={e => setCallHole(Number(e.target.value))}
+              style={{
+                width: "100%", marginBottom: 18, background: "#f6f8fa", border: "1px solid #d1d9e0",
+                borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "#1f2328",
+              }}>
+              {Array.from({ length: 18 }, (_, i) => i + 1).map(h => (
+                <option key={h} value={h}>Hole {h}</option>
+              ))}
+            </select>
 
             <div style={{ fontSize: 13, color: "#59636e", marginBottom: 6 }}>Area</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 18 }}>
+            {/* One area per call — a referee is being sent to one spot. */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
               {["Tee Off", "Fairway", "Putting Green"].map(area => {
-                const on = callAreas.includes(area);
+                const on = callArea === area;
                 return (
                   <button key={area}
-                    onClick={() => setCallAreas(prev => on ? prev.filter(a => a !== area) : [...prev, area])}
+                    onClick={() => setCallArea(on ? "" : area)}
                     style={{
-                      textAlign: "left", padding: "10px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
-                      fontSize: 14, fontWeight: 700,
+                      flex: 1, minWidth: 0, padding: "10px 4px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
+                      fontSize: 12, fontWeight: 700, lineHeight: 1.3,
                       background: on ? "#fff1e5" : "#f6f8fa",
                       border: `1px solid ${on ? "#bc4c00" : "#d1d9e0"}`,
                       color: on ? "#bc4c00" : "#59636e",
                     }}>
-                    {on ? "✓ " : ""}{area}
+                    {area}
                   </button>
                 );
               })}
@@ -5155,14 +5157,14 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
             <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={() => { onCallReferee && onCallReferee({ hole: callHole, areas: callAreas }); setCallModal(false); }}
-                disabled={callAreas.length === 0}
+                onClick={() => { onCallReferee && onCallReferee({ hole: callHole, areas: [callArea] }); setCallModal(false); }}
+                disabled={!callArea}
                 style={{
                   flex: 1, padding: "12px 0", borderRadius: 6, fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-                  cursor: callAreas.length === 0 ? "default" : "pointer",
-                  background: callAreas.length === 0 ? "#f6f8fa" : "#ffebe9",
-                  border: `1px solid ${callAreas.length === 0 ? "#d1d9e0" : "#cf222e"}`,
-                  color: callAreas.length === 0 ? "#8c959f" : "#cf222e",
+                  cursor: !callArea ? "default" : "pointer",
+                  background: !callArea ? "#f6f8fa" : "#ffebe9",
+                  border: `1px solid ${!callArea ? "#d1d9e0" : "#cf222e"}`,
+                  color: !callArea ? "#8c959f" : "#cf222e",
                 }}>Send Call</button>
               <button onClick={() => setCallModal(false)}
                 style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
