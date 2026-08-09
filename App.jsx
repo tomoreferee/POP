@@ -45,7 +45,7 @@ const DEFAULT_PARS = [4,4,3,4,5,4,3,4,4, 4,4,3,4,5,4,3,4,4];
 // Solid status fills, so a cell reads at a glance in direct sunlight instead of
 // relying on a faint tint. Text flips to white once the fill is dark enough.
 const STATUS_FILL = {
-  fast: { bg: "#0969da", fg: "#ffffff" },   // well ahead
+  fast: { bg: "#116329", fg: "#ffffff" },   // well ahead
   ok:   { bg: "#4dc9a0", fg: "#0b3b2c" },   // in position / on time
   warn: { bg: "#ffd84d", fg: "#4a3800" },   // slightly out of position
   late: { bg: "#f28b8b", fg: "#5a1010" },   // out of position
@@ -5246,13 +5246,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
           if (alertGroups.length === 0 && !hasAfternoon) return (
             <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ No groups flagged (WN / MN / TM).
+              ✓ No groups have been whistled (WN / MN / TM / EST).
             </div>
           );
 
           if (alertGroups.length === 0) return (
             <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ No groups flagged (WN / MN / TM).
+              ✓ No groups have been whistled (WN / MN / TM / EST).
             </div>
           );
 
@@ -5288,7 +5288,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               )}
               {morningAlerts.length === 0 && afternoonAlerts.length === 0 && (
                 <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-                  ✓ No groups flagged (WN / MN / TM).
+                  ✓ No groups have been whistled (WN / MN / TM / EST).
                 </div>
               )}
             </div>
