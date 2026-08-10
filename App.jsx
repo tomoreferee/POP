@@ -2101,7 +2101,10 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   // it never fires for an empty list (which would wipe the live session).
   const liveEditKey = JSON.stringify({
     g: allGroups.map(g => [g.id, g.name, g.startTime, g.startHole, g.section || ""]),
-    pars, parTimes, turnTime, turnTimeBack,
+    // playersPerGroup belongs here: without it, changing the field size never
+    // triggered the save, so the new count only reached the server if some other
+    // value happened to change at the same time.
+    pars, parTimes, turnTime, turnTimeBack, playersPerGroup,
   });
   const skipFirstApply = useRef(true);
   useEffect(() => {
@@ -5664,6 +5667,28 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         order.forEach((hIdx, s) => { slotOfHole[hIdx] = s; });
                         const lastMNSlot = allLogs.reduce((mx, l) => (l.type === "MN" ? Math.max(mx, slotOfHole[l.holeIdx] ?? -1) : mx), -1);
                         const lastTMSlot = allLogs.reduce((mx, l) => (l.type === "TM" ? Math.max(mx, slotOfHole[l.holeIdx] ?? -1) : mx), -1);
+                        // MN/TM are running states, not one-off marks. Turning MN
+                        // on at H16 covers every hole up to the "off" — including
+                        // holes whose times were recorded BEFORE the referee got
+                        // round to flagging it. Without this, going back to add MN
+                        // after the fact left those cells blank.
+                        const coverage = (type, activeNow) => {
+                          const events = allLogs
+                            .filter(l => l.type === type && !l.badTime)
+                            .map(l => ({ slot: slotOfHole[l.holeIdx] ?? -1, off: !!l.off }))
+                            .filter(e => e.slot >= 0)
+                            .sort((a, b) => a.slot - b.slot || (a.off ? 1 : -1));
+                          const spans = [];
+                          let open = null;
+                          events.forEach(e => {
+                            if (e.off) { if (open !== null) { spans.push([open, e.slot]); open = null; } }
+                            else if (open === null) open = e.slot;
+                          });
+                          if (open !== null) spans.push([open, activeNow ? 17 : open]);
+                          return (slot) => spans.some(([a, b]) => slot >= a && slot <= b);
+                        };
+                        const inMnRun = coverage("MN", mnActiveNow);
+                        const inTmRun = coverage("TM", tmActiveNow);
                         return (
                           <tr key={g.id}>
                             <td onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })}
@@ -5751,8 +5776,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const handleHoleClick = () => setQuickRecord({ groupId: g.id, targetSlot: slot });
                               const deadline = (sch?.[hi] ?? 0) + (parTimes?.[hi] ?? 14);
                               if (!endTime || !startTime) {
-                                const showMnPreview = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
-                                const showTmPreview = tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
+                                const showMnPreview = (mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN"))
+                                  || (inMnRun(slot) && !holeLogs.some(l => l.type === "MN"));
+                                const showTmPreview = (tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM"))
+                                  || (inTmRun(slot) && !holeLogs.some(l => l.type === "TM"));
                                 return (
                                   <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#59636e", cursor: "pointer", transition: "background 0.15s", ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
@@ -5809,6 +5836,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                         : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.target ? ` ${l.target}` : ""}{l.name ? ` - ${l.name}` : ""}</>)}
                                     </div>
                                   ))}
+                                  {/* Still under MN/TM here, just without its own
+                                      entry on this hole — drawn lighter so it reads
+                                      as "continues" rather than "flagged here". */}
+                                  {inMnRun(slot) && !holeLogs.some(l => l.type === "MN") && (
+                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ffffffcc", border: "1px dashed #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                      {fitAllHoles ? "M" : "MN"}
+                                    </div>
+                                  )}
+                                  {inTmRun(slot) && !holeLogs.some(l => l.type === "TM") && (
+                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffffffcc", border: "1px dashed #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                      {fitAllHoles ? "T" : "TM"}
+                                    </div>
+                                  )}
                                 </td>
                               );
                             }), turnGapW, `b-${tableKey}-${g.id}`, "td", gapBody, isFit9 ? g.name.replace(/^\s*group\s*/i, "") : null)}
