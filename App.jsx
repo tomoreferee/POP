@@ -1300,6 +1300,93 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
   const [roundsWithData, setRoundsWithData] = useState({});   // { roundId: true } — rounds that actually hold groups
+  const [backupBusyId, setBackupBusyId] = useState(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+  const [importNote, setImportNote] = useState(null);
+
+  const handleBackupTournament = async (t) => {
+    setBackupBusyId(t.id);
+    setImportNote(null);
+    try {
+      const payload = await buildTournamentBackup(t.id, { name: t.name, hostVenue: t.host_venue, year: t.year });
+      const safe = (v) => (v || "").replace(/[^\w\-]+/g, "-").replace(/^-+|-+$/g, "");
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safe(t.name) || "tournament"}-backup.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setImportNote({ ok: true, text: `Saved ${payload.rounds.length} round${payload.rounds.length === 1 ? "" : "s"} from ${t.name}.` });
+    } catch (e) {
+      setImportNote({ ok: false, text: `Backup failed: ${e?.message || e}` });
+    }
+    setBackupBusyId(null);
+  };
+
+  // Import always creates a new competition. Restoring into an existing one
+  // would silently overwrite rounds someone might still be recording into.
+  const runImport = async (payload) => {
+    if (payload?.format !== "pop-tournament-backup") {
+      setImportNote({ ok: false, text: "That file isn't a tournament backup from this app." });
+      return;
+    }
+    const rounds = payload.rounds || [];
+    const labels = rounds.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ");
+    const baseName = payload?.tournament?.name || "Imported competition";
+    const newName = tournaments.some(t => t.name === baseName) ? `${baseName} (imported)` : baseName;
+    if (!window.confirm(`Create "${newName}" with ${rounds.length} round${rounds.length === 1 ? "" : "s"} (${labels})?`)) return;
+
+    setImportBusy(true);
+    try {
+      const numbered = rounds.filter(r => r.label !== "Q").length;
+      const created = await createTournament({
+        name: newName,
+        hostVenue: payload?.tournament?.hostVenue || "",
+        hasQualifying: rounds.some(r => r.label === "Q"),
+        numRounds: numbered || 4,
+        year: payload?.tournament?.year || undefined,
+      });
+      if (!created) throw new Error("could not create the competition");
+      const res = await restoreTournamentBackup(created.id, payload);
+      await reloadTournaments();
+      setImportNote({ ok: true, text: `Imported "${newName}" — ${res.rounds} round${res.rounds === 1 ? "" : "s"}.` });
+    } catch (err) {
+      setImportNote({ ok: false, text: `Import failed: ${err?.message || err}` });
+    }
+    setImportBusy(false);
+  };
+
+  const handleImportTournament = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    setImportNote(null);
+    let payload;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch {
+      setImportNote({ ok: false, text: "That file isn't valid JSON." });
+      return;
+    }
+    await runImport(payload);
+  };
+
+  const handleImportPasted = async () => {
+    setImportNote(null);
+    let payload;
+    try {
+      payload = JSON.parse(pasteText);
+    } catch {
+      setImportNote({ ok: false, text: "That text isn't valid JSON." });
+      return;
+    }
+    setPasteOpen(false);
+    await runImport(payload);
+  };
+
 
   const reloadTournaments = async () => {
     const [t, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
@@ -1553,6 +1640,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                     </button>
                     {isAdmin && (
                       <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+                        <button onClick={() => handleBackupTournament(t)}
+                          disabled={backupBusyId === t.id}
+                          title="Download every round of this competition as one file"
+                          style={{ background: "#f6f8fa", border: "1px solid #1a7f3744", color: "#1a7f37", borderRadius: 6, height: 32, padding: "0 12px", cursor: backupBusyId === t.id ? "wait" : "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
+                          {backupBusyId === t.id ? "…" : "Backup"}
+                        </button>
                         <button onClick={() => handleStartEdit(t)}
                           title="Edit competition details"
                           style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", borderRadius: 6, height: 32, padding: "0 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
@@ -1571,9 +1664,67 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
             </div>
           )}
 
+          {isAdmin && (
+            <div style={{ borderTop: "1px solid #d1d9e0", marginTop: 16, paddingTop: 14 }}>
+              {/* A <label> wrapping the input opens the picker natively. Calling
+                  .click() on a display:none input silently does nothing on iOS
+                  Safari, and a strict accept list greys out .json in the Files
+                  app — so the input stays in the layout, just invisible, and
+                  accepts anything. */}
+              <label
+                style={{ display: "block", width: "100%", textAlign: "center", background: "#fff8c5", border: "1px solid #9a670066", color: "#9a6700", borderRadius: 6, padding: "10px 0", cursor: importBusy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, boxSizing: "border-box" }}>
+                {importBusy ? "Importing…" : "Import Tournament from Backup"}
+                <input type="file" onChange={handleImportTournament} disabled={importBusy}
+                  style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", clip: "rect(0 0 0 0)" }} />
+              </label>
+
+              <button onClick={() => { setPasteText(""); setPasteOpen(true); }}
+                style={{ width: "100%", marginTop: 6, background: "none", border: "none", color: "#0969da", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, padding: "4px 0" }}>
+                Or paste backup text instead
+              </button>
+
+              <div style={{ fontSize: 11, color: "#59636e", marginTop: 4, lineHeight: 1.5 }}>
+                Creates a new competition from a backup file, with all its rounds and recorded times. Nothing existing is overwritten.
+              </div>
+              {importNote && (
+                <div style={{ fontSize: 12, marginTop: 8, fontWeight: 700, color: importNote.ok ? "#1a7f37" : "#cf222e" }}>
+                  {importNote.text}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
 
       </div>
+
+      {/* Paste fallback — some devices won't hand a .json file to the browser */}
+      {pasteOpen && (
+        <div onClick={() => setPasteOpen(false)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1150, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, padding: 18, width: "100%", maxWidth: 420 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328", marginBottom: 4 }}>Paste Backup Text</div>
+            <div style={{ fontSize: 11, color: "#59636e", marginBottom: 10, lineHeight: 1.5 }}>
+              Open the backup file, copy everything, and paste it here.
+            </div>
+            <textarea
+              value={pasteText}
+              onChange={e => setPasteText(e.target.value)}
+              placeholder='{"format":"pop-tournament-backup", ...}'
+              style={{ width: "100%", boxSizing: "border-box", height: 140, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 10, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 11, color: "#1f2328", resize: "vertical" }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button onClick={handleImportPasted} disabled={!pasteText.trim() || importBusy}
+                style={{ flex: 1, background: pasteText.trim() ? "#fff8c5" : "#f6f8fa", border: `1px solid ${pasteText.trim() ? "#9a670088" : "#d1d9e0"}`, color: pasteText.trim() ? "#9a6700" : "#8c959f", borderRadius: 6, padding: "10px 0", cursor: pasteText.trim() ? "pointer" : "default", fontFamily: "inherit", fontSize: 13, fontWeight: 700 }}>
+                Import
+              </button>
+              <button onClick={() => setPasteOpen(false)}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create / edit a tournament */}
       {showCreate && isAdmin && (
@@ -4682,7 +4833,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onImportData, backupSetup, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -4758,92 +4909,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [callHole, setCallHole] = useState(1);
   const [callArea, setCallArea] = useState("");          // Tee Off | Fairway | Putting Green
   const [openCall, setOpenCall] = useState(null);        // a call being attended to
-  const importFileRef = useRef(null);
-  const [importBusy, setImportBusy] = useState(false);
-  const [importNote, setImportNote] = useState(null);
-
-  const [backupBusy, setBackupBusy] = useState(false);
-
-  const safeName = (v) => (v || "").replace(/[^\w\-]+/g, "-").replace(/^-+|-+$/g, "");
-  const saveJson = (payload, filename) => {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-
-  const handleDownloadTournamentBackup = async () => {
-    if (!tournamentId) return;
-    setBackupBusy(true);
-    setImportNote(null);
-    try {
-      const payload = await buildTournamentBackup(tournamentId, { name: tournamentName, hostVenue });
-      saveJson(payload, `${safeName(tournamentName) || "tournament"}-all-rounds-backup.json`);
-      setImportNote({ ok: true, text: `Saved ${payload.rounds.length} round${payload.rounds.length === 1 ? "" : "s"}.` });
-    } catch (e) {
-      setImportNote({ ok: false, text: `Backup failed: ${e?.message || e}` });
-    }
-    setBackupBusy(false);
-  };
-
-  const handleDownloadBackup = () => {
-    const payload = {
-      format: "pop-round-backup",
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      tournament: { name: tournamentName || "", hostVenue: hostVenue || "" },
-      round: { label: roundLabel || "" },
-      setup: backupSetup || {},
-      groupData: groupData || {},
-    };
-    saveJson(payload, `${safeName(tournamentName) || "round"}-${safeName(roundLabel ? `R${roundLabel}` : "")}-backup.json`);
-  };
-
-  const handleImportFile = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";                       // allow re-picking the same file
-    if (!file) return;
-    setImportNote(null);
-    let payload;
-    try {
-      payload = JSON.parse(await file.text());
-    } catch {
-      setImportNote({ ok: false, text: "That file isn't valid JSON." });
-      return;
-    }
-    if (payload?.format === "pop-tournament-backup") {
-      const rounds = payload.rounds || [];
-      const labels = rounds.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ");
-      const warning = `Import ${rounds.length} round${rounds.length === 1 ? "" : "s"} (${labels})${payload?.tournament?.name ? ` from ${payload.tournament.name}` : ""}?\n\nEach of those rounds in the competition currently open will be replaced, and any missing round will be created. This cannot be undone.`;
-      if (!window.confirm(warning)) return;
-      setImportBusy(true);
-      try {
-        const res = await restoreTournamentBackup(tournamentId, payload);
-        setImportNote({ ok: true, text: `Imported ${res.rounds} round${res.rounds === 1 ? "" : "s"}. Reopen a round to see it.` });
-      } catch (e) {
-        setImportNote({ ok: false, text: `Import failed: ${e?.message || e}` });
-      }
-      setImportBusy(false);
-      return;
-    }
-
-    if (payload?.format !== "pop-round-backup") {
-      setImportNote({ ok: false, text: "That file isn't a backup from this app." });
-      return;
-    }
-    const count = payload?.setup?.groups?.length ?? 0;
-    const from = [payload?.tournament?.name, payload?.round?.label ? `Round ${payload.round.label}` : null].filter(Boolean).join(" — ");
-    const warning = `Import ${count} group${count === 1 ? "" : "s"}${from ? ` from ${from}` : ""}?\n\nThis replaces the setup and all recorded times in the round currently open. It cannot be undone.`;
-    if (!window.confirm(warning)) return;
-    setImportBusy(true);
-    const res = await onImportData(payload);
-    setImportBusy(false);
-    setImportNote(res?.ok
-      ? { ok: true, text: `Imported ${res.groups} group${res.groups === 1 ? "" : "s"}.` }
-      : { ok: false, text: res?.error || "Import failed." });
-  };
   const actionBtn = {
     background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
     borderRadius: 6, padding: "7px 0", cursor: "pointer",
@@ -5127,39 +5192,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               </div>
             ))}
 
-            {/* Full backup — unlike the sheets above (which are a report of
-                computed values), this is the round's actual data, so it can be
-                loaded straight back in. */}
-            <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 14, marginTop: 4 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>Backup File (.json)</div>
-              <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, marginBottom: 10, lineHeight: 1.5 }}>
-                Setup and every recorded time — as data, so it can be loaded back in.
-                <b> This Round</b> saves the round you're in; <b>Whole Tournament</b> saves every round of this competition (Q, R1–R4) in one file.
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button onClick={handleDownloadBackup}
-                  style={{ background: "#ddf4ff", border: "1px solid #0969da88", color: "#0969da", borderRadius: 6, padding: "8px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-                  This Round
-                </button>
-                <button onClick={handleDownloadTournamentBackup}
-                  disabled={backupBusy}
-                  style={{ background: "#ddf4ff", border: "1px solid #0969da88", color: "#0969da", borderRadius: 6, padding: "8px 14px", cursor: backupBusy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-                  {backupBusy ? "Collecting…" : "Whole Tournament"}
-                </button>
-                <button onClick={() => importFileRef.current && importFileRef.current.click()}
-                  disabled={importBusy}
-                  style={{ background: "#fff8c5", border: "1px solid #9a670088", color: "#9a6700", borderRadius: 6, padding: "8px 14px", cursor: importBusy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-                  {importBusy ? "Importing…" : "Import Data"}
-                </button>
-                <input ref={importFileRef} type="file" accept="application/json,.json" style={{ display: "none" }}
-                  onChange={handleImportFile} />
-              </div>
-              {importNote && (
-                <div style={{ fontSize: 12, marginTop: 10, fontWeight: 700, color: importNote.ok ? "#1a7f37" : "#cf222e" }}>
-                  {importNote.text}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -7580,51 +7612,6 @@ export default function App() {
     saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, refereeCalls: next, roundId: currentRound?.id });
   };
 
-  // Restore a backup file into the round that's currently open. This overwrites
-  // the round wholesale — it's the counterpart to the JSON export, not a merge.
-  const handleImportData = async (payload) => {
-    if (!currentRound?.id) return { ok: false, error: "No round is open." };
-    const setup = payload?.setup;
-    if (!setup || !Array.isArray(setup.groups)) return { ok: false, error: "This file doesn't contain a round backup." };
-
-    const grps = setup.groups;
-    const ps = setup.pars ?? pars;
-    const pt = setup.parTimes ?? parTimes;
-    const base = setup.baseSchedules ?? setup.schedules ?? {};
-    const sch = setup.schedules ?? base;
-    const susp = setup.suspensions ?? [];
-    const gd = payload.groupData && typeof payload.groupData === "object" ? payload.groupData : {};
-
-    setGroups(grps);
-    setPars(ps);
-    setParTimes(pt);
-    setBaseSchedules(base);
-    setSchedules(sch);
-    setSuspensions(susp);
-    setIsSuspended(!!setup.isSuspended);
-    setPendingStopTime(setup.pendingStopTime ?? "");
-    setPlayersPerGroup(setup.playersPerGroup ?? 3);
-    setTurnTime(setup.turnTime ?? 1);
-    setTurnTimeBack(setup.turnTimeBack ?? setup.turnTime ?? 1);
-    setGroupData(gd);
-
-    await saveAppState({
-      roundId: currentRound.id,
-      groups: grps, pars: ps, parTimes: pt, baseSchedules: base, schedules: sch,
-      suspensions: susp, isSuspended: !!setup.isSuspended, pendingStopTime: setup.pendingStopTime ?? "",
-      playersPerGroup: setup.playersPerGroup ?? 3, turnTime: setup.turnTime ?? 1,
-      turnTimeBack: setup.turnTimeBack ?? setup.turnTime ?? 1, refereeCalls,
-    });
-    const writtenAt = new Date().toISOString();
-    for (const g of grps) {
-      if (gd[g.id]) {
-        lastLocalWriteAt.current[g.id] = writtenAt;
-        await saveGroupData(currentRound.id, g.id, gd[g.id], writtenAt);
-      }
-    }
-    return { ok: true, groups: grps.length };
-  };
-
   // Loads a round (and its tournament) into the app. Shared by the Tournament
   // picker screen and the Switch Round popup on the Setup screen, so both paths
   // behave identically.
@@ -7847,8 +7834,6 @@ export default function App() {
       isTrueAdmin={isAdmin}
       refereeCalls={refereeCalls}
       onCallReferee={handleCallReferee}
-      onImportData={handleImportData}
-      backupSetup={{ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack }}
       onClearRefereeCall={handleClearRefereeCall}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
