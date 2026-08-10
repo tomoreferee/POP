@@ -28,6 +28,19 @@ const PAR_TIMES_BY_PLAYERS = {
   3: { 3: 13, 4: 15, 5: 18 },
   4: { 3: 15, 4: 18, 5: 20 },
 };
+// Stimpmeter readings read as feet and inches: 9′ 11″. Either reading may be
+// unset, in which case it's simply left out.
+function formatGreenSpeed(gs) {
+  if (!gs) return "";
+  const one = (f, i) => (f === undefined || f === null ? null : `${f}′ ${i ?? 0}″`);
+  const pt = one(gs.ptFeet, gs.ptInches);
+  const avg = one(gs.avgFeet, gs.avgInches);
+  const parts = [];
+  if (pt) parts.push(`PT : ${pt}`);
+  if (avg) parts.push(`Avg.18 : ${avg}`);
+  return parts.join("  |  ");
+}
+
 function parTimeTable(playersPerGroup) {
   return PAR_TIMES_BY_PLAYERS[playersPerGroup] ?? PAR_TIMES_BY_PLAYERS[3];
 }
@@ -1854,7 +1867,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
   const roundKey = `${tournamentId || ""}:${roundLabel || ""}`;
@@ -1868,6 +1881,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   const [pars, setPars] = useState(() => savedPars ?? loadSetup()?.pars ?? [...DEFAULT_PARS]);
   const [parTimes, setParTimes] = useState(() => savedParTimes ?? loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
   const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
+  const [greenSpeed, setGreenSpeed] = useState({});
+  const [preferredLies, setPreferredLies] = useState(false);
   const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? loadSetup()?.turnTime ?? 1);
   const [turnTimeBack, setTurnTimeBack] = useState(() => savedTurnTimeBack ?? loadSetup()?.turnTimeBack ?? 1);
 
@@ -1985,7 +2000,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     applyIfChanged("parTimes", pt, setParTimes);
     applyIfChanged("turnTime", tt, setTurnTime);
     applyIfChanged("playersPerGroup", livePlayersPerGroup, setPlayersPerGroup);
-  }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup]);
+    applyIfChanged("greenSpeed", liveGreenSpeed, setGreenSpeed);
+    applyIfChanged("preferredLies", livePreferredLies, setPreferredLies);
+  }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies]);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
@@ -2104,7 +2121,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     // playersPerGroup belongs here: without it, changing the field size never
     // triggered the save, so the new count only reached the server if some other
     // value happened to change at the same time.
-    pars, parTimes, turnTime, turnTimeBack, playersPerGroup,
+    pars, parTimes, turnTime, turnTimeBack, playersPerGroup, greenSpeed, preferredLies,
   });
   const skipFirstApply = useRef(true);
   useEffect(() => {
@@ -2113,7 +2130,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     // Don't fire on the initial mount / on the sync-down from the live session
     if (skipFirstApply.current) { skipFirstApply.current = false; return; }
     const t = setTimeout(() => {
-      onApplyLiveEdits(allGroups, pars, parTimes, playersPerGroup, turnTime, turnTimeBack);
+      onApplyLiveEdits(allGroups, pars, parTimes, playersPerGroup, turnTime, turnTimeBack, greenSpeed, preferredLies);
     }, 700);
     return () => clearTimeout(t);
   }, [liveEditKey, hasLiveSession, isAdmin]);
@@ -2234,6 +2251,53 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                     style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#1a7f37", background: "#f6f8fa", border: "1px solid #1a7f3766", borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                     ⇄ Switch Round
                   </button>
+                )}
+              </div>
+            )}
+
+            {/* Course conditions for the round — green speed and whether
+                preferred lies are in play. They sit with the round because they
+                are set once per round, not per group. */}
+            {roundLabel && (
+              <div style={{ borderTop: "1px solid #d1d9e0", padding: "12px 20px 14px" }}>
+                <div style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 8 }}>SPEED GREEN</div>
+                {isAdmin ? (
+                  <>
+                    {[
+                      { key: "pt", label: "PT", f: "ptFeet", i: "ptInches" },
+                      { key: "avg", label: "Avg.18", f: "avgFeet", i: "avgInches" },
+                    ].map(row => (
+                      <div key={row.key} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <span style={{ width: 52, flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#1f2328" }}>{row.label}</span>
+                        <select value={greenSpeed?.[row.f] ?? ""}
+                          onChange={e => setGreenSpeed(g => ({ ...g, [row.f]: e.target.value === "" ? undefined : Number(e.target.value) }))}
+                          style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+                          <option value="">— ft —</option>
+                          {Array.from({ length: 9 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
+                        </select>
+                        <select value={greenSpeed?.[row.i] ?? ""}
+                          onChange={e => setGreenSpeed(g => ({ ...g, [row.i]: e.target.value === "" ? undefined : Number(e.target.value) }))}
+                          style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+                          <option value="">— in —</option>
+                          {Array.from({ length: 12 }, (_, i) => i).map(inch => <option key={inch} value={inch}>{inch}″</option>)}
+                        </select>
+                      </div>
+                    ))}
+                    <button onClick={() => setPreferredLies(v => !v)}
+                      style={{
+                        width: "100%", marginTop: 4, height: 34, borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                        background: preferredLies ? "#dafbe1" : "#f6f8fa",
+                        border: `1px solid ${preferredLies ? "#1a7f37" : "#d1d9e0"}`,
+                        color: preferredLies ? "#1a7f37" : "#59636e",
+                      }}>
+                      Preferred Lies {preferredLies ? "ON" : "OFF"}
+                    </button>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 13, color: "#1f2328", fontWeight: 700 }}>
+                    {formatGreenSpeed(greenSpeed) || "Not set"}
+                    {preferredLies ? <span style={{ color: "#1a7f37" }}> · Preferred Lies</span> : null}
+                  </div>
                 )}
               </div>
             )}
@@ -2633,7 +2697,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         <button
           onClick={() => {
             if (!isAdmin && allGroups.length === 0) return;
-            onStart(allGroups, pars, parTimes, playersPerGroup, turnTime, turnTimeBack);
+            onStart(allGroups, pars, parTimes, playersPerGroup, turnTime, turnTimeBack, greenSpeed, preferredLies);
           }}
           disabled={!isAdmin && allGroups.length === 0}
           style={{
@@ -4841,7 +4905,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -5034,13 +5098,27 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
               {tournamentName || "(untitled tournament)"}
               {roundLabel && <span style={{ color: "#59636e" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
+            </div>
+            {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
+            {/* Conditions the referees need at a glance: field size, green speed
+                and whether preferred lies are in force. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 5 }}>
               {playersPerGroup ? (
-                <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, verticalAlign: "middle" }}>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
                   {playersPerGroup}-BALL
                 </span>
               ) : null}
+              {formatGreenSpeed(greenSpeed) && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 4, padding: "1px 7px", display: "inline-flex", alignItems: "center", lineHeight: 1.4 }}>
+                  {formatGreenSpeed(greenSpeed)}
+                </span>
+              )}
+              {preferredLies && (
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
+                  PREFERRED LIES
+                </span>
+              )}
             </div>
-            {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
           </div>
         )}
         {onOpenRound && (
@@ -6810,9 +6888,11 @@ async function fetchAppState(roundId) {
     turnTime: data.turn_time ?? 1,
     turnTimeBack: data.turn_time_back ?? data.turn_time ?? 1,
     refereeCalls: data.referee_calls ?? [],
+    greenSpeed: data.green_speed ?? {},
+    preferredLies: data.preferred_lies ?? false,
   };
 }
-async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack, refereeCalls }) {
+async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack, refereeCalls, greenSpeed, preferredLies }) {
   if (!roundId) return { ok: false, error: "no round" };
   const base = {
     round_id: roundId,
@@ -6828,7 +6908,14 @@ async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, sc
     ...(turnTimeBack !== undefined ? { turn_time_back: turnTimeBack } : {}),
     updated_at: new Date().toISOString(),
   };
-  const row = { ...base, ...(refereeCalls !== undefined ? { referee_calls: refereeCalls } : {}) };
+  // Anything added after the first release lives here, so a database that
+  // hasn't been migrated yet can still be written to (see the retry below).
+  const optional = {
+    ...(refereeCalls !== undefined ? { referee_calls: refereeCalls } : {}),
+    ...(greenSpeed !== undefined ? { green_speed: greenSpeed } : {}),
+    ...(preferredLies !== undefined ? { preferred_lies: preferredLies } : {}),
+  };
+  const row = { ...base, ...optional };
   try {
     const { error } = await supabase.from("round_state").upsert(row);
     if (!error) return { ok: true };
@@ -6839,7 +6926,7 @@ async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, sc
     if (/column .* does not exist|schema cache/i.test(error.message || "")) {
       const retry = await supabase.from("round_state").upsert(base);
       if (!retry.error) {
-        console.warn("round_state saved without referee_calls — run the migration to enable referee calls.");
+        console.warn("round_state saved without the newer columns — run the migration to enable them:", Object.keys(optional).join(", "));
         return { ok: true, degraded: true };
       }
       console.error("saveAppState failed:", retry.error.message);
@@ -7222,6 +7309,8 @@ export default function App() {
   const [isSuspended, setIsSuspended] = useState(false);
   const [pendingStopTime, setPendingStopTime] = useState(""); // holds the stop time while waiting to resume
   const [refereeCalls, setRefereeCalls] = useState([]);       // open "referee needed" calls, shared across devices
+  const [greenSpeed, setGreenSpeed] = useState({});           // { ptFeet, ptInches, avgFeet, avgInches }
+  const [preferredLies, setPreferredLies] = useState(false);
 
   // ─── Update users list locally + push to Supabase (handles add/edit/delete) ───
   // Self-service password change, reachable from every signed-in screen.
@@ -7338,6 +7427,10 @@ export default function App() {
             setIsSuspended(state.isSuspended);
             setPendingStopTime(state.pendingStopTime);
             setRefereeCalls(state.refereeCalls ?? []);
+        setGreenSpeed(state.greenSpeed ?? {});
+        setPreferredLies(!!state.preferredLies);
+            setGreenSpeed(state.greenSpeed ?? {});
+            setPreferredLies(!!state.preferredLies);
             setPlayersPerGroup(state.playersPerGroup ?? 3);
             setTurnTime(state.turnTime ?? 1);
             setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
@@ -7432,6 +7525,8 @@ export default function App() {
         if (row.players_per_group != null) setPlayersPerGroup(row.players_per_group);
         if (row.turn_time != null) setTurnTime(row.turn_time);
         if (row.turn_time_back != null) setTurnTimeBack(row.turn_time_back);
+        if (row.green_speed != null) setGreenSpeed(row.green_speed);
+        if (row.preferred_lies != null) setPreferredLies(row.preferred_lies);
       })
       .subscribe();
 
@@ -7520,7 +7615,7 @@ export default function App() {
   const handleSuspendStop = (stopTimeStr) => {
     setPendingStopTime(stopTimeStr);
     setIsSuspended(true);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr, refereeCalls, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: true, pendingStopTime: stopTimeStr, refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
   };
 
   const handleSuspendResume = (resumeTimeStr) => {
@@ -7531,7 +7626,7 @@ export default function App() {
     setSuspensions(nextSuspensions);
     setIsSuspended(false);
     setPendingStopTime("");
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", refereeCalls, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended: false, pendingStopTime: "", refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
   };
 
   // Cancel a stop that was pressed by mistake — nothing is recorded, the clock
@@ -7539,7 +7634,7 @@ export default function App() {
   const handleSuspendCancel = () => {
     setIsSuspended(false);
     setPendingStopTime("");
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: false, pendingStopTime: "", refereeCalls, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended: false, pendingStopTime: "", refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
   };
 
   // Edit an already-recorded suspension (wrong stop/resume time typed in).
@@ -7549,14 +7644,14 @@ export default function App() {
     const offsetMin = Math.max(0, (rh * 60 + rm) - (sh * 60 + sm));
     const nextSuspensions = suspensions.map((s, i) => i === idx ? { stopTime: stopTimeStr, resumeTime: resumeTimeStr, offsetMin } : s);
     setSuspensions(nextSuspensions);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, refereeCalls, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
   };
 
   // Remove a suspension entirely — its offset stops being applied to every schedule.
   const handleSuspendDelete = (idx) => {
     const nextSuspensions = suspensions.filter((_, i) => i !== idx);
     setSuspensions(nextSuspensions);
-    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, refereeCalls, roundId: currentRound?.id });
+    saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
   };
 
   const handleLogin = async (username, admin) => {
@@ -7612,7 +7707,7 @@ export default function App() {
     } catch {}
   };
 
-  const handleStart = (grps, ps, pt, pxg, tt, ttb) => {
+  const handleStart = (grps, ps, pt, pxg, tt, ttb, gs, pl) => {
     // Was a session already running before this "Start tracking" press?
     // If so, this is just the admin/user coming back through the Pace
     // Monitor (setup) page, not a brand-new round — so we must NOT wipe
@@ -7649,6 +7744,8 @@ export default function App() {
     setPlayersPerGroup(pxg ?? 3);
     setTurnTime(tt ?? 1);
     setTurnTimeBack(ttb ?? tt ?? 1);
+    if (gs !== undefined) setGreenSpeed(gs);
+    if (pl !== undefined) setPreferredLies(pl);
     // Remember this course setup on the tournament so the next round starts with it
     saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1 });
     setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1, turn_time_back: ttb ?? tt ?? 1 } : prev);
@@ -7668,7 +7765,7 @@ export default function App() {
       setPendingStopTime("");
     }
 
-    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, refereeCalls, roundId: currentRound?.id });
+    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
     const seedWrittenAt = new Date().toISOString();
     grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(currentRound?.id, g.id, data[g.id], seedWrittenAt); });
   };
@@ -7676,7 +7773,7 @@ export default function App() {
   // Applies Setup edits to the running round without navigating away and without
   // ever touching recorded times — used for live editing of group names/start
   // times/pars/par times/transit time.
-  const handleApplyLiveEdits = async (grps, ps, pt, pxg, tt, ttb) => {
+  const handleApplyLiveEdits = async (grps, ps, pt, pxg, tt, ttb, gs, pl) => {
     if (!grps || grps.length === 0) return;      // never wipe a live session
     if (groups.length === 0) return;             // nothing live to update
     const sch = {};
@@ -7688,6 +7785,8 @@ export default function App() {
     setPlayersPerGroup(pxg ?? 3);
     setTurnTime(tt ?? 1);
     setTurnTimeBack(ttb ?? tt ?? 1);
+    if (gs !== undefined) setGreenSpeed(gs);
+    if (pl !== undefined) setPreferredLies(pl);
     setBaseSchedules(sch);
     setSchedules(sch);
     saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1 });
@@ -7697,6 +7796,7 @@ export default function App() {
     const saved = await saveAppState({
       groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch,
       suspensions, isSuspended, pendingStopTime, refereeCalls,
+      greenSpeed: gs ?? greenSpeed, preferredLies: pl ?? preferredLies,
       roundId: currentRound?.id, playersPerGroup: pxg ?? 3, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1,
     });
     if (saved && saved.ok === false) {
@@ -7763,6 +7863,8 @@ export default function App() {
         setIsSuspended(state.isSuspended);
         setPendingStopTime(state.pendingStopTime);
         setRefereeCalls(state.refereeCalls ?? []);
+        setGreenSpeed(state.greenSpeed ?? {});
+        setPreferredLies(!!state.preferredLies);
         setPlayersPerGroup(state.playersPerGroup ?? 3);
         setTurnTime(state.turnTime ?? 1);
         setGroupData(gd || {});
@@ -7933,6 +8035,8 @@ export default function App() {
       liveParTimes={groups.length > 0 ? parTimes : null}
       liveTurnTime={groups.length > 0 ? turnTime : null}
       livePlayersPerGroup={groups.length > 0 ? playersPerGroup : null}
+      liveGreenSpeed={greenSpeed}
+      livePreferredLies={preferredLies}
       liveGroups={groups}
       onApplyLiveEdits={handleApplyLiveEdits}
       onSwitchTournament={() => setScreen("tournament")}
@@ -7960,6 +8064,8 @@ export default function App() {
       onChangePassword={() => setShowChangePassword(true)}
       tournamentId={currentTournament?.id || null}
       isTrueAdmin={isAdmin}
+      greenSpeed={greenSpeed}
+      preferredLies={preferredLies}
       refereeCalls={refereeCalls}
       onCallReferee={handleCallReferee}
       onManageTournaments={() => setScreen("tournament")}
