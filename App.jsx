@@ -3604,7 +3604,8 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                       style={{
                         width: 32, height: 52, flexShrink: 0, boxSizing: "border-box", borderRadius: 6,
                         background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328",
-                        fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                        fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", padding: 0, lineHeight: 1,
+                        cursor: "pointer", fontFamily: "inherit",
                       }}>+/−</button>
                     <input type="text" inputMode="numeric" pattern="-?[0-9]*"
                       value={diffManual > 0 ? `+${diffManual}` : diffManual}
