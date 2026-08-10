@@ -3594,20 +3594,34 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                     style={{ width: 44, height: 52, borderRadius: 6, background: "#ffebe9", border: "1px solid #cf222e33", color: "#cf222e", fontSize: 18, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>−</button>
                 </div>
                 <div style={{ flex: 1, textAlign: "center" }}>
-                  <input type="text" inputMode="numeric" pattern="-?[0-9]*"
-                    value={diffManual > 0 ? `+${diffManual}` : diffManual}
-                    onChange={e => {
-                      const v = e.target.value.replace(/[^0-9-]/g, "");
-                      setDiffManual(v === "" || v === "-" ? 0 : Number(v));
-                    }}
-                    style={{
-                      width: 90, background: "#ffffff",
-                      border: `2px solid ${diffManual >= 3 ? "#cf222e66" : diffManual >= 1 ? "#9a670066" : "#1a7f3766"}`,
-                      color: diffColor(diffManual),
-                      borderRadius: 6, padding: "6px 4px",
-                      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 44, fontWeight: 600, textAlign: "center", outline: "none",
-                    }}
-                  />
+                  {/* The iOS numeric keypad has no minus key, so a value can't be
+                      typed negative — this flips the sign instead. */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <button
+                      onClick={() => setDiffManual(d => -d)}
+                      title="Switch between early (−) and late (+)"
+                      style={{
+                        width: 36, height: 52, borderRadius: 6, background: "#f6f8fa", border: "1px solid #d1d9e0",
+                        color: "#1f2328", fontSize: 20, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
+                      }}>±</button>
+                    <input type="text" inputMode="numeric" pattern="-?[0-9]*"
+                      value={diffManual > 0 ? `+${diffManual}` : diffManual}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const neg = raw.trim().startsWith("-");
+                        const digits = raw.replace(/[^0-9]/g, "");
+                        if (digits === "") { setDiffManual(0); return; }
+                        setDiffManual(neg ? -Number(digits) : Number(digits));
+                      }}
+                      style={{
+                        width: 90, background: "#ffffff",
+                        border: `2px solid ${diffManual >= 3 ? "#cf222e66" : diffManual >= 1 ? "#9a670066" : "#1a7f3766"}`,
+                        color: diffColor(diffManual),
+                        borderRadius: 6, padding: "6px 4px",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 44, fontWeight: 600, textAlign: "center", outline: "none",
+                      }}
+                    />
+                  </div>
                   <div style={{ fontSize: 12, color: "#59636e", marginTop: 4 }}>
                     {diffManual === 0 ? `On time → finish ${minToTime(deadlineMin - 1)}` : diffManual > 0 ? `${diffManual} min late → finish ${minToTime(deadlineMin - 1)}` : `${Math.abs(diffManual)} min early → finish ${minToTime(deadlineMin - 1)}`}
                   </div>
