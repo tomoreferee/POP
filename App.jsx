@@ -2290,7 +2290,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                         border: `1px solid ${preferredLies ? "#1a7f37" : "#d1d9e0"}`,
                         color: preferredLies ? "#1a7f37" : "#59636e",
                       }}>
-                      Preferred Lies {preferredLies ? "ON" : "OFF"}
+                      {preferredLies ? "Preferred Lies" : "No Preferred Lies"}
                     </button>
                   </>
                 ) : (
@@ -5109,7 +5109,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 </span>
               ) : null}
               {formatGreenSpeed(greenSpeed) && (
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 4, padding: "1px 7px", display: "inline-flex", alignItems: "center", lineHeight: 1.4 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, whiteSpace: "nowrap" }}>
                   {formatGreenSpeed(greenSpeed)}
                 </span>
               )}
