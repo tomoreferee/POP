@@ -2154,6 +2154,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 onChangePassword={onChangePassword}
                 onLogout={onLogout}
                 onManageUsers={isTrueAdmin ? onManageUsers : null}
+                onManageTournaments={isTrueAdmin ? onSwitchTournament : null}
                 badges={
                   <>
                     <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#9a6700" : "#0969da", background: isTrueAdmin ? "#fff8c5" : "#ddf4ff", border: `1px solid ${isTrueAdmin ? "#9a670044" : "#0969da44"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1 }}>
@@ -2703,14 +2704,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             )}
 
             <div style={{ display: "flex", gap: 8 }}>
-              {isTrueAdmin && onSwitchTournament && (
-                <button onClick={() => { setShowTournamentPicker(false); onSwitchTournament(); }}
-                  style={{ flex: 1, background: "#f6f8fa", border: "1px dashed #0969da66", color: "#0969da", borderRadius: 6, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-                  Manage Tournaments
-                </button>
-              )}
               <button onClick={() => setShowTournamentPicker(false)}
-                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "10px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                style={{ flex: 1, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "10px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
                 Cancel
               </button>
             </div>
@@ -4286,7 +4281,7 @@ function WeatherBar({ hostVenue }) {
 
 /* Supabase-style account menu: tap the user chip, get a panel with
    Change Password / Manage Users / Log Out instead of loose header buttons. */
-function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, badges = null, align = "right" }) {
+function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, badges = null, align = "right" }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -4345,6 +4340,7 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, badg
 
             <div style={{ padding: "4px 0" }}>
               {item("Change Password", onChangePassword)}
+              {onManageTournaments && item("Manage Tournaments", onManageTournaments)}
               {onManageUsers && item("Manage Users", onManageUsers)}
             </div>
 
@@ -4833,7 +4829,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -5001,6 +4997,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               currentUser={currentUser}
               onChangePassword={onChangePassword}
               onLogout={onLogout}
+              onManageTournaments={isTrueAdmin ? onManageTournaments : null}
             />
           )}
         </div>
@@ -7834,6 +7831,7 @@ export default function App() {
       isTrueAdmin={isAdmin}
       refereeCalls={refereeCalls}
       onCallReferee={handleCallReferee}
+      onManageTournaments={() => setScreen("tournament")}
       onClearRefereeCall={handleClearRefereeCall}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
