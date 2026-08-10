@@ -1854,7 +1854,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
   const roundKey = `${tournamentId || ""}:${roundLabel || ""}`;
@@ -1968,7 +1968,11 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     if (p) setPars(p);
     if (pt) setParTimes(pt);
     if (tt !== null && tt !== undefined) setTurnTime(tt);
-  }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime]);
+    // Field size belongs in this list too: without it this screen kept showing
+    // the local draft's count, and pressing Update pushed that stale number
+    // back over whatever the round is really running.
+    if (livePlayersPerGroup != null) setPlayersPerGroup(livePlayersPerGroup);
+  }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup]);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
@@ -7277,6 +7281,12 @@ export default function App() {
         setIsSuspended(row.is_suspended ?? false);
         setPendingStopTime(row.pending_stop_time ?? "");
         setRefereeCalls(row.referee_calls ?? []);
+        // These were missing, so a change to the field size or turn time never
+        // reached other devices — the TM player buttons stayed at the old count
+        // until the app was reloaded.
+        if (row.players_per_group != null) setPlayersPerGroup(row.players_per_group);
+        if (row.turn_time != null) setTurnTime(row.turn_time);
+        if (row.turn_time_back != null) setTurnTimeBack(row.turn_time_back);
       })
       .subscribe();
 
@@ -7772,6 +7782,7 @@ export default function App() {
       livePars={groups.length > 0 ? pars : null}
       liveParTimes={groups.length > 0 ? parTimes : null}
       liveTurnTime={groups.length > 0 ? turnTime : null}
+      livePlayersPerGroup={groups.length > 0 ? playersPerGroup : null}
       liveGroups={groups}
       onApplyLiveEdits={handleApplyLiveEdits}
       onSwitchTournament={() => setScreen("tournament")}
