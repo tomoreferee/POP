@@ -455,21 +455,33 @@ function logBg(type) { return (LOG_TYPE_META[type] || LOG_TYPE_META.MN).darkBg; 
 // Builds a hole-sorted, condensed summary of a group's WN/MN/TM/Bad Time history:
 // WN and Bad Time are one-off flags (one chip each); MN/TM are on/off sessions that
 // get collapsed into a single "start hole → off hole" entry instead of one chip per hole.
-function summarizeStatusLogs(logs, mnActive, tmActive) {
+function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1) {
   const items = [];
+  // A group starting at H10 plays 10…18, 1…9, so hole NUMBER is not play order.
+  // slotOf maps a hole index to its position in this group's round, and nextHole
+  // gives the hole played after it — which wraps H18 back to H1 rather than
+  // running off the end into "H19".
+  const order = getHoleOrder(startHole);
+  const slotOf = {};
+  order.forEach((hi, slot) => { slotOf[hi] = slot; });
+  const nextHoleNumber = (holeIdx) => {
+    const slot = slotOf[holeIdx];
+    if (slot === undefined || slot >= 17) return null;   // last hole of the round
+    return order[slot + 1] + 1;
+  };
 
   logs.filter(l => l.type === "WN").forEach(l => {
-    items.push({ key: `wn-${l.idx}`, type: "WN", sortHole: l.holeIdx, label: `WN @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx });
+    items.push({ key: `wn-${l.idx}`, type: "WN", sortHole: slotOf[l.holeIdx] ?? l.holeIdx, label: `WN @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx });
   });
   logs.filter(l => l.type === "EST").forEach(l => {
     items.push({
-      key: `est-${l.idx}`, type: "EST", sortHole: l.holeIdx,
+      key: `est-${l.idx}`, type: "EST", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
       label: `EST ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
     });
   });
   logs.filter(l => l.type === "TM" && l.badTime).forEach(l => {
     items.push({
-      key: `bt-${l.idx}`, type: "TM", sortHole: l.holeIdx,
+      key: `bt-${l.idx}`, type: "TM", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
       label: `Bad Time ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
     });
   });
@@ -477,7 +489,7 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
   const runsFor = (type, isActiveNow) => {
     const entries = logs
       .filter(l => l.type === type && !l.badTime)
-      .sort((a, b) => a.holeIdx - b.holeIdx || (a.off ? 1 : -1));
+      .sort((a, b) => (slotOf[a.holeIdx] ?? a.holeIdx) - (slotOf[b.holeIdx] ?? b.holeIdx) || (a.off ? 1 : -1));
     const runs = [];
     let cur = null;
     entries.forEach(l => {
@@ -485,8 +497,8 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
         if (cur) { cur.offHole = l.holeIdx + 1; cur.offIdx = l.idx; if (l.name) cur.name = l.name; runs.push(cur); cur = null; }
         return;
       }
-      if (!cur) cur = { startHole: l.holeIdx + 1, lastHole: l.holeIdx + 1, offHole: null, offIdx: null, idx: l.idx, target: l.target || "", name: l.name || "" };
-      else { cur.lastHole = l.holeIdx + 1; if (l.target) cur.target = l.target; if (l.name) cur.name = l.name; }
+      if (!cur) cur = { startHole: l.holeIdx + 1, startIdx: l.holeIdx, lastHole: l.holeIdx + 1, lastIdx: l.holeIdx, offHole: null, offIdx: null, idx: l.idx, target: l.target || "", name: l.name || "" };
+      else { cur.lastHole = l.holeIdx + 1; cur.lastIdx = l.holeIdx; if (l.target) cur.target = l.target; if (l.name) cur.name = l.name; }
     });
     if (cur) runs.push(cur);
     return runs.map((r, i) => {
@@ -497,10 +509,15 @@ function summarizeStatusLogs(logs, mnActive, tmActive) {
         ? `${type} @H${r.startHole} → Off @H${r.offHole}${targetSuffix}${bySuffix}`
         : (isLast && isActiveNow)
           ? `${type} @H${r.startHole} → In progress${targetSuffix}${bySuffix}`
-          : `${type} @H${r.startHole} → Off @H${r.lastHole + 1}${targetSuffix}${bySuffix}`;
+          : (() => {
+              const nextH = nextHoleNumber(r.lastIdx);
+              return nextH
+                ? `${type} @H${r.startHole} → Off @H${nextH}${targetSuffix}${bySuffix}`
+                : `${type} @H${r.startHole} → Off at finish${targetSuffix}${bySuffix}`;
+            })();
       // Only offer a delete action when there's a specific "off" event to undo —
       // deleting it re-opens the run (fixes an accidental off-at-wrong-hole tap).
-      return { key: `${type}-${r.startHole}`, type, sortHole: r.startHole - 1, label, idx: r.offIdx ?? undefined, deleteTitle: r.offHole ? "Delete this off marker (turned off on the wrong hole)" : undefined };
+      return { key: `${type}-${r.startHole}`, type, sortHole: slotOf[r.startIdx] ?? (r.startHole - 1), label, idx: r.offIdx ?? undefined, deleteTitle: r.offHole ? "Delete this off marker (turned off on the wrong hole)" : undefined };
     });
   };
 
@@ -5421,7 +5438,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 {(() => {
                   const logs = (gd?.actionLogs ?? []).map((l, idx) => ({ ...l, idx }));
                   if (logs.length === 0 && !mnActive && !tmActive) return null;
-                  const items = summarizeStatusLogs(logs, mnActive, tmActive);
+                  const items = summarizeStatusLogs(logs, mnActive, tmActive, g.startHole || 1);
                   return (
                     <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 4 }}>
                       {items.map(it => (
