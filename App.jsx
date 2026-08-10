@@ -5672,6 +5672,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         // holes whose times were recorded BEFORE the referee got
                         // round to flagging it. Without this, going back to add MN
                         // after the fact left those cells blank.
+                        // Furthest hole this group has actually been timed through
+                        const lastRecordedSlot = order.reduce(
+                          (mx, hIdx, s2) => (data?.holeData?.[hIdx]?.endTime ? s2 : mx), -1);
                         const coverage = (type, activeNow) => {
                           const events = allLogs
                             .filter(l => l.type === type && !l.badTime)
@@ -5684,7 +5687,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             if (e.off) { if (open !== null) { spans.push([open, e.slot]); open = null; } }
                             else if (open === null) open = e.slot;
                           });
-                          if (open !== null) spans.push([open, activeNow ? 17 : open]);
+                          if (open !== null) spans.push([open, activeNow ? Math.max(open, lastRecordedSlot) : open]);
                           return (slot) => spans.some(([a, b]) => slot >= a && slot <= b);
                         };
                         const inMnRun = coverage("MN", mnActiveNow);
@@ -5776,10 +5779,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               const handleHoleClick = () => setQuickRecord({ groupId: g.id, targetSlot: slot });
                               const deadline = (sch?.[hi] ?? 0) + (parTimes?.[hi] ?? 14);
                               if (!endTime || !startTime) {
-                                const showMnPreview = (mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN"))
-                                  || (inMnRun(slot) && !holeLogs.some(l => l.type === "MN"));
-                                const showTmPreview = (tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM"))
-                                  || (inTmRun(slot) && !holeLogs.some(l => l.type === "TM"));
+                                const showMnPreview = mnActiveNow && slot === lastMNSlot + 1 && !holeLogs.some(l => l.type === "MN");
+                                const showTmPreview = tmActiveNow && slot === lastTMSlot + 1 && !holeLogs.some(l => l.type === "TM");
                                 return (
                                   <td key={hi} onClick={handleHoleClick} style={{ ...td, color: "#59636e", cursor: "pointer", transition: "background 0.15s", ...(!fitAllHoles && slot === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
@@ -5836,16 +5837,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                         : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.target ? ` ${l.target}` : ""}{l.name ? ` - ${l.name}` : ""}</>)}
                                     </div>
                                   ))}
-                                  {/* Still under MN/TM here, just without its own
-                                      entry on this hole — drawn lighter so it reads
-                                      as "continues" rather than "flagged here". */}
+                                  {/* Under MN/TM on this hole without its own entry
+                                      — same chip as a logged one, since to a referee
+                                      reading the row it means the same thing. */}
                                   {inMnRun(slot) && !holeLogs.some(l => l.type === "MN") && (
-                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ffffffcc", border: "1px dashed #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ffffffdd", border: "1px solid #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
                                       {fitAllHoles ? "M" : "MN"}
                                     </div>
                                   )}
                                   {inTmRun(slot) && !holeLogs.some(l => l.type === "TM") && (
-                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffffffcc", border: "1px dashed #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffffffdd", border: "1px solid #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
                                       {fitAllHoles ? "T" : "TM"}
                                     </div>
                                   )}
