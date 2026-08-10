@@ -2271,13 +2271,13 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                         <span style={{ width: 52, flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#1f2328" }}>{row.label}</span>
                         <select value={greenSpeed?.[row.f] ?? ""}
                           onChange={e => setGreenSpeed(g => ({ ...g, [row.f]: e.target.value === "" ? undefined : Number(e.target.value) }))}
-                          style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+                          style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328", textAlign: "center", textAlignLast: "center" }}>
                           <option value="">— ft —</option>
                           {Array.from({ length: 9 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
                         </select>
                         <select value={greenSpeed?.[row.i] ?? ""}
                           onChange={e => setGreenSpeed(g => ({ ...g, [row.i]: e.target.value === "" ? undefined : Number(e.target.value) }))}
-                          style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+                          style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328", textAlign: "center", textAlignLast: "center" }}>
                           <option value="">— in —</option>
                           {Array.from({ length: 12 }, (_, i) => i).map(inch => <option key={inch} value={inch}>{inch}″</option>)}
                         </select>
