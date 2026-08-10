@@ -1961,17 +1961,30 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   // Whatever the live round is actually running takes priority over the tournament
   // default — otherwise this screen could show stale values (e.g. opened on another
   // device) and "Start tracking" would silently overwrite the real schedule.
+  //
+  // But it must only apply when the live value CHANGES. The realtime handler
+  // rebuilds pars/parTimes as new arrays on every round_state write, so these
+  // props get fresh references constantly; re-applying on each of those would
+  // undo whatever the admin has just picked on this screen — which is exactly
+  // what made the player-count buttons snap back.
+  const lastApplied = useRef({});
   useEffect(() => {
     const p = (livePars?.length === 18 ? livePars : null) ?? (savedPars?.length === 18 ? savedPars : null);
     const pt = (liveParTimes?.length === 18 ? liveParTimes : null) ?? (savedParTimes?.length === 18 ? savedParTimes : null);
     const tt = liveTurnTime ?? savedTurnTime;
-    if (p) setPars(p);
-    if (pt) setParTimes(pt);
-    if (tt !== null && tt !== undefined) setTurnTime(tt);
-    // Field size belongs in this list too: without it this screen kept showing
-    // the local draft's count, and pressing Update pushed that stale number
-    // back over whatever the round is really running.
-    if (livePlayersPerGroup != null) setPlayersPerGroup(livePlayersPerGroup);
+
+    const applyIfChanged = (key, value, setter) => {
+      if (value === null || value === undefined) return;
+      const sig = JSON.stringify(value);
+      if (lastApplied.current[key] === sig) return;
+      lastApplied.current[key] = sig;
+      setter(value);
+    };
+
+    applyIfChanged("pars", p, setPars);
+    applyIfChanged("parTimes", pt, setParTimes);
+    applyIfChanged("turnTime", tt, setTurnTime);
+    applyIfChanged("playersPerGroup", livePlayersPerGroup, setPlayersPerGroup);
   }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup]);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
