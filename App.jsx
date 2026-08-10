@@ -4919,6 +4919,14 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [callHole, setCallHole] = useState(1);
   const [callArea, setCallArea] = useState("");          // Tee Off | Fairway | Putting Green
   const [openCall, setOpenCall] = useState(null);        // a call being attended to
+  const [notifOpen, setNotifOpen] = useState(true);
+  // How many things are actually asking for attention right now
+  const notifCount = (refereeCalls?.length || 0) + groups.filter(g => {
+    const gd = groupData[g.id];
+    if (!gd) return false;
+    const logs = gd.actionLogs ?? [];
+    return logs.length > 0 || gd.mnActive || gd.tmActive;
+  }).length;
   const actionBtn = {
     background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
     borderRadius: 6, padding: "7px 0", cursor: "pointer",
@@ -5095,72 +5103,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
       )}
 
-      {/* Per-device hole focus — hide columns for holes this marshal doesn't supervise */}
-      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "8px 24px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => setShowFocusPicker(v => !v)}
-            style={{
-              background: focusHoles.length ? "#ddf4ff" : "#f6f8fa",
-              border: `1px solid ${focusHoles.length ? "#0969da" : "#d1d9e0"}`,
-              color: focusHoles.length ? "#1f2328" : "#59636e",
-              borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
-            }}>
-            My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
-          </button>
-          <button onClick={cycleView}
-            title="Tap to cycle: Normal View → Fit 9 Holes → Fit 18 Holes"
-            style={{
-              background: "#ddf4ff",
-              border: "1px solid #0969da",
-              color: "#1f2328",
-              borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
-            }}>
-            {VIEW_LABEL[viewMode]}<span style={{ fontSize: 10, color: "#59636e" }}>⇄</span>
-          </button>
-          {focusHoles.length > 0 && (
-            <button onClick={() => saveFocusHoles([])}
-              style={{ marginLeft: "auto", background: "#f6f8fa", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
-              ✕ Show All
-            </button>
-          )}
-        </div>
-        {focusHoles.length > 0 && (
-          <div style={{ fontSize: 12, color: "#59636e", marginTop: 6 }}>
-            Showing {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
-          </div>
-        )}
-      </div>
-
-      {showFocusPicker && (
-        <div style={{ background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "12px 24px" }}>
-          <div style={{ fontSize: 11, color: "#59636e", marginBottom: 8 }}>Select the holes you supervise (none selected = show all) — saved on this device only</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 6, marginBottom: 10 }}>
-            {Array.from({ length: 18 }, (_, i) => i).map(hi => {
-              const on = focusHoles.includes(hi);
-              return (
-                <button key={hi}
-                  onClick={() => saveFocusHoles(on ? focusHoles.filter(x => x !== hi) : [...focusHoles, hi])}
-                  style={{
-                    width: "100%", height: 34, borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0,
-                    background: on ? "#ddf4ff" : "#ffffff",
-                    border: `1px solid ${on ? "#0969da" : "#d1d9e0"}`,
-                    color: on ? "#1f2328" : "#59636e",
-                  }}>H{hi + 1}</button>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i))}
-              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H1–H9</button>
-            <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i + 9))}
-              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H10–H18</button>
-            <button onClick={() => saveFocusHoles([])}
-              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show All</button>
-            <button onClick={() => setShowFocusPicker(false)}
-              style={{ marginLeft: "auto", background: "#dafbe1", border: "1px solid #1a7f3766", color: "#1a7f37", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
-          </div>
-        </div>
-      )}
 
       {/* Export Modal — copy each sheet's data as TSV, paste directly into Excel/Sheets.
           (File downloads are unreliable inside sandboxed artifact webviews, so
@@ -5370,208 +5312,294 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       )}
 
       <div style={{ padding: "16px 20px" }}>
-        {/* Open referee calls — deliberately loud. They flash until someone
-            attends and clears them, and they sit above the group alerts
-            because they're a request for a person, not a pace observation. */}
-        {refereeCalls && refereeCalls.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-            <style>{`@keyframes popCallFlash {
-              0%, 100% { background: #ffebe9; border-color: #cf222e; }
-              50%      { background: #ffffff; border-color: #cf222e55; }
-            }`}</style>
-            {refereeCalls.map(call => (
-              <div key={call.id}
-                onClick={() => setOpenCall(call)}
-                style={{
-                  border: "2px solid #cf222e", borderRadius: 8, padding: "10px 14px", cursor: "pointer",
-                  animation: "popCallFlash 1s ease-in-out infinite",
-                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-                }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#cf222e" }}>
-                    REFEREE NEEDED — H{call.hole}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#1f2328", marginTop: 2 }}>
-                    {(call.areas || []).join(" · ") || "—"}
-                    {call.name ? ` · by ${call.name}` : ""}
-                    {call.time ? ` · ${call.time}` : ""}
-                  </div>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#cf222e", whiteSpace: "nowrap" }}>Tap to attend</span>
-              </div>
-            ))}
+        {/* Notifications — referee calls and flagged groups. Collapsible, because
+            on a busy morning this list can push the schedule tables off screen. */}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
+          <div
+            onClick={() => setNotifOpen(v => !v)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", cursor: "pointer", background: "#f6f8fa", borderBottom: notifOpen ? "1px solid #d1d9e0" : "none" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, letterSpacing: 1, color: "#59636e" }}>
+              NOTIFICATIONS
+              {notifCount > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#cf222e", background: "#ffebe9", border: "1px solid #cf222e44", borderRadius: 10, padding: "1px 7px", letterSpacing: 0 }}>{notifCount}</span>
+              )}
+            </span>
+            <span style={{ fontSize: 14, color: "#59636e", transform: notifOpen ? "none" : "rotate(-90deg)", transition: "transform 0.15s" }}>▾</span>
           </div>
-        )}
-
-        {/* Alert Cards — split Morning / Afternoon */}
-        {(() => {
-          const alertGroups = groups.filter(g => {
-            const gd = groupData[g.id];
-            if (gd?.roundFinished === true) return false; // manually closed out
-            const holeFromRecords = gd?.records?.filter(Boolean).length ?? 0;
-            const holeFromData = (gd?.holeData ?? []).filter(h => h?.endTime).length;
-            const hole = Math.max(holeFromRecords, holeFromData);
-            if (hole >= 18) return false;
-            const mnActive = gd?.mnActive === true;
-            const tmActive = gd?.tmActive === true;
-            // Only groups that have actually been flagged (WN / MN / TM / Bad Time)
-            // belong here — running behind on its own isn't enough, since that's
-            // already visible from the colours in the schedule table below.
-            const hasLoggedAction = (gd?.actionLogs ?? []).length > 0;
-            return mnActive || tmActive || hasLoggedAction;
-          });
-
-          // Sort groups with "late" status first, followed by "starting late", then on-time groups with a pending WN/MN
-          const STATUS_RANK = { late: 3, warn: 2, ok: 1, idle: 0 };
-          alertGroups.sort((a, b) => (STATUS_RANK[getGroupStatus(b)] ?? 0) - (STATUS_RANK[getGroupStatus(a)] ?? 0));
-
-          // fallback: groups without a section use time < 12:00 = morning
-          const getSection = (g) => {
-            if (g.section) return g.section;
-            const [h] = (g.startTime || "06:00").split(":").map(Number);
-            return h < 12 ? "morning" : "afternoon";
-          };
-
-          const morningAlerts = alertGroups.filter(g => getSection(g) === "morning");
-          const afternoonAlerts = alertGroups.filter(g => getSection(g) === "afternoon");
-          const hasAfternoon = groups.some(g => getSection(g) === "afternoon");
-
-          const renderGroupCard = (g) => {
-            const status = getGroupStatus(g);
-            const hole = getHoleProgress(g);
-            const sch = schedules[g.id];
-            const gd = groupData[g.id];
-            const { holeIdx: lastHoleIdx, diff: nowDiff } = getLastFinishedHole(g);
-            const lastEndTime = (() => {
-              if (lastHoleIdx < 0) return null;
-              const hd = gd.holeData[lastHoleIdx];
-              if (!hd?.endTime) return null;
-              if (hd.manualDiff !== undefined) {
-                const deadline = (sch?.[lastHoleIdx] ?? 0) + (parTimes?.[lastHoleIdx] ?? 14);
-                return minToTime(deadline - 1 + hd.manualDiff);
-              }
-              return hd.endTime;
-            })();
-            const diffColor = nowDiff === null ? "#818b98" : { ok: "#1a7f37", warn: "#9a6700", late: "#cf222e" }[status];
-            const mnActive = gd?.mnActive === true;
-            const mnName = gd?.mnName ?? "";
-            const tmActive = gd?.tmActive === true;
-            const tmName = gd?.tmName ?? "";
-            const tmTarget = gd?.tmTarget ?? "";
-            return (
-              <div key={g.id} onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })} style={{
-                background: "#ffffff", border: `1px solid ${GROUP_NEUTRAL}44`, borderRadius: 6,
-                padding: "8px 10px", cursor: "pointer", transition: "box-shadow 0.15s",
-                boxShadow: status === "late" ? `0 0 14px #ff707022` : "none",
-                minWidth: 0, overflow: "hidden",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 18px ${GROUP_NEUTRAL}22`; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = status === "late" ? `0 0 14px #ff707022` : "none"; }}
-              >
-                {/* One compact row: dot · name · progress · last hole diff · status */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#59636e", flexShrink: 0 }} />
-                  <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0, color: "#1f2328" }}>{g.name}</div>
-                  <div style={{ fontSize: 11, color: "#59636e", whiteSpace: "nowrap", flexShrink: 0 }}>H{hole}/18</div>
-                  {nowDiff !== null ? (
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
-                      <span style={{ fontSize: 11, color: "#59636e" }}>H{lastHoleIdx + 1}</span>
-                      <span style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 17, fontWeight: 600, color: diffColor, lineHeight: 1 }}>{nowDiff > 0 ? `+${nowDiff}` : nowDiff}</span>
-                      {lastEndTime && <span style={{ fontSize: 11, color: "#59636e" }}>{lastEndTime}</span>}
+          {notifOpen && (
+            <div style={{ padding: "12px 14px 4px" }}>
+          {/* Open referee calls — deliberately loud. They flash until someone
+              attends and clears them, and they sit above the group alerts
+              because they're a request for a person, not a pace observation. */}
+          {refereeCalls && refereeCalls.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+              <style>{`@keyframes popCallFlash {
+                0%, 100% { background: #ffebe9; border-color: #cf222e; }
+                50%      { background: #ffffff; border-color: #cf222e55; }
+              }`}</style>
+              {refereeCalls.map(call => (
+                <div key={call.id}
+                  onClick={() => setOpenCall(call)}
+                  style={{
+                    border: "2px solid #cf222e", borderRadius: 8, padding: "10px 14px", cursor: "pointer",
+                    animation: "popCallFlash 1s ease-in-out infinite",
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                  }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#cf222e" }}>
+                      REFEREE NEEDED — H{call.hole}
                     </div>
-                  ) : (
-                    <span style={{ fontSize: 11, color: "#59636e", whiteSpace: "nowrap", flexShrink: 0 }}>No data yet</span>
-                  )}
-                  <div style={{ marginLeft: "auto", flexShrink: 0 }}><StatusBadge status={status} small /></div>
+                    <div style={{ fontSize: 12, color: "#1f2328", marginTop: 2 }}>
+                      {(call.areas || []).join(" · ") || "—"}
+                      {call.name ? ` · by ${call.name}` : ""}
+                      {call.time ? ` · ${call.time}` : ""}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#cf222e", whiteSpace: "nowrap" }}>Tap to attend</span>
                 </div>
-                {(() => {
-                  const logs = (gd?.actionLogs ?? []).map((l, idx) => ({ ...l, idx }));
-                  if (logs.length === 0 && !mnActive && !tmActive) return null;
-                  const items = summarizeStatusLogs(logs, mnActive, tmActive, g.startHole || 1);
-                  return (
-                    <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 4 }}>
-                      {items.map(it => (
-                        <span key={it.key} onClick={(e) => { if (it.idx !== undefined) { e.stopPropagation(); setEditLogPopup({ groupId: g.id, idx: it.idx }); } }} style={{
-                          display: "inline-flex", alignItems: "center", gap: 3,
-                          background: `${logBg(it.type)}66`,
-                          border: `1px solid ${logColor(it.type)}44`,
-                          borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 700,
-                          color: logColor(it.type), lineHeight: 1.5, alignSelf: "flex-start",
-                          cursor: it.idx !== undefined ? "pointer" : "default",
-                        }}>
-                          {it.label}
-                          {it.idx !== undefined ? (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setDeleteLogConfirm({ groupId: g.id, idx: it.idx }); }}
-                              title={it.deleteTitle || "Delete this log"}
-                              style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
-                            >🗑</button>
-                          ) : (it.type === "MN" || it.type === "TM") && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: it.type }); }}
-                              title={`Clear all ${it.type} status`}
-                              style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
-                            >🗑</button>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-                  );
-                })()}
+              ))}
+            </div>
+          )}
+
+          {/* Alert Cards — split Morning / Afternoon */}
+          {(() => {
+            const alertGroups = groups.filter(g => {
+              const gd = groupData[g.id];
+              if (gd?.roundFinished === true) return false; // manually closed out
+              const holeFromRecords = gd?.records?.filter(Boolean).length ?? 0;
+              const holeFromData = (gd?.holeData ?? []).filter(h => h?.endTime).length;
+              const hole = Math.max(holeFromRecords, holeFromData);
+              if (hole >= 18) return false;
+              const mnActive = gd?.mnActive === true;
+              const tmActive = gd?.tmActive === true;
+              // Only groups that have actually been flagged (WN / MN / TM / Bad Time)
+              // belong here — running behind on its own isn't enough, since that's
+              // already visible from the colours in the schedule table below.
+              const hasLoggedAction = (gd?.actionLogs ?? []).length > 0;
+              return mnActive || tmActive || hasLoggedAction;
+            });
+
+            // Sort groups with "late" status first, followed by "starting late", then on-time groups with a pending WN/MN
+            const STATUS_RANK = { late: 3, warn: 2, ok: 1, idle: 0 };
+            alertGroups.sort((a, b) => (STATUS_RANK[getGroupStatus(b)] ?? 0) - (STATUS_RANK[getGroupStatus(a)] ?? 0));
+
+            // fallback: groups without a section use time < 12:00 = morning
+            const getSection = (g) => {
+              if (g.section) return g.section;
+              const [h] = (g.startTime || "06:00").split(":").map(Number);
+              return h < 12 ? "morning" : "afternoon";
+            };
+
+            const morningAlerts = alertGroups.filter(g => getSection(g) === "morning");
+            const afternoonAlerts = alertGroups.filter(g => getSection(g) === "afternoon");
+            const hasAfternoon = groups.some(g => getSection(g) === "afternoon");
+
+            const renderGroupCard = (g) => {
+              const status = getGroupStatus(g);
+              const hole = getHoleProgress(g);
+              const sch = schedules[g.id];
+              const gd = groupData[g.id];
+              const { holeIdx: lastHoleIdx, diff: nowDiff } = getLastFinishedHole(g);
+              const lastEndTime = (() => {
+                if (lastHoleIdx < 0) return null;
+                const hd = gd.holeData[lastHoleIdx];
+                if (!hd?.endTime) return null;
+                if (hd.manualDiff !== undefined) {
+                  const deadline = (sch?.[lastHoleIdx] ?? 0) + (parTimes?.[lastHoleIdx] ?? 14);
+                  return minToTime(deadline - 1 + hd.manualDiff);
+                }
+                return hd.endTime;
+              })();
+              const diffColor = nowDiff === null ? "#818b98" : { ok: "#1a7f37", warn: "#9a6700", late: "#cf222e" }[status];
+              const mnActive = gd?.mnActive === true;
+              const mnName = gd?.mnName ?? "";
+              const tmActive = gd?.tmActive === true;
+              const tmName = gd?.tmName ?? "";
+              const tmTarget = gd?.tmTarget ?? "";
+              return (
+                <div key={g.id} onClick={() => setQuickRecord({ groupId: g.id, targetSlot: null })} style={{
+                  background: "#ffffff", border: `1px solid ${GROUP_NEUTRAL}44`, borderRadius: 6,
+                  padding: "8px 10px", cursor: "pointer", transition: "box-shadow 0.15s",
+                  boxShadow: status === "late" ? `0 0 14px #ff707022` : "none",
+                  minWidth: 0, overflow: "hidden",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 18px ${GROUP_NEUTRAL}22`; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = status === "late" ? `0 0 14px #ff707022` : "none"; }}
+                >
+                  {/* One compact row: dot · name · progress · last hole diff · status */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#59636e", flexShrink: 0 }} />
+                    <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0, color: "#1f2328" }}>{g.name}</div>
+                    <div style={{ fontSize: 11, color: "#59636e", whiteSpace: "nowrap", flexShrink: 0 }}>H{hole}/18</div>
+                    {nowDiff !== null ? (
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, color: "#59636e" }}>H{lastHoleIdx + 1}</span>
+                        <span style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 17, fontWeight: 600, color: diffColor, lineHeight: 1 }}>{nowDiff > 0 ? `+${nowDiff}` : nowDiff}</span>
+                        {lastEndTime && <span style={{ fontSize: 11, color: "#59636e" }}>{lastEndTime}</span>}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 11, color: "#59636e", whiteSpace: "nowrap", flexShrink: 0 }}>No data yet</span>
+                    )}
+                    <div style={{ marginLeft: "auto", flexShrink: 0 }}><StatusBadge status={status} small /></div>
+                  </div>
+                  {(() => {
+                    const logs = (gd?.actionLogs ?? []).map((l, idx) => ({ ...l, idx }));
+                    if (logs.length === 0 && !mnActive && !tmActive) return null;
+                    const items = summarizeStatusLogs(logs, mnActive, tmActive, g.startHole || 1);
+                    return (
+                      <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {items.map(it => (
+                          <span key={it.key} onClick={(e) => { if (it.idx !== undefined) { e.stopPropagation(); setEditLogPopup({ groupId: g.id, idx: it.idx }); } }} style={{
+                            display: "inline-flex", alignItems: "center", gap: 3,
+                            background: `${logBg(it.type)}66`,
+                            border: `1px solid ${logColor(it.type)}44`,
+                            borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 700,
+                            color: logColor(it.type), lineHeight: 1.5, alignSelf: "flex-start",
+                            cursor: it.idx !== undefined ? "pointer" : "default",
+                          }}>
+                            {it.label}
+                            {it.idx !== undefined ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setDeleteLogConfirm({ groupId: g.id, idx: it.idx }); }}
+                                title={it.deleteTitle || "Delete this log"}
+                                style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
+                              >🗑</button>
+                            ) : (it.type === "MN" || it.type === "TM") && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setClearStatusConfirm({ groupId: g.id, type: it.type }); }}
+                                title={`Clear all ${it.type} status`}
+                                style={{ background: "none", border: "none", color: "inherit", opacity: 0.75, cursor: "pointer", fontSize: 10, padding: 0, marginLeft: 1, lineHeight: 1 }}
+                              >🗑</button>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            };
+
+            if (alertGroups.length === 0 && !hasAfternoon) return (
+              <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
+                ✓ No groups have been whistled (WN / MN / TM / EST).
               </div>
             );
-          };
 
-          if (alertGroups.length === 0 && !hasAfternoon) return (
-            <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ No groups have been whistled (WN / MN / TM / EST).
-            </div>
-          );
+            if (alertGroups.length === 0) return (
+              <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
+                ✓ No groups have been whistled (WN / MN / TM / EST).
+              </div>
+            );
 
-          if (alertGroups.length === 0) return (
-            <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-              ✓ No groups have been whistled (WN / MN / TM / EST).
-            </div>
-          );
+            if (!hasAfternoon) return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {alertGroups.map(renderGroupCard)}
+              </div>
+            );
 
-          if (!hasAfternoon) return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {alertGroups.map(renderGroupCard)}
+            return (
+              <div>
+                {morningAlerts.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, color: "#59636e", fontWeight: 700, letterSpacing: 2 }}>MORNING</div>
+                      <div style={{ flex: 1, height: 1, background: "#d1d9e0" }} />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {morningAlerts.map(renderGroupCard)}
+                    </div>
+                  </div>
+                )}
+                {afternoonAlerts.length > 0 && (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, letterSpacing: 2 }}>AFTERNOON</div>
+                      <div style={{ flex: 1, height: 1, background: "#d1d9e0" }} />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {afternoonAlerts.map(renderGroupCard)}
+                    </div>
+                  </div>
+                )}
+                {morningAlerts.length === 0 && afternoonAlerts.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
+                    ✓ No groups have been whistled (WN / MN / TM / EST).
+                  </div>
+                )}
+              </div>
+            );
+          })()}
             </div>
-          );
+          )}
+        </div>
 
-          return (
-            <div>
-              {morningAlerts.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: "#59636e", fontWeight: 700, letterSpacing: 2 }}>MORNING</div>
-                    <div style={{ flex: 1, height: 1, background: "#d1d9e0" }} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {morningAlerts.map(renderGroupCard)}
-                  </div>
-                </div>
-              )}
-              {afternoonAlerts.length > 0 && (
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, letterSpacing: 2 }}>AFTERNOON</div>
-                    <div style={{ flex: 1, height: 1, background: "#d1d9e0" }} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {afternoonAlerts.map(renderGroupCard)}
-                  </div>
-                </div>
-              )}
-              {morningAlerts.length === 0 && afternoonAlerts.length === 0 && (
-                <div style={{ textAlign: "center", padding: "18px 0 8px", color: "#3a3d5a", fontSize: 13, letterSpacing: 1 }}>
-                  ✓ No groups have been whistled (WN / MN / TM / EST).
-                </div>
-              )}
-            </div>
-          );
-        })()}
+      {/* Per-device hole focus — sits directly above the tables it filters */}
+      <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, padding: "8px 12px", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => setShowFocusPicker(v => !v)}
+            style={{
+              background: focusHoles.length ? "#ddf4ff" : "#f6f8fa",
+              border: `1px solid ${focusHoles.length ? "#0969da" : "#d1d9e0"}`,
+              color: focusHoles.length ? "#1f2328" : "#59636e",
+              borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
+            }}>
+            My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
+          </button>
+          <button onClick={cycleView}
+            title="Tap to cycle: Normal View → Fit 9 Holes → Fit 18 Holes"
+            style={{
+              background: "#ddf4ff",
+              border: "1px solid #0969da",
+              color: "#1f2328",
+              borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
+            }}>
+            {VIEW_LABEL[viewMode]}<span style={{ fontSize: 10, color: "#59636e" }}>⇄</span>
+          </button>
+          {focusHoles.length > 0 && (
+            <button onClick={() => saveFocusHoles([])}
+              style={{ marginLeft: "auto", background: "#f6f8fa", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
+              ✕ Show All
+            </button>
+          )}
+        </div>
+        {focusHoles.length > 0 && (
+          <div style={{ fontSize: 12, color: "#59636e", marginTop: 6 }}>
+            Showing {focusHoles.slice().sort((a, b) => a - b).map(h => `H${h + 1}`).join(", ")}
+          </div>
+        )}
+      </div>
+
+      {showFocusPicker && (
+        <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 8, padding: "12px 14px", marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: "#59636e", marginBottom: 8 }}>Select the holes you supervise (none selected = show all) — saved on this device only</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 6, marginBottom: 10 }}>
+            {Array.from({ length: 18 }, (_, i) => i).map(hi => {
+              const on = focusHoles.includes(hi);
+              return (
+                <button key={hi}
+                  onClick={() => saveFocusHoles(on ? focusHoles.filter(x => x !== hi) : [...focusHoles, hi])}
+                  style={{
+                    width: "100%", height: 34, borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: 0,
+                    background: on ? "#ddf4ff" : "#ffffff",
+                    border: `1px solid ${on ? "#0969da" : "#d1d9e0"}`,
+                    color: on ? "#1f2328" : "#59636e",
+                  }}>H{hi + 1}</button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i))}
+              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H1–H9</button>
+            <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i + 9))}
+              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H10–H18</button>
+            <button onClick={() => saveFocusHoles([])}
+              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show All</button>
+            <button onClick={() => setShowFocusPicker(false)}
+              style={{ marginLeft: "auto", background: "#dafbe1", border: "1px solid #1a7f3766", color: "#1a7f37", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
+          </div>
+        </div>
+      )}
 
         {/* Summary Table — split Morning/Afternoon and H1/H10 */}
         {(() => {
