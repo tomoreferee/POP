@@ -5655,7 +5655,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               ? { ...gapRule, background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 500, color: "#59636e", textAlign: "center" }
               : fitAllHoles ? { borderTop: "1px solid #d1d9e0" } : null;
             return (
-              <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 16, overflow: "hidden" }}>
+              <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 8, overflow: "hidden" }}>
                 <div
                   onClick={() => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
                   style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
@@ -5966,8 +5966,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const secColor = "#59636e";
             const secBorder = "#d1d9e0";
             return (
-              <div key={sec} style={{ marginTop: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+              <div key={sec} style={{ marginTop: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 0 }}>
                   <div style={{ fontSize: 13, color: secColor, fontWeight: 700, letterSpacing: 0, whiteSpace: "nowrap" }}>{secLabel}</div>
                   <div style={{ flex: 1, height: 1, background: secBorder }} />
                 </div>
