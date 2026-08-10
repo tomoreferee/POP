@@ -1301,8 +1301,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [roundPickerFor, setRoundPickerFor] = useState(null); // tournament whose rounds are being picked
   const [roundsWithData, setRoundsWithData] = useState({});   // { roundId: true } — rounds that actually hold groups
   const [backupBusyId, setBackupBusyId] = useState(null);
-  const [pasteOpen, setPasteOpen] = useState(false);
-  const [pasteText, setPasteText] = useState("");
   const [importBusy, setImportBusy] = useState(false);
   const [importNote, setImportNote] = useState(null);
 
@@ -1374,18 +1372,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     await runImport(payload);
   };
 
-  const handleImportPasted = async () => {
-    setImportNote(null);
-    let payload;
-    try {
-      payload = JSON.parse(pasteText);
-    } catch {
-      setImportNote({ ok: false, text: "That text isn't valid JSON." });
-      return;
-    }
-    setPasteOpen(false);
-    await runImport(payload);
-  };
 
 
   const reloadTournaments = async () => {
@@ -1678,12 +1664,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                   style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", clip: "rect(0 0 0 0)" }} />
               </label>
 
-              <button onClick={() => { setPasteText(""); setPasteOpen(true); }}
-                style={{ width: "100%", marginTop: 6, background: "none", border: "none", color: "#0969da", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, padding: "4px 0" }}>
-                Or paste backup text instead
-              </button>
-
-              <div style={{ fontSize: 11, color: "#59636e", marginTop: 4, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, color: "#59636e", marginTop: 6, lineHeight: 1.5 }}>
                 Creates a new competition from a backup file, with all its rounds and recorded times. Nothing existing is overwritten.
               </div>
               {importNote && (
@@ -1697,34 +1678,6 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         </div>
 
       </div>
-
-      {/* Paste fallback — some devices won't hand a .json file to the browser */}
-      {pasteOpen && (
-        <div onClick={() => setPasteOpen(false)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1150, padding: 16 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, padding: 18, width: "100%", maxWidth: 420 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328", marginBottom: 4 }}>Paste Backup Text</div>
-            <div style={{ fontSize: 11, color: "#59636e", marginBottom: 10, lineHeight: 1.5 }}>
-              Open the backup file, copy everything, and paste it here.
-            </div>
-            <textarea
-              value={pasteText}
-              onChange={e => setPasteText(e.target.value)}
-              placeholder='{"format":"pop-tournament-backup", ...}'
-              style={{ width: "100%", boxSizing: "border-box", height: 140, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 10, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 11, color: "#1f2328", resize: "vertical" }}
-            />
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={handleImportPasted} disabled={!pasteText.trim() || importBusy}
-                style={{ flex: 1, background: pasteText.trim() ? "#fff8c5" : "#f6f8fa", border: `1px solid ${pasteText.trim() ? "#9a670088" : "#d1d9e0"}`, color: pasteText.trim() ? "#9a6700" : "#8c959f", borderRadius: 6, padding: "10px 0", cursor: pasteText.trim() ? "pointer" : "default", fontFamily: "inherit", fontSize: 13, fontWeight: 700 }}>
-                Import
-              </button>
-              <button onClick={() => setPasteOpen(false)}
-                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Create / edit a tournament */}
       {showCreate && isAdmin && (
