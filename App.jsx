@@ -5057,7 +5057,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {/* Action grid — Summary / Export Data down the left, Stopping Play /
           Call Referee down the right. Short rows so the whole block matches the
           height of the conditions strip above it. */}
-      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "8px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {onNavigateSummary && (
           <button onClick={onNavigateSummary} style={actionBtn}>Summary</button>
         )}
@@ -5311,10 +5311,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
       )}
 
-      <div style={{ padding: "16px 20px" }}>
+      <div style={{ padding: "10px 20px 16px" }}>
         {/* Notifications — referee calls and flagged groups. Collapsible, because
             on a busy morning this list can push the schedule tables off screen. */}
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, marginBottom: 8, overflow: "hidden" }}>
           <div
             onClick={() => setNotifOpen(v => !v)}
             style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", cursor: "pointer", background: "#f6f8fa", borderBottom: notifOpen ? "1px solid #d1d9e0" : "none" }}>
@@ -5535,7 +5535,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
 
       {/* Per-device hole focus — sits directly above the tables it filters */}
-      <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, padding: "8px 12px", marginBottom: 12 }}>
+      <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, padding: "6px 10px", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => setShowFocusPicker(v => !v)}
             style={{
@@ -5571,7 +5571,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       </div>
 
       {showFocusPicker && (
-        <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 8, padding: "12px 14px", marginBottom: 12 }}>
+        <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 8, padding: "12px 14px", marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: "#59636e", marginBottom: 8 }}>Select the holes you supervise (none selected = show all) — saved on this device only</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 6, marginBottom: 10 }}>
             {Array.from({ length: 18 }, (_, i) => i).map(hi => {
@@ -5966,7 +5966,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const secColor = "#59636e";
             const secBorder = "#d1d9e0";
             return (
-              <div key={sec} style={{ marginTop: 28 }}>
+              <div key={sec} style={{ marginTop: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
                   <div style={{ fontSize: 13, color: secColor, fontWeight: 700, letterSpacing: 0, whiteSpace: "nowrap" }}>{secLabel}</div>
                   <div style={{ flex: 1, height: 1, background: secBorder }} />
