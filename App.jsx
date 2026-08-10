@@ -4840,11 +4840,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
     } catch { return "normal"; }
   });
   // Which half of the round Fit 9 is showing: 0 = first nine, 1 = second nine.
-  const [nineHalf, setNineHalf] = useState(0);
+  // Which nine each table is showing, keyed by table. It used to be one shared
+  // value, so paging the H10 table moved the highlight on the H1 table too.
+  const [nineHalfByTable, setNineHalfByTable] = useState({});
   const fitAllHoles = viewMode !== "normal";
   const isFit9 = viewMode === "fit9";
   // Fit 9 renders the whole round but sizes columns so nine holes fill the
-  // screen; nineHalf only tracks which chip is highlighted.
+  // screen; nineHalfByTable only tracks which chip is highlighted.
   const VIEW_LABEL = { normal: "Normal View", fit9: "Fit 9 Holes", fit18: "Fit 18 Holes" };
   const cycleView = () => {
     setViewMode(v => {
@@ -5572,6 +5574,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeLabel = meta.label;
             const tableKey = `${sectionKey}-${startHole}`;
             const isCollapsed = !!collapsedTables[tableKey];
+            const nineHalf = nineHalfByTable[tableKey] ?? 0;
+            const setNineHalf = (half) => setNineHalfByTable(prev => (prev[tableKey] === half ? prev : { ...prev, [tableKey]: half }));
             // Fit 18 squeezes all 18 columns onto one screen. Fit 9 renders the
             // same 18 columns but each is a ninth of the viewport, so nine fill
             // the screen and the rest is a drag away.
@@ -5635,7 +5639,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   </span>
                 </div>
                 {!isCollapsed && (
-                <div id={`scroll-${tableKey}`} style={{ overflowX: viewMode === "fit18" ? "hidden" : "auto", WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain" }}>
+                <div id={`scroll-${tableKey}`}
+                  onScroll={isFit9 ? (e) => {
+                    // Dragging is the other way to change nine, so the chips have
+                    // to follow the scroll or they'd contradict what's on screen.
+                    const el = e.currentTarget;
+                    const half = el.scrollLeft > (el.scrollWidth - el.clientWidth) / 2 ? 1 : 0;
+                    setNineHalf(half);
+                  } : undefined}
+                  style={{ overflowX: viewMode === "fit18" ? "hidden" : "auto", WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain" }}>
                   <table style={{ borderCollapse: "collapse", fontSize: 13, ...(viewMode === "fit18" ? { width: "100%", tableLayout: "fixed" } : {}) }}>
                     <thead>
                       <tr style={{ background: "#f6f8fa" }}>
