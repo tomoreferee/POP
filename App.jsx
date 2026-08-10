@@ -5581,10 +5581,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // the screen and the rest is a drag away.
             // 100vw less the page padding (40) and the sticky Grp + Time columns
             // (82) — so nine hole columns exactly fill the first screen.
-            const holeColW = isFit9 ? "calc((100vw - 124px) / 9)" : 0;
+            const holeColW = isFit9 ? "calc((100vw - 128px) / 9)" : 0;
             const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
             const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined } : tdStyle;
-            const nameColW = fitAllHoles ? (isFit9 ? 40 : 26) : 80;
+            const nameColW = fitAllHoles ? (isFit9 ? 44 : 32) : 80;
             const startColW = fitAllHoles ? (isFit9 ? 42 : 28) : 56;
             // At the turn, Fit 9 repeats the group column (the second nine is a
             // drag away from the sticky one, so you'd otherwise lose track of
@@ -5725,7 +5725,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                 <span>{fitAllHoles ? g.name.replace(/^\s*group\s*/i, "") : g.name}</span>
                                 {!fitAllHoles && <span style={{ fontSize: 11, color: "#59636e" }}>›</span>}
                               </div>
-                              <div style={{ display: fitAllHoles ? "none" : "flex", gap: 3, marginTop: 4, justifyContent: "center", flexWrap: "wrap" }}>
+                              {/* These badges say whether the group is under a
+                                  warning or being monitored — the whole point of
+                                  scanning the table. They used to be hidden in
+                                  both fit views; instead they just get tighter. */}
+                              <div style={{ display: "flex", gap: fitAllHoles ? 1 : 3, marginTop: fitAllHoles ? 2 : 4, justifyContent: "center", flexWrap: "wrap" }}>
                                 {data?.roundFinished === true && (
                                   <span
                                     onClick={(e) => {
@@ -5735,7 +5739,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       }
                                     }}
                                     title="Tap to undo the finished status"
-                                    style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}
+                                    style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px", cursor: "pointer" }}
                                   >{fitAllHoles ? "FIN" : "FINISHED"}</span>
                                 )}
                                 {hasWN && <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "W" : "WN"}</span>}
