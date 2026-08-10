@@ -6701,24 +6701,44 @@ async function fetchAppState(roundId) {
   };
 }
 async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack, refereeCalls }) {
-  if (!roundId) return;
+  if (!roundId) return { ok: false, error: "no round" };
+  const base = {
+    round_id: roundId,
+    groups, pars,
+    par_times: parTimes,
+    base_schedules: baseSchedules,
+    schedules,
+    suspensions,
+    is_suspended: isSuspended,
+    pending_stop_time: pendingStopTime,
+    ...(playersPerGroup !== undefined ? { players_per_group: playersPerGroup } : {}),
+    ...(turnTime !== undefined ? { turn_time: turnTime } : {}),
+    ...(turnTimeBack !== undefined ? { turn_time_back: turnTimeBack } : {}),
+    updated_at: new Date().toISOString(),
+  };
+  const row = { ...base, ...(refereeCalls !== undefined ? { referee_calls: refereeCalls } : {}) };
   try {
-    await supabase.from("round_state").upsert({
-      round_id: roundId,
-      groups, pars,
-      par_times: parTimes,
-      base_schedules: baseSchedules,
-      schedules,
-      suspensions,
-      is_suspended: isSuspended,
-      pending_stop_time: pendingStopTime,
-      ...(playersPerGroup !== undefined ? { players_per_group: playersPerGroup } : {}),
-      ...(turnTime !== undefined ? { turn_time: turnTime } : {}),
-      ...(turnTimeBack !== undefined ? { turn_time_back: turnTimeBack } : {}),
-      ...(refereeCalls !== undefined ? { referee_calls: refereeCalls } : {}),
-      updated_at: new Date().toISOString(),
-    });
-  } catch {}
+    const { error } = await supabase.from("round_state").upsert(row);
+    if (!error) return { ok: true };
+
+    // A column this build knows about may not exist in the database yet. Rather
+    // than losing the whole save — which silently dropped edits like the player
+    // count — retry without the optional field and report what happened.
+    if (/column .* does not exist|schema cache/i.test(error.message || "")) {
+      const retry = await supabase.from("round_state").upsert(base);
+      if (!retry.error) {
+        console.warn("round_state saved without referee_calls — run the migration to enable referee calls.");
+        return { ok: true, degraded: true };
+      }
+      console.error("saveAppState failed:", retry.error.message);
+      return { ok: false, error: retry.error.message };
+    }
+    console.error("saveAppState failed:", error.message);
+    return { ok: false, error: error.message };
+  } catch (e) {
+    console.error("saveAppState threw:", e);
+    return { ok: false, error: String(e?.message || e) };
+  }
 }
 async function clearAppState(roundId) {
   if (!roundId) return;
@@ -7544,7 +7564,7 @@ export default function App() {
   // Applies Setup edits to the running round without navigating away and without
   // ever touching recorded times — used for live editing of group names/start
   // times/pars/par times/transit time.
-  const handleApplyLiveEdits = (grps, ps, pt, pxg, tt, ttb) => {
+  const handleApplyLiveEdits = async (grps, ps, pt, pxg, tt, ttb) => {
     if (!grps || grps.length === 0) return;      // never wipe a live session
     if (groups.length === 0) return;             // nothing live to update
     const sch = {};
@@ -7560,11 +7580,16 @@ export default function App() {
     setSchedules(sch);
     saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1 });
     setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1, turn_time_back: ttb ?? tt ?? 1 } : prev);
-    saveAppState({
+    // If the write fails, say so — a silent failure here looked like the edit
+    // had been applied while the database still held the old values.
+    const saved = await saveAppState({
       groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch,
       suspensions, isSuspended, pendingStopTime, refereeCalls,
       roundId: currentRound?.id, playersPerGroup: pxg ?? 3, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1,
     });
+    if (saved && saved.ok === false) {
+      window.alert(`The changes could not be saved.\n\n${saved.error}\n\nThey are showing on this device only — reload before recording any times.`);
+    }
     // Give brand-new groups a blank scorecard; existing groups keep their data untouched.
     const newOnes = grps.filter(g => !groupData[g.id]);
     if (newOnes.length) {
