@@ -6954,16 +6954,63 @@ async function fetchAllGroupData(roundId) {
   data.forEach(row => { gd[row.group_id] = row.data; });
   return gd;
 }
+// Recorded times must not be lost to a flaky course connection. A failed write
+// used to disappear silently, so the referee saw the time on screen while the
+// database never received it — and a refresh wiped it. Failures are now kept
+// and retried until they land.
+const pendingGroupWrites = new Map();   // key `${roundId}|${groupId}` → payload
+let groupWriteFailures = 0;
+
+async function pushGroupRow(row) {
+  const { error } = await supabase.from("round_group_data").upsert(row);
+  return error || null;
+}
+
+async function flushPendingGroupWrites() {
+  if (!pendingGroupWrites.size) return;
+  for (const [key, row] of Array.from(pendingGroupWrites.entries())) {
+    const err = await pushGroupRow(row);
+    if (!err) pendingGroupWrites.delete(key);
+    else console.warn("retry failed for", key, err.message);
+  }
+}
+
 async function saveGroupData(roundId, groupId, data, updatedAt) {
-  if (!roundId) return;
+  if (!roundId) return { ok: false, error: "no round" };
+  const row = {
+    round_id: roundId,
+    group_id: String(groupId),
+    data,
+    updated_at: updatedAt || new Date().toISOString(),
+  };
+  const key = `${roundId}|${groupId}`;
   try {
-    await supabase.from("round_group_data").upsert({
-      round_id: roundId,
-      group_id: String(groupId),
-      data,
-      updated_at: updatedAt || new Date().toISOString(),
-    });
-  } catch {}
+    const err = await pushGroupRow(row);
+    if (!err) {
+      pendingGroupWrites.delete(key);
+      groupWriteFailures = 0;
+      return { ok: true };
+    }
+    // Newest state for this group wins; queue it and keep trying.
+    pendingGroupWrites.set(key, row);
+    groupWriteFailures++;
+    console.error("saveGroupData failed:", err.message);
+    if (groupWriteFailures === 3) {
+      window.alert("Recorded times aren't reaching the server.\n\nThey're being retried in the background — stay on this page and check the connection. Don't close the app until this clears.");
+    }
+    return { ok: false, error: err.message };
+  } catch (e) {
+    pendingGroupWrites.set(key, row);
+    groupWriteFailures++;
+    console.error("saveGroupData threw:", e);
+    return { ok: false, error: String(e?.message || e) };
+  }
+}
+
+// Keep trying in the background, and immediately when the device comes back online.
+if (typeof window !== "undefined" && !window.__popGroupRetry) {
+  window.__popGroupRetry = setInterval(flushPendingGroupWrites, 10000);
+  window.addEventListener("online", flushPendingGroupWrites);
 }
 
 // ─── Tournament / Round helpers ─────────────────────────────────────────────
@@ -7283,6 +7330,18 @@ export default function App() {
   // realtime echo of an OLDER write can't stomp a NEWER local write (race condition
   // that was silently dropping WN/MN/TM/Bad Time log entries recorded in quick succession).
   const lastLocalWriteAt = useRef({});
+  const groupDataRef = useRef({});
+  // Don't let someone close the app while recorded times are still queued.
+  useEffect(() => {
+    const warn = (e) => {
+      if (pendingGroupWrites.size === 0) return;
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, []);
   const [screen, setScreen] = useState("login");
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -7301,6 +7360,9 @@ export default function App() {
   const [baseSchedules, setBaseSchedules] = useState({}); // original schedules
   const [schedules, setSchedules] = useState({});         // adjusted schedules
   const [groupData, setGroupData] = useState({});
+  // Mirrors groupData so a save can read the latest value without having to run
+  // inside the state updater.
+  useEffect(() => { groupDataRef.current = groupData; }, [groupData]);
   const [activeGroup, setActiveGroup] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -7938,11 +8000,12 @@ export default function App() {
   const handleUpdateGroup = (id, update) => {
     const writtenAt = new Date().toISOString();
     lastLocalWriteAt.current[id] = writtenAt;
-    setGroupData(prev => {
-      const next = { ...prev, [id]: { ...prev[id], ...update } };
-      saveGroupData(currentRound?.id, id, next[id], writtenAt);
-      return next;
-    });
+    // Build the next value first, then save. Doing the write inside the state
+    // updater meant React could run it more than once, and made the save order
+    // hard to reason about.
+    const next = { ...(groupDataRef.current[id] || {}), ...update };
+    setGroupData(prev => ({ ...prev, [id]: { ...prev[id], ...update } }));
+    saveGroupData(currentRound?.id, id, next, writtenAt);
   };
 
   // Clear the entire session (admin only)
