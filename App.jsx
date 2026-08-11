@@ -3578,10 +3578,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 the card can be compared at a glance. */}
             <div style={{ textAlign: "center", background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 10px" : "10px 14px", minWidth: compact ? 76 : 92, flexShrink: 0 }}>
               <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Now</div>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 20 : 24, lineHeight: 1, color: "#1f2328" }}>{minToTime(now)}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4, color: diffColor(diffLive) }}>
-                {diffLive > 0 ? `+${diffLive}` : diffLive} min
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 14 : 16, lineHeight: 1, color: "#59636e" }}>{minToTime(now)}</div>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 24 : 28, fontWeight: 700, lineHeight: 1, marginTop: 4, color: diffColor(diffLive), whiteSpace: "nowrap" }}>
+                {diffLive > 0 ? `+${diffLive}` : diffLive}
               </div>
+              <div style={{ fontSize: 9, color: "#8c959f", marginTop: 1 }}>min</div>
             </div>
             {(() => {
               const recTime = holeData[currentHole]?.endTime || null;
@@ -3589,12 +3590,13 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               return (
                 <div style={{ textAlign: "center", background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 10px" : "10px 14px", minWidth: compact ? 76 : 92, flexShrink: 0 }}>
                   <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Recorded</div>
-                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 20 : 24, lineHeight: 1, color: recTime ? "#1f2328" : "#8c959f" }}>
+                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 14 : 16, lineHeight: 1, color: "#59636e" }}>
                     {recTime || "—"}
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4, color: recDiff === null ? "#8c959f" : diffColor(recDiff) }}>
-                    {recDiff === null ? "— min" : `${recDiff > 0 ? `+${recDiff}` : recDiff} min`}
+                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 24 : 28, fontWeight: 700, lineHeight: 1, marginTop: 4, color: recDiff === null ? "#8c959f" : diffColor(recDiff), whiteSpace: "nowrap" }}>
+                    {recDiff === null ? "—" : `${recDiff > 0 ? `+${recDiff}` : recDiff}`}
                   </div>
+                  <div style={{ fontSize: 9, color: "#8c959f", marginTop: 1 }}>min</div>
                 </div>
               );
             })()}
