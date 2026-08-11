@@ -3264,7 +3264,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       const next = currentSlot + 1;
       setCurrentSlot(next);
       setRecordedEnd(null);
-      setDiffManual(0);
+      setDiffManual(diffAtHole(holeOrder[next]) ?? 0);
       onUpdate({ holeData: nxtHD, records: nxtRec, currentHole: next, actionLogs: nxtLogs, mnActive, mnName: nextMnName, tmActive, tmName: nextTmName, tmTarget });
     } else {
       setCurrentSlot(18);
@@ -3504,7 +3504,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             )}
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 16 }}>
             <button
-              onClick={() => setCurrentSlot(Math.max(0, currentSlot - 1))}
+              onClick={() => { const t = Math.max(0, currentSlot - 1); setCurrentSlot(t); setRecordedEnd(null); setDiffManual(diffAtHole(holeOrder[t]) ?? 0); }}
               disabled={currentSlot === 0}
               title="Previous hole"
               style={{ background: "#f6f8fa", border: `1px solid ${GROUP_NEUTRAL}44`, color: currentSlot === 0 ? "#d1d9e0" : GROUP_NEUTRAL, cursor: currentSlot === 0 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 6, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
@@ -3513,7 +3513,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               {currentHole + 1}
             </div>
             <button
-              onClick={() => setCurrentSlot(Math.min(17, currentSlot + 1))}
+              onClick={() => { const t = Math.min(17, currentSlot + 1); setCurrentSlot(t); setRecordedEnd(null); setDiffManual(diffAtHole(holeOrder[t]) ?? 0); }}
               disabled={currentSlot === 17}
               title="Next hole"
               style={{ background: "#f6f8fa", border: `1px solid ${GROUP_NEUTRAL}44`, color: currentSlot === 17 ? "#d1d9e0" : GROUP_NEUTRAL, cursor: currentSlot === 17 ? "not-allowed" : "pointer", fontSize: compact ? 15 : 22, fontWeight: 700, borderRadius: 6, width: compact ? 28 : 40, height: compact ? 28 : 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
@@ -3545,25 +3545,33 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           )}
 
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 10 : 16, marginBottom: compact ? 12 : 20 }}>
-            <div style={{ flex: 1, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 10px" : "12px 14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Start</div>
-                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 19 : 24, color: "#1f2328", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
+            <div style={{ flex: 1, minWidth: 0, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 6px" : "10px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Start</div>
+                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 16 : 19, color: "#1f2328", lineHeight: 1 }}>{minToTime(startAbsMin)}</div>
                 </div>
-                <div style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Par Time</div>
-                  <div style={{ color: "#818b98", fontSize: compact ? 14 : 18 }}>+{parTimeNow}m→</div>
+                <div style={{ textAlign: "center", flexShrink: 0 }}>
+                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Par</div>
+                  <div style={{ color: "#818b98", fontSize: compact ? 12 : 14, whiteSpace: "nowrap" }}>+{parTimeNow}m→</div>
                 </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Finish</div>
-                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 19 : 24, color: "#1f2328", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
+                <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Finish</div>
+                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 16 : 19, color: "#1f2328", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
+                </div>
+                {/* What's already on the card for this hole, so it can be checked
+                    against Now without scrolling back to the banner. */}
+                <div style={{ flex: 1, minWidth: 0, textAlign: "center", borderLeft: "1px solid #d1d9e0", paddingLeft: 4 }}>
+                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Recorded</div>
+                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 16 : 19, lineHeight: 1, color: holeData[currentHole]?.endTime ? "#1a7f37" : "#8c959f" }}>
+                    {holeData[currentHole]?.endTime || "—"}
+                  </div>
                 </div>
               </div>
             </div>
-            <div style={{ textAlign: "center", background: "#f6f8fa", borderRadius: 6, padding: compact ? "6px 8px" : "10px 12px", minWidth: compact ? 64 : 80 }}>
+            <div style={{ textAlign: "center", background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 10px" : "10px 14px", minWidth: compact ? 76 : 92, flexShrink: 0 }}>
               <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Now</div>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 19 : 24, lineHeight: 1, color: "#1f2328" }}>{minToTime(now)}</div>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 20 : 24, lineHeight: 1, color: "#1f2328" }}>{minToTime(now)}</div>
               <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4, color: diffColor(diffLive) }}>
                 {diffLive > 0 ? `+${diffLive}` : diffLive} min
               </div>
@@ -3571,7 +3579,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           </div>
 
           {/* Delay input */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 10, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
             <span style={{ fontSize: 12, color: "#cf222e" }}>Delay Time</span>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
@@ -3917,7 +3925,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                     if (isEditing) return;
                     setCurrentSlot(slot);
                     setRecordedEnd(null);
-                    setDiffManual(0);
+                    setDiffManual(diffAtHole(i) ?? 0);
                   };
 
                   return (
