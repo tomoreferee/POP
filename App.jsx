@@ -553,7 +553,7 @@ function LogoutButton({ onLogout }) {
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = "#cf222eaa"}
       onMouseLeave={e => e.currentTarget.style.borderColor = "#cf222e44"}
-    >Log Out</button>
+    >Logout</button>
   );
 }
 function useTimer() {
@@ -2194,7 +2194,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
       {/* Legend */}
       <div style={{ padding: "16px 24px 0" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#59636e" }}>
-          <span style={{ color: "#0969da", fontWeight: 700, letterSpacing: 1 }}>Status criteria:</span>
+          <span style={{ color: "#0969da", fontWeight: 700, letterSpacing: 1 }}>Status Criteria:</span>
           {/* Swatches match the solid cell fills used in the schedule table */}
           {[
             { k: "fast", label: "In Position (Fast) (< -10 min)" },
@@ -2519,9 +2519,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                                 <div style={{ fontSize: 14, color: "#9a6700", fontWeight: 700, letterSpacing: 1 }}>View-only mode (User)</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 30 }}>
-                <div style={{ fontSize: 12, color: "#59636e" }}>✗ Cannot edit Par / time per hole</div>
+                <div style={{ fontSize: 12, color: "#59636e" }}>✗ Cannot edit par / time per hole</div>
                 <div style={{ fontSize: 12, color: "#59636e" }}>✗ Cannot add or edit player groups</div>
-                <div style={{ fontSize: 12, color: "#1a7f37", marginTop: 2 }}>✓ Can view the Schedule table and track Pace</div>
+                <div style={{ fontSize: 12, color: "#1a7f37", marginTop: 2 }}>✓ Can view the schedule table and track pace</div>
               </div>
             </div>
           )}
@@ -2707,8 +2707,22 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, fontSize: 20,
           }}
         >
-          {(!isAdmin && allGroups.length === 0) ? "Waiting for Admin to set up groups" : "▶ Start tracking PACE OF PLAY"}
+          {(!isAdmin && allGroups.length === 0) ? "Waiting for admin to setup groups" : "▶ Start tracking PACE OF PLAY"}
         </button>
+        )}
+
+        {/* Before a round is set up there's nothing to come back to, and no other
+            way off this screen — so offer the tournament list rather than making
+            people log out to get out. */}
+        {allGroups.length === 0 && onSwitchTournament && (
+          <button
+            onClick={onSwitchTournament}
+            style={{
+              width: "100%", marginTop: 12, background: "#ffffff", border: "1px solid #d1d9e0",
+              color: "#59636e", borderRadius: 6, padding: "12px", cursor: "pointer",
+              fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+            }}
+          >← Back to Select Tournament</button>
         )}
 
         {hasLiveSession && (
@@ -4356,7 +4370,7 @@ function WeatherBar({ hostVenue }) {
 }
 
 /* Supabase-style account menu: tap the user chip, get a panel with
-   Change Password / Manage Users / Log Out instead of loose header buttons. */
+   Change Password / Manage Users / Logout instead of loose header buttons. */
 function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, badges = null, align = "right" }) {
   const [open, setOpen] = useState(false);
 
@@ -4421,7 +4435,7 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
             </div>
 
             <div style={{ borderTop: "1px solid #d1d9e0", padding: "4px 0" }}>
-              {item("Log Out", onLogout, "danger")}
+              {item("Logout", onLogout, "danger")}
             </div>
           </div>
         </>
@@ -6512,7 +6526,7 @@ function LoginScreen({ onLogin, users }) {
           onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}
         >
-          Log in
+          Login
         </button>
       </div>
     </div>
