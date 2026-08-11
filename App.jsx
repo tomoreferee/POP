@@ -4938,6 +4938,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // Which nine each table is showing, keyed by table. It used to be one shared
   // value, so paging the H10 table moved the highlight on the H1 table too.
   const [nineHalfByTable, setNineHalfByTable] = useState({});
+  const [fullscreenTable, setFullscreenTable] = useState(null);   // tableKey shown edge-to-edge
+  useEffect(() => {
+    if (!fullscreenTable) return;
+    const onKey = e => { if (e.key === "Escape") setFullscreenTable(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreenTable]);
   const fitAllHoles = viewMode !== "normal";
   const isFit9 = viewMode === "fit9";
   // Fit 9 renders the whole round but sizes columns so nine holes fill the
@@ -5711,6 +5718,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeLabel = meta.label;
             const tableKey = `${sectionKey}-${startHole}`;
             const isCollapsed = !!collapsedTables[tableKey];
+            const isFullscreen = fullscreenTable === tableKey;
             const nineHalf = nineHalfByTable[tableKey] ?? 0;
             const setNineHalf = (half) => setNineHalfByTable(prev => (prev[tableKey] === half ? prev : { ...prev, [tableKey]: half }));
             // Fit 18 squeezes all 18 columns onto one screen. Fit 9 renders the
@@ -5718,7 +5726,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // the screen and the rest is a drag away.
             // 100vw less the page padding (40) and the sticky Grp + Time columns
             // (82) — so nine hole columns exactly fill the first screen.
-            const holeColW = isFit9 ? "calc((100vw - 128px) / 9)" : 0;
+            const holeColW = isFit9 ? `calc((100vw - ${isFullscreen ? 104 : 128}px) / 9)` : 0;
             const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
             const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined, overflow: "hidden" } : tdStyle;
             const nameColW = fitAllHoles ? (isFit9 ? 44 : 32) : 80;
@@ -5750,8 +5758,14 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const gapParFoot = fitAllHoles
               ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderTop: "1px solid #d1d9e0" }
               : null;
-            return (
-              <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 8, overflow: "hidden" }}>
+            const card = (
+              <div key={tableKey} style={{
+                background: "#ffffff", border: `1px solid ${colColor}22`,
+                borderRadius: isFullscreen ? 0 : 6,
+                marginTop: isFullscreen ? 0 : 8,
+                overflow: "hidden",
+                ...(isFullscreen ? { height: "100%", display: "flex", flexDirection: "column" } : {}),
+              }}>
                 <div
                   onClick={() => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
                   style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
@@ -5776,7 +5790,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         ))}
                       </span>
                     )}
-                    <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+                    {/* iOS Safari won't put an arbitrary element into real
+                        fullscreen, so this is an in-app overlay — works the same
+                        everywhere and keeps whichever view mode is active. */}
+                    <button
+                      onClick={e => { e.stopPropagation(); setFullscreenTable(isFullscreen ? null : tableKey); }}
+                      title={isFullscreen ? "Exit full screen" : "Full screen"}
+                      style={{ background: isFullscreen ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${isFullscreen ? "#0969da66" : "#d1d9e0"}`, color: isFullscreen ? "#0969da" : "#59636e", borderRadius: 4, height: 22, padding: "0 8px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}
+                    >{isFullscreen ? "✕ Exit" : "⛶ Full"}</button>
+                    {!isFullscreen && (
+                      <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+                    )}
                   </span>
                 </div>
                 {!isCollapsed && (
@@ -5788,7 +5812,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     const half = el.scrollLeft > (el.scrollWidth - el.clientWidth) / 2 ? 1 : 0;
                     setNineHalf(half);
                   } : undefined}
-                  style={{ overflowX: viewMode === "fit18" ? "hidden" : "auto", WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain" }}>
+                  style={{
+                    overflowX: viewMode === "fit18" ? "hidden" : "auto",
+                    WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain",
+                    ...(isFullscreen ? { flex: 1, overflowY: "auto" } : {}),
+                  }}>
                   <table style={{ borderCollapse: "collapse", fontSize: 13, ...(viewMode === "fit18" ? { width: "100%", tableLayout: "fixed" } : {}) }}>
                     <thead>
                       <tr style={{ background: "#f6f8fa" }}>
@@ -6066,6 +6094,14 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 </div>
                 )}
               </div>
+            );
+
+            if (!isFullscreen) return card;
+            return (
+              <div key={tableKey} style={{
+                position: "fixed", inset: 0, zIndex: 1300, background: "#ffffff",
+                padding: 8, boxSizing: "border-box", overflow: "auto",
+              }}>{card}</div>
             );
           };
 
