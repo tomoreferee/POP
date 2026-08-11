@@ -5450,6 +5450,40 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       )}
 
       <div style={{ padding: "10px 20px 16px" }}>
+        {/* Referee calls follow you down the page. Sticky rather than fixed, so
+            at the top of the page it sits in normal flow and covers nothing —
+            it only pins to the top edge once you've scrolled past it. Below the
+            modal layers so the attend sheet still opens over it. */}
+        {refereeCalls && refereeCalls.length > 0 && (
+          <div style={{
+            position: "sticky", top: 0, zIndex: 900,
+            background: "#ffffff", border: "1px solid #cf222e55", borderRadius: 8,
+            boxShadow: "0 2px 8px #1f232814",
+            padding: "8px 10px", marginBottom: 8,
+          }}>
+            <style>{`@keyframes popCallFlash {
+              0%, 100% { background: #ffebe9; border-color: #cf222e; }
+              50%      { background: #ffffff; border-color: #cf222e55; }
+            }`}</style>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+              {refereeCalls.map(call => (
+                <button key={call.id}
+                  onClick={() => setOpenCall(call)}
+                  title="Tap to attend this call"
+                  style={{
+                    border: "1px solid #cf222e", borderRadius: 4, padding: "4px 4px", cursor: "pointer",
+                    animation: "popCallFlash 1s ease-in-out infinite",
+                    color: "#cf222e", fontFamily: "inherit", fontSize: 10, fontWeight: 700,
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                    minWidth: 0, textAlign: "center",
+                  }}>
+                  REF H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Notifications — referee calls and flagged groups. Collapsible, because
             on a busy morning this list can push the schedule tables off screen. */}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 8, marginBottom: 8, overflow: "hidden" }}>
@@ -5872,39 +5906,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   </span>
                 </div>
 
-                {/* Referee calls sit on their own line: on a portrait phone the
-                    label, the nine-selector and these chips can't share one row
-                    without overlapping. Equal-width cells so every call reads the
-                    same whatever the hole number or area. */}
-                {refereeCalls && refereeCalls.length > 0 && (
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gap: 6,
-                    padding: "10px 16px 12px",
-                  }}>
-                    <style>{`@keyframes popCallFlash {
-                      0%, 100% { background: #ffebe9; border-color: #cf222e; }
-                      50%      { background: #ffffff; border-color: #cf222e55; }
-                    }`}</style>
-                    {refereeCalls.map(call => (
-                      <button key={call.id}
-                        onClick={() => setOpenCall(call)}
-                        title="Tap to attend this call"
-                        style={{
-                          border: "1px solid #cf222e", borderRadius: 4, padding: "3px 4px", cursor: "pointer",
-                          animation: "popCallFlash 1s ease-in-out infinite",
-                          color: "#cf222e", fontFamily: "inherit", fontSize: 10, fontWeight: 700,
-                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                          minWidth: 0, textAlign: "center",
-                        }}>
-                        {/* Three across leaves ~100px per cell, which the full
-                            word doesn't fit — shortened rather than clipped. */}
-                        REF H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
-                      </button>
-                    ))}
-                  </div>
-                )}
                 {!isCollapsed && (
                 <div id={`scroll-${tableKey}`}
                   onScroll={isFit9 ? (e) => {
