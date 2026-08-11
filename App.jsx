@@ -5879,7 +5879,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 {refereeCalls && refereeCalls.length > 0 && (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: `repeat(${isFit9 ? 3 : 2}, 1fr)`,
+                    gridTemplateColumns: "repeat(3, 1fr)",
                     gap: 6,
                     padding: "10px 16px 12px",
                   }}>
@@ -5894,13 +5894,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         style={{
                           border: "1px solid #cf222e", borderRadius: 4, padding: "3px 4px", cursor: "pointer",
                           animation: "popCallFlash 1s ease-in-out infinite",
-                          color: "#cf222e", fontFamily: "inherit", fontSize: isFit9 ? 10 : 11, fontWeight: 700,
+                          color: "#cf222e", fontFamily: "inherit", fontSize: 10, fontWeight: 700,
                           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                           minWidth: 0, textAlign: "center",
                         }}>
                         {/* Three across leaves ~100px per cell, which the full
                             word doesn't fit — shortened rather than clipped. */}
-                        {isFit9 ? "REF " : "REFEREE "}H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
+                        REF H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
                       </button>
                     ))}
                   </div>
