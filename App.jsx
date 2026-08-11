@@ -5763,6 +5763,34 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const gapParFoot = fitAllHoles
               ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderTop: "1px solid #d1d9e0" }
               : null;
+            // Log chips used to set the column width: "MN - NP" at 11px is wider
+            // than a hole column, so any cell carrying one pushed the whole table
+            // out. They're drawn small and clipped instead, and the name is cut to
+            // initials — the full detail is in the group's own log anyway.
+            const logChipText = (l) => {
+              if (fitAllHoles) return shortLogLabel(l);
+              const who = l.name ? `·${l.name}` : "";
+              if (l.badTime) return `BT${l.target ? ` ${l.target}` : ""}${who}`;
+              if (l.off) return `Off ${l.type}${who}`;
+              return `${l.type}${l.target ? ` ${l.target}` : ""}${who}`;
+            };
+            const logChipStyle = (l) => ({
+              marginTop: fitAllHoles ? 1 : 2,
+              fontSize: fitAllHoles ? 9 : 9,
+              fontWeight: 700,
+              color: logColor(l.type),
+              background: `${logBg(l.type)}55`,
+              borderRadius: 3,
+              padding: fitAllHoles ? "0 1px" : "0 2px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              // A percentage cap is circular in an auto-layout table (the column
+              // sizes to its content), so this is a hard pixel ceiling.
+              maxWidth: fitAllHoles ? "100%" : 44,
+              marginLeft: "auto",
+              marginRight: "auto",
+            });
             const card = (
               <div key={tableKey} style={{
                 background: "#ffffff", border: `1px solid ${colColor}22`,
@@ -6024,10 +6052,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       <div style={{ fontSize: 13, fontWeight: 700, color: "#59636e", whiteSpace: "nowrap" }}>{minToTime(deadline)}</div>
                                     )}
                                     {holeLogs.map((l, li) => (
-                                      <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: `${logBg(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
-                                        {fitAllHoles
-                                          ? shortLogLabel(l)
-                                          : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.target ? ` ${l.target}` : ""}{l.name ? ` - ${l.name}` : ""}</>)}
+                                      <div key={li} style={logChipStyle(l)}>
+                                        {logChipText(l)}
                                       </div>
                                     ))}
                                     {showMnPreview && (
@@ -6072,10 +6098,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     );
                                   })()}
                                   {holeLogs.map((l, li) => (
-                                    <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 1px" : "1px 4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden" }}>
-                                      {fitAllHoles
-                                        ? shortLogLabel(l)
-                                        : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.target ? ` ${l.target}` : ""}{l.name ? ` - ${l.name}` : ""}</>)}
+                                    <div key={li} style={{ ...logChipStyle(l), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55` }}>
+                                      {logChipText(l)}
                                     </div>
                                   ))}
                                   {/* Under MN/TM on this hole without its own entry
