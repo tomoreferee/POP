@@ -30,6 +30,13 @@ const PAR_TIMES_BY_PLAYERS = {
 };
 // Stimpmeter readings read as feet and inches: 9′ 11″. Either reading may be
 // unset, in which case it's simply left out.
+// Short forms for the tight header chips: Tee Off → Tee, Fairway → FW,
+// Putting Green → Grn.
+const AREA_SHORT = { "Tee Off": "Tee", "Fairway": "FW", "Putting Green": "Grn" };
+function shortAreas(areas) {
+  return (areas || []).map(a => AREA_SHORT[a] || a).join(" · ");
+}
+
 function formatGreenSpeed(gs) {
   if (!gs) return "";
   const one = (f, i) => (f === undefined || f === null ? null : `${f}′ ${i ?? 0}″`);
@@ -5446,12 +5453,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#cf222e" }}>
-                      REFEREE NEEDED — H{call.hole}
+                      REFEREE NEEDED — H{call.hole}{shortAreas(call.areas) ? ` · ${shortAreas(call.areas)}` : ""}
                     </div>
                     <div style={{ fontSize: 12, color: "#1f2328", marginTop: 2 }}>
-                      {(call.areas || []).join(" · ") || "—"}
-                      {call.name ? ` · by ${call.name}` : ""}
-                      {call.time ? ` · ${call.time}` : ""}
+                      {[call.name ? `by ${call.name}` : null, call.time].filter(Boolean).join(" · ") || "—"}
                     </div>
                   </div>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#cf222e", whiteSpace: "nowrap" }}>Tap to attend</span>
@@ -5789,7 +5794,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             animation: "popCallFlash 1s ease-in-out infinite",
                             color: "#cf222e", fontFamily: "inherit", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
                           }}>
-                          REFEREE H{call.hole}
+                          REFEREE H{call.hole}{shortAreas(call.areas) ? ` · ${shortAreas(call.areas)}` : ""}
                         </button>
                       ))}
                       {refereeCalls.length > 2 && (
