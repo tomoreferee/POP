@@ -1318,7 +1318,8 @@ function saveSetup(data) {
 // chooses its own round independently.
 const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
 
-function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePassword, onManageUsers, onRoundSelected, liveTournamentId, openRoundId, hasLiveGroups, allUsers }) {
+function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePassword, onManageUsers, onRoundSelected, liveTournamentId, openRoundId, hasLiveGroups, allUsers, refereeCalls, onClearRefereeCall }) {
+  const [headerRef, headerH] = useHeaderHeight();
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournamentId, setSelectedTournamentId] = useState(liveTournamentId || null);
   const [rounds, setRounds] = useState([]);
@@ -1598,7 +1599,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       {/* Grid so the right-hand column can never be pushed off screen.
           Pinned: the title and account menu stay reachable while scrolling a
           long list. Needs its own background now that content passes under it. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0" }}>
+      <RefereeCallToast calls={refereeCalls} headerH={headerH} onClear={onClearRefereeCall} />
+      <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0" }}>
         {/* Title + who's signed in */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", gap: 10 }}>
           <div style={{ minWidth: 0 }}>
@@ -1876,7 +1878,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
+  const [headerRef, headerH] = useHeaderHeight();
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
   const roundKey = `${tournamentId || ""}:${roundLabel || ""}`;
@@ -2089,7 +2092,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
 
-      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px" }}>
+      <RefereeCallToast calls={refereeCalls} headerH={headerH} onClear={onClearRefereeCall} />
+      <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px" }}>
         {/* One 2-column grid for the whole header, so the right-hand column —
             user, Log out and Clear Data — shares a single edge all the way down. */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
@@ -4330,6 +4334,119 @@ function AnalogClock({ minutes, size = 30 }) {
   );
 }
 
+/* Referee calls float over the page like an incoming message: pinned below the
+   screen's own header and flashing until someone attends. Self-contained so
+   every screen can drop it in — it measures the header itself and owns the
+   attend dialog, rather than each screen re-implementing both. */
+function RefereeCallToast({ calls, headerH = 0, offsetTop = null, onClear }) {
+  const [openCall, setOpenCall] = useState(null);
+  const [dismissed, setDismissed] = useState(false);
+  const signature = (calls || []).map(c => c.id).join("|");
+  const dismissedFor = useRef("");
+  useEffect(() => {
+    // A dismissal only covers the calls open at that moment; a new one returns.
+    if (dismissedFor.current !== signature) setDismissed(false);
+  }, [signature]);
+
+  if (!calls || calls.length === 0) return null;
+
+  const top = (offsetTop !== null ? offsetTop : headerH) + 8;
+
+  return (
+    <>
+      {!dismissed && (
+        <div style={{
+          position: "fixed", top, left: 12, right: 12, zIndex: 1180,
+          background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10,
+          boxShadow: "0 6px 20px #1f232833",
+          padding: "8px 10px",
+          animation: "popCallToast 1.1s ease-in-out infinite",
+        }}>
+          <style>{`
+            @keyframes popCallFlash {
+              0%, 100% { background: #ffebe9; border-color: #cf222e; }
+              50%      { background: #ffffff; border-color: #cf222e55; }
+            }
+            @keyframes popCallToast {
+              0%, 100% { box-shadow: 0 6px 20px #1f232833, 0 0 0 0 #cf222e00; }
+              50%      { box-shadow: 0 6px 20px #1f232833, 0 0 0 4px #cf222e33; }
+            }
+          `}</style>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#cf222e" }}>
+              REFEREE NEEDED · {calls.length}
+            </span>
+            <span
+              onClick={() => { dismissedFor.current = signature; setDismissed(true); }}
+              title="Hide until the next call"
+              style={{ fontSize: 14, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}
+            >✕</span>
+          </div>
+          {/* One call gets the full width, two split it, three or more fill the
+              row and wrap — so a single call is never a small chip lost in space. */}
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(calls.length, 3)}, 1fr)`, gap: 6 }}>
+            {calls.map(call => (
+              <button key={call.id}
+                onClick={() => setOpenCall(call)}
+                title="Tap to attend this call"
+                style={{
+                  border: "1px solid #cf222e", borderRadius: 4, padding: "4px 4px", cursor: "pointer",
+                  animation: "popCallFlash 1s ease-in-out infinite",
+                  color: "#cf222e", fontFamily: "inherit", fontSize: calls.length >= 3 ? 10 : 12, fontWeight: 700,
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  minWidth: 0, textAlign: "center",
+                }}>
+                {calls.length >= 3 ? "REF " : "REFEREE "}H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {openCall && (
+        <div onClick={() => setOpenCall(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10, padding: 20, width: "100%", maxWidth: 340 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#cf222e", marginBottom: 10 }}>REFEREE NEEDED</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>Hole {openCall.hole}</div>
+            <div style={{ fontSize: 13, color: "#59636e", marginTop: 4, marginBottom: 18, lineHeight: 1.6 }}>
+              {(openCall.areas || []).join(" · ") || "—"}
+              {openCall.name ? <><br />Called by {openCall.name}</> : null}
+              {openCall.time ? ` at ${openCall.time}` : ""}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => { onClear && onClear(openCall.id); setOpenCall(null); }}
+                style={{ flex: 1, background: "#dafbe1", border: "1px solid #1a7f37", color: "#1a7f37", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
+                Clear
+              </button>
+              <button onClick={() => setOpenCall(null)}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* Measures a pinned header so a floating panel can sit just below it. */
+function useHeaderHeight() {
+  const ref = useRef(null);
+  const [h, setH] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setH(el.offsetHeight || 0);
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, []);
+  return [ref, h];
+}
+
 function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToSetup, badges = null, align = "right" }) {
   const [open, setOpen] = useState(false);
 
@@ -4899,10 +5016,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // value, so paging the H10 table moved the highlight on the H1 table too.
   const [nineHalfByTable, setNineHalfByTable] = useState({});
   const [fullscreenTable, setFullscreenTable] = useState(null);   // tableKey shown edge-to-edge
+  const [openCall, setOpenCall] = useState(null);                 // call opened from the Notifications list
   // The toast is hidden at the very top of the page — the calls are already
   // visible there, and covering the header would hide the tournament details.
   const [scrolledDown, setScrolledDown] = useState(false);
-  const [callToastDismissed, setCallToastDismissed] = useState(false);
   useEffect(() => {
     // #root is the scroller here (height:100% + overflow-y:auto in index.html),
     // so window.scrollY never moves — listening to the window meant the toast
@@ -4917,33 +5034,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       window.removeEventListener("scroll", read);
     };
   }, []);
-  // Dismissing hides it for the calls open at that moment; a new call brings it back.
-  const callSignature = (refereeCalls || []).map(c => c.id).join("|");
-  const dismissedFor = useRef("");
-  useEffect(() => {
-    if (dismissedFor.current !== callSignature) setCallToastDismissed(false);
-  }, [callSignature]);
   // In full screen there's no page header to protect, and the overlay has its
   // own scroller — so show it there regardless of how far the page behind it
   // has been scrolled.
-  const showCallToast = (scrolledDown || !!fullscreenTable) && !callToastDismissed;
-  // Its height depends on how many calls are open (three per row), so it's
-  // measured rather than assumed — a fixed offset left it covering the table
-  // header as soon as a second row appeared.
-  const callToastRef = useRef(null);
-  const [callToastH, setCallToastH] = useState(0);
-  useEffect(() => {
-    const el = callToastRef.current;
-    if (!el) { setCallToastH(0); return; }
-    const measure = () => setCallToastH(el.offsetHeight || 0);
-    measure();
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
-    ro?.observe(el);
-    return () => ro?.disconnect();
-  }, [showCallToast, refereeCalls?.length]);
-  const setShowCallToast = (v) => {
-    if (v === false) { dismissedFor.current = callSignature; setCallToastDismissed(true); }
-  };
+  const showCallToast = scrolledDown || !!fullscreenTable;
+  const [headerRef, headerH] = useHeaderHeight();
   useEffect(() => {
     if (!fullscreenTable) return;
     const onKey = e => { if (e.key === "Escape") setFullscreenTable(null); };
@@ -5008,7 +5103,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [callModal, setCallModal] = useState(false);     // "Call Referee" form
   const [callHole, setCallHole] = useState(1);
   const [callArea, setCallArea] = useState("");          // Tee Off | Fairway | Putting Green
-  const [openCall, setOpenCall] = useState(null);        // a call being attended to
   const [notifOpen, setNotifOpen] = useState(true);
   // How many things are actually asking for attention right now
   const notifCount = (refereeCalls?.length || 0) + groups.filter(g => {
@@ -5088,7 +5182,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       {/* Grid, not flex: the left cell is allowed to shrink so the right cell can
           never be pushed off the edge of the screen. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", gap: 10 }}>
+      <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", gap: 10 }}>
         {/* Title block hard against the left edge, laid out the same way as the
             Setup screen — no back button in front of it now that Setup is
             reachable from the account menu. */}
@@ -5393,83 +5487,35 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
       )}
 
-      {/* Attending a call — the only way to stop the flashing */}
-      {openCall && (
-        <div onClick={() => setOpenCall(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10, padding: 20, width: "100%", maxWidth: 340 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#cf222e", marginBottom: 10 }}>REFEREE NEEDED</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>Hole {openCall.hole}</div>
-            <div style={{ fontSize: 13, color: "#59636e", marginTop: 4, marginBottom: 18, lineHeight: 1.6 }}>
-              {(openCall.areas || []).join(" · ") || "—"}
-              {openCall.name ? <><br />Called by {openCall.name}</> : null}
-              {openCall.time ? ` at ${openCall.time}` : ""}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => { onClearRefereeCall && onClearRefereeCall(openCall.id); setOpenCall(null); }}
-                style={{ flex: 1, background: "#dafbe1", border: "1px solid #1a7f37", color: "#1a7f37", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
-                Clear
-              </button>
-              <button onClick={() => setOpenCall(null)}
-                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div style={{ padding: "10px 20px 16px" }}>
-        {/* Referee calls float over the page like an incoming message: pinned
-            to the top of the screen and flashing until someone attends. It only
-            appears once you've scrolled down, so at the top of the page it
-            covers nothing — the same calls are already in view there. */}
-        {refereeCalls && refereeCalls.length > 0 && showCallToast && (
-          <div ref={callToastRef} style={{
-            position: "fixed", top: 10, left: 12, right: 12, zIndex: 1180,
-            background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10,
-            boxShadow: "0 6px 20px #1f232833",
-            padding: "8px 10px",
-            animation: "popCallToast 1.1s ease-in-out infinite",
-          }}>
-            <style>{`
-              @keyframes popCallFlash {
-                0%, 100% { background: #ffebe9; border-color: #cf222e; }
-                50%      { background: #ffffff; border-color: #cf222e55; }
-              }
-              @keyframes popCallToast {
-                0%, 100% { box-shadow: 0 6px 20px #1f232833, 0 0 0 0 #cf222e00; }
-                50%      { box-shadow: 0 6px 20px #1f232833, 0 0 0 4px #cf222e33; }
-              }
-            `}</style>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#cf222e" }}>
-                REFEREE NEEDED · {refereeCalls.length}
-              </span>
-              <span
-                onClick={() => setShowCallToast(false)}
-                title="Hide until the next call"
-                style={{ fontSize: 14, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}
-              >✕</span>
-            </div>
-            {/* One call gets the full width, two split it, three or more fill
-                the row and wrap — so a single call is never a small chip lost in
-                empty space. */}
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(refereeCalls.length, 3)}, 1fr)`, gap: 6 }}>
-              {refereeCalls.map(call => (
-                <button key={call.id}
-                  onClick={() => setOpenCall(call)}
-                  title="Tap to attend this call"
-                  style={{
-                    border: "1px solid #cf222e", borderRadius: 4, padding: "4px 4px", cursor: "pointer",
-                    animation: "popCallFlash 1s ease-in-out infinite",
-                    color: "#cf222e", fontFamily: "inherit", fontSize: refereeCalls.length >= 3 ? 10 : 12, fontWeight: 700,
-                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                    minWidth: 0, textAlign: "center",
-                  }}>
-                  {refereeCalls.length >= 3 ? "REF " : "REFEREE "}H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
+        <RefereeCallToast
+          calls={showCallToast ? refereeCalls : []}
+          offsetTop={fullscreenTable ? 0 : headerH}
+          onClear={onClearRefereeCall}
+        />
+        {/* Attending a call opened from the Notifications list below */}
+        {openCall && (
+          <div onClick={() => setOpenCall(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10, padding: 20, width: "100%", maxWidth: 340 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#cf222e", marginBottom: 10 }}>REFEREE NEEDED</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>Hole {openCall.hole}</div>
+              <div style={{ fontSize: 13, color: "#59636e", marginTop: 4, marginBottom: 18, lineHeight: 1.6 }}>
+                {(openCall.areas || []).join(" · ") || "—"}
+                {openCall.name ? <><br />Called by {openCall.name}</> : null}
+                {openCall.time ? ` at ${openCall.time}` : ""}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => { onClearRefereeCall && onClearRefereeCall(openCall.id); setOpenCall(null); }}
+                  style={{ flex: 1, background: "#dafbe1", border: "1px solid #1a7f37", color: "#1a7f37", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
+                  Clear
                 </button>
-              ))}
+                <button onClick={() => setOpenCall(null)}
+                  style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -6194,7 +6240,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 // the record sheet, which has to appear on top. Extra top padding
                 // when the call toast is up, so it can't cover the exit button.
                 position: "fixed", inset: 0, zIndex: 1150, background: "#ffffff",
-                padding: 8, paddingTop: (refereeCalls?.length && showCallToast) ? callToastH + 20 : 8,
+                padding: 8, paddingTop: (refereeCalls?.length && showCallToast) ? (refereeCalls.length > 3 ? 124 : 92) : 8,
                 boxSizing: "border-box", overflow: "auto",
               }}>{card}</div>
             );
@@ -8210,6 +8256,8 @@ export default function App() {
     <>
     {passwordModal}
     <TournamentRoundScreen
+      refereeCalls={refereeCalls}
+      onClearRefereeCall={handleClearRefereeCall}
       currentUser={currentUser}
       isAdmin={isAdmin}
       onLogout={handleLogout}
@@ -8238,6 +8286,8 @@ export default function App() {
     <>
     {passwordModal}
     <SetupScreen
+      refereeCalls={refereeCalls}
+      onClearRefereeCall={handleClearRefereeCall}
       onStart={handleStart}
       currentUser={currentUser}
       // TD and CR run the event, so they get the same editing rights as an admin
