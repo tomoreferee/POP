@@ -2919,6 +2919,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   const [recordedEnd, setRecordedEnd] = useState(null);
   const [inputMode, setInputMode] = useState("stamp");
   const [diffManual, setDiffManual] = useState(0);
+  // Opening the sheet on a hole that already has a time should offer that value,
+  // not 0 — most edits are a nudge of a minute or two.
+  const seededForHole = useRef(null);
 
   const [editingHole, setEditingHole] = useState(null);
   const [editField, setEditField] = useState("end");
@@ -3184,6 +3187,15 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     const deadline = (adjustedSchedule[holeIdx] ?? 0) + (parTimes?.[holeIdx] ?? 14);
     return endMin - deadline + 1;
   };
+
+  // Whenever the sheet settles on a hole, offer that hole's recorded difference
+  // as the starting value. Guarded by a ref so typing in the field isn't
+  // overwritten on every re-render.
+  useEffect(() => {
+    if (seededForHole.current === currentHole) return;
+    seededForHole.current = currentHole;
+    setDiffManual(diffAtHole(currentHole) ?? 0);
+  }, [currentHole, holeData]);
 
   const commitRecord = (holeIdx, newHoleData) => {
     const nxtHD = [...holeData];
@@ -3559,16 +3571,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Finish</div>
                   <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 16 : 19, color: "#1f2328", lineHeight: 1 }}>{minToTime(deadlineMin)}</div>
                 </div>
-                {/* What's already on the card for this hole, so it can be checked
-                    against Now without scrolling back to the banner. */}
-                <div style={{ flex: 1, minWidth: 0, textAlign: "center", borderLeft: "1px solid #d1d9e0", paddingLeft: 4 }}>
-                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Recorded</div>
-                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 16 : 19, lineHeight: 1, color: holeData[currentHole]?.endTime ? "#1a7f37" : "#8c959f" }}>
-                    {holeData[currentHole]?.endTime || "—"}
-                  </div>
-                </div>
               </div>
             </div>
+            {/* Now and Recorded read the same way — time on top, minutes off the
+                schedule underneath — so the live position and what's already on
+                the card can be compared at a glance. */}
             <div style={{ textAlign: "center", background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 10px" : "10px 14px", minWidth: compact ? 76 : 92, flexShrink: 0 }}>
               <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Now</div>
               <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 20 : 24, lineHeight: 1, color: "#1f2328" }}>{minToTime(now)}</div>
@@ -3576,12 +3583,27 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 {diffLive > 0 ? `+${diffLive}` : diffLive} min
               </div>
             </div>
+            {(() => {
+              const recTime = holeData[currentHole]?.endTime || null;
+              const recDiff = diffAtHole(currentHole);
+              return (
+                <div style={{ textAlign: "center", background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 10px" : "10px 14px", minWidth: compact ? 76 : 92, flexShrink: 0 }}>
+                  <div style={{ fontSize: 11, color: "#59636e", marginBottom: 2 }}>Recorded</div>
+                  <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: compact ? 20 : 24, lineHeight: 1, color: recTime ? "#1f2328" : "#8c959f" }}>
+                    {recTime || "—"}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4, color: recDiff === null ? "#8c959f" : diffColor(recDiff) }}>
+                    {recDiff === null ? "— min" : `${recDiff > 0 ? `+${recDiff}` : recDiff} min`}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Delay input */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 10, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
-            <span style={{ fontSize: 12, color: "#cf222e" }}>Delay Time</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 12, color: "#cf222e", flex: 1, textAlign: "left" }}>Delay Time</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, flexShrink: 0 }}>
               <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
               <input
                 type="number" min="0" value={delayMin}
@@ -3590,7 +3612,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               />
               <button onClick={() => updateDelay(delayMin + 1)} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>+</button>
             </div>
-            <span style={{ fontSize: 12, color: "#59636e" }}>min</span>
+            <span style={{ fontSize: 12, color: "#59636e", flex: 1, textAlign: "left" }}>min</span>
             {delayMin > 0 && (
               <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "2px 7px" }}>
                 schedule +{delayMin}m
@@ -5797,7 +5819,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               // what stops it widening the column; a percentage would be circular
               // in an auto-layout table.
               ...(fitAllHoles
-                ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }
+                ? { whiteSpace: "nowrap" }
                 : { whiteSpace: "normal", wordBreak: "normal", overflowWrap: "normal", hyphens: "none", maxWidth: 44 }),
               marginLeft: "auto",
               marginRight: "auto",
