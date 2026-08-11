@@ -5874,9 +5874,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
                 {/* Referee calls sit on their own line: on a portrait phone the
                     label, the nine-selector and these chips can't share one row
-                    without overlapping. */}
+                    without overlapping. Equal-width cells so every call reads the
+                    same whatever the hole number or area. */}
                 {refereeCalls && refereeCalls.length > 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "0 16px 10px" }}>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${isFit9 ? 3 : 2}, 1fr)`,
+                    gap: 6,
+                    padding: "10px 16px 12px",
+                  }}>
                     <style>{`@keyframes popCallFlash {
                       0%, 100% { background: #ffebe9; border-color: #cf222e; }
                       50%      { background: #ffffff; border-color: #cf222e55; }
@@ -5886,11 +5892,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         onClick={() => setOpenCall(call)}
                         title="Tap to attend this call"
                         style={{
-                          border: "1px solid #cf222e", borderRadius: 4, padding: "2px 8px", cursor: "pointer",
+                          border: "1px solid #cf222e", borderRadius: 4, padding: "3px 4px", cursor: "pointer",
                           animation: "popCallFlash 1s ease-in-out infinite",
-                          color: "#cf222e", fontFamily: "inherit", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+                          color: "#cf222e", fontFamily: "inherit", fontSize: isFit9 ? 10 : 11, fontWeight: 700,
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                          minWidth: 0, textAlign: "center",
                         }}>
-                        REFEREE H{call.hole}{shortAreas(call.areas) ? ` · ${shortAreas(call.areas)}` : ""}
+                        {/* Three across leaves ~100px per cell, which the full
+                            word doesn't fit — shortened rather than clipped. */}
+                        {isFit9 ? "REF " : "REFEREE "}H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
                       </button>
                     ))}
                   </div>
