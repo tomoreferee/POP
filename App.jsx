@@ -4414,17 +4414,14 @@ function WeatherBar({ hostVenue }) {
    official timekeeper. Deliberately unbranded — a sponsor's mark would need
    their licensed asset dropping in here. */
 function AnalogClock({ minutes, size = 30 }) {
-  // The app's clock only advances by the minute, so the seconds hand keeps its
-  // own tick — otherwise it would jump a whole revolution at a time.
-  const [sec, setSec] = useState(() => new Date().getSeconds());
-  useEffect(() => {
-    const id = setInterval(() => setSec(new Date().getSeconds()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  // The sweep is a CSS animation rather than a JS tick: a state update every
+  // frame would re-render the header 60 times a second, and a one-second
+  // interval would step rather than glide. The negative delay starts the
+  // animation partway through so the hand begins at the true current second.
+  const startSec = useRef(new Date().getSeconds() + new Date().getMilliseconds() / 1000).current;
 
   const [h24, m] = [Math.floor((minutes % 1440) / 60), minutes % 60];
-  const secondAngle = sec * 6;                            // 360 / 60
-  const minuteAngle = m * 6 + sec * 0.1;                  // drifts with seconds
+  const minuteAngle = m * 6;                              // 360 / 60
   const hourAngle = (h24 % 12) * 30 + m * 0.5;            // 360 / 12, plus drift
   const c = size / 2;
   const hand = (angle, length, width, color, tail = 0) => {
@@ -4439,6 +4436,7 @@ function AnalogClock({ minutes, size = 30 }) {
   };
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" style={{ flexShrink: 0, display: "block" }}>
+      <style>{`@keyframes popClockSweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <circle cx={c} cy={c} r={c - 1} fill="#ffffff" stroke="#1f2328" strokeWidth="1.5" />
       {Array.from({ length: 12 }, (_, i) => {
         const quarter = i % 3 === 0;                       // 12, 3, 6, 9 stand out
@@ -4454,7 +4452,13 @@ function AnalogClock({ minutes, size = 30 }) {
       })}
       {hand(hourAngle, c * 0.46, 2, "#1f2328")}
       {hand(minuteAngle, c * 0.70, 1.5, "#1f2328")}
-      {hand(secondAngle, c * 0.76, 0.8, "#cf222e", c * 0.18)}
+      <g style={{
+        transformOrigin: `${c}px ${c}px`,
+        animation: "popClockSweep 60s linear infinite",
+        animationDelay: `-${startSec}s`,
+      }}>
+        {hand(0, c * 0.76, 0.8, "#cf222e", c * 0.18)}
+      </g>
       <circle cx={c} cy={c} r="1.3" fill="#cf222e" />
     </svg>
   );
