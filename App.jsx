@@ -4530,7 +4530,7 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
             </div>
 
             <div style={{ padding: "4px 0" }}>
-              {onGoToSetup && item("Back to Setup", onGoToSetup)}
+              {onGoToSetup && item("Setup", onGoToSetup)}
               {item("Change Password", onChangePassword)}
               {onManageTournaments && item("Manage Tournaments", onManageTournaments)}
               {onManageUsers && item("Manage Users", onManageUsers)}
