@@ -4978,6 +4978,26 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // value, so paging the H10 table moved the highlight on the H1 table too.
   const [nineHalfByTable, setNineHalfByTable] = useState({});
   const [fullscreenTable, setFullscreenTable] = useState(null);   // tableKey shown edge-to-edge
+  // The toast is hidden at the very top of the page — the calls are already
+  // visible there, and covering the header would hide the tournament details.
+  const [scrolledDown, setScrolledDown] = useState(false);
+  const [callToastDismissed, setCallToastDismissed] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolledDown(window.scrollY > 90);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  // Dismissing hides it for the calls open at that moment; a new call brings it back.
+  const callSignature = (refereeCalls || []).map(c => c.id).join("|");
+  const dismissedFor = useRef("");
+  useEffect(() => {
+    if (dismissedFor.current !== callSignature) setCallToastDismissed(false);
+  }, [callSignature]);
+  const showCallToast = scrolledDown && !callToastDismissed;
+  const setShowCallToast = (v) => {
+    if (v === false) { dismissedFor.current = callSignature; setCallToastDismissed(true); }
+  };
   useEffect(() => {
     if (!fullscreenTable) return;
     const onKey = e => { if (e.key === "Escape") setFullscreenTable(null); };
@@ -5450,21 +5470,38 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       )}
 
       <div style={{ padding: "10px 20px 16px" }}>
-        {/* Referee calls follow you down the page. Sticky rather than fixed, so
-            at the top of the page it sits in normal flow and covers nothing —
-            it only pins to the top edge once you've scrolled past it. Below the
-            modal layers so the attend sheet still opens over it. */}
-        {refereeCalls && refereeCalls.length > 0 && (
+        {/* Referee calls float over the page like an incoming message: pinned
+            to the top of the screen and flashing until someone attends. It only
+            appears once you've scrolled down, so at the top of the page it
+            covers nothing — the same calls are already in view there. */}
+        {refereeCalls && refereeCalls.length > 0 && showCallToast && (
           <div style={{
-            position: "sticky", top: 0, zIndex: 900,
-            background: "#ffffff", border: "1px solid #cf222e55", borderRadius: 8,
-            boxShadow: "0 2px 8px #1f232814",
-            padding: "8px 10px", marginBottom: 8,
+            position: "fixed", top: 10, left: 12, right: 12, zIndex: 900,
+            background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10,
+            boxShadow: "0 6px 20px #1f232833",
+            padding: "8px 10px",
+            animation: "popCallToast 1.1s ease-in-out infinite",
           }}>
-            <style>{`@keyframes popCallFlash {
-              0%, 100% { background: #ffebe9; border-color: #cf222e; }
-              50%      { background: #ffffff; border-color: #cf222e55; }
-            }`}</style>
+            <style>{`
+              @keyframes popCallFlash {
+                0%, 100% { background: #ffebe9; border-color: #cf222e; }
+                50%      { background: #ffffff; border-color: #cf222e55; }
+              }
+              @keyframes popCallToast {
+                0%, 100% { box-shadow: 0 6px 20px #1f232833, 0 0 0 0 #cf222e00; }
+                50%      { box-shadow: 0 6px 20px #1f232833, 0 0 0 4px #cf222e33; }
+              }
+            `}</style>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#cf222e" }}>
+                REFEREE NEEDED · {refereeCalls.length}
+              </span>
+              <span
+                onClick={() => setShowCallToast(false)}
+                title="Hide until the next call"
+                style={{ fontSize: 14, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}
+              >✕</span>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
               {refereeCalls.map(call => (
                 <button key={call.id}
