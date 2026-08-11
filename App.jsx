@@ -5776,18 +5776,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             };
             const logChipStyle = (l) => ({
               marginTop: fitAllHoles ? 1 : 2,
-              fontSize: fitAllHoles ? 9 : 9,
+              fontSize: 9,
               fontWeight: 700,
+              lineHeight: 1.25,
               color: logColor(l.type),
               background: `${logBg(l.type)}55`,
               borderRadius: 3,
-              padding: fitAllHoles ? "0 1px" : "0 2px",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              // A percentage cap is circular in an auto-layout table (the column
-              // sizes to its content), so this is a hard pixel ceiling.
-              maxWidth: fitAllHoles ? "100%" : 44,
+              padding: fitAllHoles ? "0 1px" : "1px 3px",
+              // Normal view has the vertical room, so a long label wraps onto a
+              // second line rather than being cut off. The pixel cap is what
+              // stops it widening the column — a percentage would be circular in
+              // an auto-layout table.
+              ...(fitAllHoles
+                ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }
+                : { whiteSpace: "normal", wordBreak: "break-word", maxWidth: 44 }),
               marginLeft: "auto",
               marginRight: "auto",
             });
