@@ -4410,6 +4410,45 @@ function WeatherBar({ hostVenue }) {
 
 /* Supabase-style account menu: tap the user chip, get a panel with
    Change Password / Manage Users / Logout instead of loose header buttons. */
+/* Analogue clock face for the header, in the style tournament apps use for an
+   official timekeeper. Deliberately unbranded — a sponsor's mark would need
+   their licensed asset dropping in here. */
+function AnalogClock({ minutes, size = 30 }) {
+  const [h24, m] = [Math.floor((minutes % 1440) / 60), minutes % 60];
+  const minuteAngle = m * 6;                       // 360 / 60
+  const hourAngle = (h24 % 12) * 30 + m * 0.5;     // 360 / 12, plus drift
+  const c = size / 2;
+  const hand = (angle, length, width, color) => {
+    const rad = (angle - 90) * Math.PI / 180;
+    return (
+      <line
+        x1={c} y1={c}
+        x2={c + Math.cos(rad) * length} y2={c + Math.sin(rad) * length}
+        stroke={color} strokeWidth={width} strokeLinecap="round"
+      />
+    );
+  };
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" style={{ flexShrink: 0, display: "block" }}>
+      <circle cx={c} cy={c} r={c - 1} fill="#ffffff" stroke="#1f2328" strokeWidth="1.5" />
+      {[0, 3, 6, 9].map(i => {
+        const rad = (i * 30 - 90) * Math.PI / 180;
+        const r1 = c - 3.5, r2 = c - 1.8;
+        return (
+          <line key={i}
+            x1={c + Math.cos(rad) * r1} y1={c + Math.sin(rad) * r1}
+            x2={c + Math.cos(rad) * r2} y2={c + Math.sin(rad) * r2}
+            stroke="#1f2328" strokeWidth="1.4" strokeLinecap="round"
+          />
+        );
+      })}
+      {hand(hourAngle, c * 0.48, 2, "#1f2328")}
+      {hand(minuteAngle, c * 0.72, 1.5, "#1f2328")}
+      <circle cx={c} cy={c} r="1.4" fill="#1a7f37" />
+    </svg>
+  );
+}
+
 function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, badges = null, align = "right" }) {
   const [open, setOpen] = useState(false);
 
@@ -5182,7 +5221,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, justifyContent: "flex-end" }}>
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
-          <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
+          {/* Face plus figures: the face reads at a glance, but pace of play is
+              judged to the minute, so the digits stay. */}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <AnalogClock minutes={now} size={30} />
+            <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
+          </span>
           {currentUser && (
             <UserMenu
               currentUser={currentUser}
