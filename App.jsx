@@ -5716,13 +5716,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             };
 
             if (alertGroups.length === 0 && !hasAfternoon) return (
-              <div style={{ textAlign: "center", padding: "18px 4px 8px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ textAlign: "center", padding: "14px 4px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 ✓ No groups have been whistled (WN / MN / TM / Bad Time / EST).
               </div>
             );
 
             if (alertGroups.length === 0) return (
-              <div style={{ textAlign: "center", padding: "18px 4px 8px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ textAlign: "center", padding: "14px 4px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 ✓ No groups have been whistled (WN / MN / TM / Bad Time / EST).
               </div>
             );
@@ -5758,7 +5758,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   </div>
                 )}
                 {morningAlerts.length === 0 && afternoonAlerts.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "18px 4px 8px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ textAlign: "center", padding: "14px 4px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     ✓ No groups have been whistled (WN / MN / TM / Bad Time / EST).
                   </div>
                 )}
