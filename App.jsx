@@ -5784,12 +5784,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               borderRadius: 3,
               padding: fitAllHoles ? "0 1px" : "1px 3px",
               // Normal view has the vertical room, so a long label wraps onto a
-              // second line rather than being cut off. The pixel cap is what
-              // stops it widening the column — a percentage would be circular in
-              // an auto-layout table.
+              // second line rather than being cut off — but only at a space.
+              // Breaking anywhere split "MN·NP" into "MN·N / P". The pixel cap is
+              // what stops it widening the column; a percentage would be circular
+              // in an auto-layout table.
               ...(fitAllHoles
                 ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }
-                : { whiteSpace: "normal", wordBreak: "break-word", maxWidth: 44 }),
+                : { whiteSpace: "normal", wordBreak: "normal", overflowWrap: "normal", hyphens: "none", maxWidth: 44 }),
               marginLeft: "auto",
               marginRight: "auto",
             });
