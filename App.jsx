@@ -6059,14 +6059,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                         {logChipText(l)}
                                       </div>
                                     ))}
+                                    {/* Same chip treatment as a logged one, just
+                                        dashed to show it's the run continuing. */}
                                     {showMnPreview && (
-                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ddf4ff", border: "1px dashed #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
-                                        {fitAllHoles ? "M" : <>MN{data?.mnName ? ` - ${data.mnName}` : ""}</>}
+                                      <div style={{ ...logChipStyle({ type: "MN" }), border: "1px dashed #0969da55" }}>
+                                        {fitAllHoles ? "M" : `MN${data?.mnName ? `·${data.mnName}` : ""}`}
                                       </div>
                                     )}
                                     {showTmPreview && (
-                                      <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffeff7", border: "1px dashed #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px" }}>
-                                        {fitAllHoles ? "T" : <>TM {data?.tmName ? `- ${data.tmName}` : ""}</>}
+                                      <div style={{ ...logChipStyle({ type: "TM" }), border: "1px dashed #bf398955" }}>
+                                        {fitAllHoles ? "T" : `TM${data?.tmName ? `·${data.tmName}` : ""}`}
                                       </div>
                                     )}
                                   </td>
@@ -6109,12 +6111,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       — same chip as a logged one, since to a referee
                                       reading the row it means the same thing. */}
                                   {inMnRun(slot) && !holeLogs.some(l => l.type === "MN") && (
-                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ffffffdd", border: "1px solid #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 1px" : "1px 4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden" }}>
+                                    <div style={{ ...logChipStyle({ type: "MN" }), background: "#ffffffdd", border: "1px solid #0969da55" }}>
                                       {fitAllHoles ? "M" : "MN"}
                                     </div>
                                   )}
                                   {inTmRun(slot) && !holeLogs.some(l => l.type === "TM") && (
-                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffffffdd", border: "1px solid #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 1px" : "1px 4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden" }}>
+                                    <div style={{ ...logChipStyle({ type: "TM" }), background: "#ffffffdd", border: "1px solid #bf398955" }}>
                                       {fitAllHoles ? "T" : "TM"}
                                     </div>
                                   )}
