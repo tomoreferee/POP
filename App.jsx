@@ -5790,17 +5790,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         ))}
                       </span>
                     )}
-                    {/* iOS Safari won't put an arbitrary element into real
-                        fullscreen, so this is an in-app overlay — works the same
-                        everywhere and keeps whichever view mode is active. */}
-                    <button
-                      onClick={e => { e.stopPropagation(); setFullscreenTable(isFullscreen ? null : tableKey); }}
-                      title={isFullscreen ? "Exit full screen" : "Full screen"}
-                      style={{ background: isFullscreen ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${isFullscreen ? "#0969da66" : "#d1d9e0"}`, color: isFullscreen ? "#0969da" : "#59636e", borderRadius: 4, height: 22, padding: "0 8px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}
-                    >{isFullscreen ? "✕ Exit" : "⛶ Full"}</button>
                     {!isFullscreen && (
                       <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                     )}
+                    {/* iOS Safari won't put an arbitrary element into real
+                        fullscreen, so this is an in-app overlay — works the same
+                        everywhere and keeps whichever view mode is active. */}
+                    <span
+                      onClick={e => { e.stopPropagation(); setFullscreenTable(isFullscreen ? null : tableKey); }}
+                      title={isFullscreen ? "Exit full screen" : "Full screen"}
+                      style={{ color: isFullscreen ? "#0969da" : "#59636e", cursor: "pointer", fontSize: 15, lineHeight: 1, padding: "0 2px", userSelect: "none" }}
+                    >{isFullscreen ? "✕" : "⛶"}</span>
                   </span>
                 </div>
                 {!isCollapsed && (
