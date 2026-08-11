@@ -4983,10 +4983,18 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [scrolledDown, setScrolledDown] = useState(false);
   const [callToastDismissed, setCallToastDismissed] = useState(false);
   useEffect(() => {
-    const onScroll = () => setScrolledDown(window.scrollY > 90);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    // #root is the scroller here (height:100% + overflow-y:auto in index.html),
+    // so window.scrollY never moves — listening to the window meant the toast
+    // never appeared at all.
+    const el = document.getElementById("root");
+    const read = () => setScrolledDown(((el?.scrollTop ?? 0) || window.scrollY || 0) > 90);
+    read();
+    el?.addEventListener("scroll", read, { passive: true });
+    window.addEventListener("scroll", read, { passive: true });
+    return () => {
+      el?.removeEventListener("scroll", read);
+      window.removeEventListener("scroll", read);
+    };
   }, []);
   // Dismissing hides it for the calls open at that moment; a new call brings it back.
   const callSignature = (refereeCalls || []).map(c => c.id).join("|");
