@@ -1602,9 +1602,11 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>TOURNAMENT</div>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
             </div>
-            <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, minWidth: 0 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 5px", height: 16, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+              <span style={{ fontSize: 11, color: "#59636e", lineHeight: 1.4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Golf Referee · Pace of Play System</span>
+            </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
@@ -4501,7 +4503,7 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
         onClick={() => setOpen(v => !v)}
         title="Account"
         style={{
-          display: "inline-flex", alignItems: "center", gap: 6, maxWidth: 170,
+          display: "inline-flex", alignItems: "center", gap: 6, maxWidth: 104,
           background: open ? "#eaeef2" : "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328",
           borderRadius: 20, padding: "5px 10px 5px 6px", cursor: "pointer", fontFamily: "inherit",
         }}
@@ -5231,25 +5233,24 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           never be pushed off the edge of the screen. */}
       <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <button onClick={onBack} style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", cursor: "pointer", fontSize: 18, fontWeight: 700, borderRadius: 6, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
+          <button onClick={onBack} title="Back to Setup" style={{ background: "#f6f8fa", border: "1px solid #0969da44", color: "#0969da", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, letterSpacing: 1, borderRadius: 6, padding: "0 10px", height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, whiteSpace: "nowrap" }}>SETUP</button>
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>DASHBOARD</div>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 19, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap", flexShrink: 0 }}>DASHBOARD</div>
             </div>
-            <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, minWidth: 0 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 5px", height: 16, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
+              <span style={{ fontSize: 11, color: "#59636e", lineHeight: 1.4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Golf Referee · Pace of Play System</span>
+            </div>
           </div>
         </div>
         {/* Right side: clock sits beside the account menu. */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, justifyContent: "flex-end" }}>
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
-          {/* Face plus figures: the face reads at a glance, but pace of play is
-              judged to the minute, so the digits stay. */}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <AnalogClock minutes={now} size={30} />
-            <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
-          </span>
+          {/* The face alone: the digits were pushing the title out of the header,
+              and every recording screen shows the exact time anyway. */}
+          <AnalogClock minutes={now} size={32} />
           {currentUser && (
             <UserMenu
               currentUser={currentUser}
