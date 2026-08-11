@@ -5006,6 +5006,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // own scroller — so show it there regardless of how far the page behind it
   // has been scrolled.
   const showCallToast = (scrolledDown || !!fullscreenTable) && !callToastDismissed;
+  // Its height depends on how many calls are open (three per row), so it's
+  // measured rather than assumed — a fixed offset left it covering the table
+  // header as soon as a second row appeared.
+  const callToastRef = useRef(null);
+  const [callToastH, setCallToastH] = useState(0);
+  useEffect(() => {
+    const el = callToastRef.current;
+    if (!el) { setCallToastH(0); return; }
+    const measure = () => setCallToastH(el.offsetHeight || 0);
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [showCallToast, refereeCalls?.length]);
   const setShowCallToast = (v) => {
     if (v === false) { dismissedFor.current = callSignature; setCallToastDismissed(true); }
   };
@@ -5486,7 +5500,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             appears once you've scrolled down, so at the top of the page it
             covers nothing — the same calls are already in view there. */}
         {refereeCalls && refereeCalls.length > 0 && showCallToast && (
-          <div style={{
+          <div ref={callToastRef} style={{
             position: "fixed", top: 10, left: 12, right: 12, zIndex: 1180,
             background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10,
             boxShadow: "0 6px 20px #1f232833",
@@ -6252,7 +6266,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 // the record sheet, which has to appear on top. Extra top padding
                 // when the call toast is up, so it can't cover the exit button.
                 position: "fixed", inset: 0, zIndex: 1150, background: "#ffffff",
-                padding: 8, paddingTop: (refereeCalls?.length && showCallToast) ? 84 : 8,
+                padding: 8, paddingTop: (refereeCalls?.length && showCallToast) ? callToastH + 20 : 8,
                 boxSizing: "border-box", overflow: "auto",
               }}>{card}</div>
             );
