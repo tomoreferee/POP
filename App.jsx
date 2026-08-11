@@ -5527,7 +5527,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 style={{ fontSize: 14, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}
               >✕</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+            {/* One call gets the full width, two split it, three or more fill
+                the row and wrap — so a single call is never a small chip lost in
+                empty space. */}
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(refereeCalls.length, 3)}, 1fr)`, gap: 6 }}>
               {refereeCalls.map(call => (
                 <button key={call.id}
                   onClick={() => setOpenCall(call)}
@@ -5535,11 +5538,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   style={{
                     border: "1px solid #cf222e", borderRadius: 4, padding: "4px 4px", cursor: "pointer",
                     animation: "popCallFlash 1s ease-in-out infinite",
-                    color: "#cf222e", fontFamily: "inherit", fontSize: 10, fontWeight: 700,
+                    color: "#cf222e", fontFamily: "inherit", fontSize: refereeCalls.length >= 3 ? 10 : 12, fontWeight: 700,
                     whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     minWidth: 0, textAlign: "center",
                   }}>
-                  REF H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
+                  {refereeCalls.length >= 3 ? "REF " : "REFEREE "}H{call.hole}{shortAreas(call.areas) ? `·${shortAreas(call.areas)}` : ""}
                 </button>
               ))}
             </div>
