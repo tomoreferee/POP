@@ -1874,7 +1874,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound }) {
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
   const roundKey = `${tournamentId || ""}:${roundLabel || ""}`;
@@ -1893,68 +1893,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? loadSetup()?.turnTime ?? 1);
   const [turnTimeBack, setTurnTimeBack] = useState(() => savedTurnTimeBack ?? loadSetup()?.turnTimeBack ?? 1);
 
-  // Quick tournament switcher popup — a simple list, so the common "jump to my
-  // other event" case never leaves the Setup page. Full management (create,
-  // roles, access, delete) still lives on the Tournament screen.
-  const [showTournamentPicker, setShowTournamentPicker] = useState(false);
-  const [tPickerList, setTPickerList] = useState([]);
-  const [tPickerLoading, setTPickerLoading] = useState(false);
-  const openTournamentPicker = async () => {
-    setShowTournamentPicker(true);
-    setTPickerLoading(true);
-    const [all, roles] = await Promise.all([fetchTournaments(), fetchAllRoles()]);
-    // Only offer what this person may actually open
-    setTPickerList(
-      all.filter(t =>
-        t.status !== "closed" &&
-        true
-      )
-    );
-    setTPickerLoading(false);
-  };
-
-  // Round switcher popup — loads this tournament's rounds on demand
-  const [showRoundPicker, setShowRoundPicker] = useState(false);
-  const [pickerRounds, setPickerRounds] = useState([]);
-  const [pickerRoundsWithData, setPickerRoundsWithData] = useState({});
-  const [pickerTournament, setPickerTournament] = useState(null);
-  const [pickerLoading, setPickerLoading] = useState(false);
-  const openRoundPicker = async () => {
-    if (!tournamentId) return;
-    setShowRoundPicker(true);
-    setPickerLoading(true);
-    const [rs, t] = await Promise.all([fetchRounds(tournamentId), fetchTournamentById(tournamentId)]);
-    setPickerRounds(rs);
-    setPickerTournament(t);
-    setPickerRoundsWithData(await fetchRoundsWithData(rs.map(r => r.id)));
-    setPickerLoading(false);
-  };
-  // Offer the rounds this tournament actually uses, plus the next one so a new
-  // round can still be started — not a blanket Q + R1..R4.
-  // Offer exactly the rounds this competition is configured for. Without this
-  // the switcher happily invented R2/R3/R4 for a one-round event.
-  const pickerLabels = (() => {
-    const existing = pickerRounds.map(r => r.label);
-    const configured = pickerTournament && (pickerTournament.num_rounds != null || pickerTournament.has_qualifying != null);
-
-    if (configured) {
-      const list = [
-        ...(pickerTournament.has_qualifying !== false ? ["Q"] : []),
-        ...ROUND_LABELS.filter(l => l !== "Q").slice(0, pickerTournament.num_rounds ?? 4),
-      ];
-      // Never hide a round that already exists, even if the setting changed later
-      existing.forEach(l => { if (!list.includes(l)) list.push(l); });
-      return ROUND_LABELS.filter(l => list.includes(l));
-    }
-
-    // Unconfigured (older tournaments): what exists, plus the next one
-    if (existing.length === 0) return ROUND_LABELS;
-    const numbered = existing.filter(l => l !== "Q").map(Number).filter(n => !isNaN(n));
-    const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
-    const list = [...existing];
-    if (nextNum <= 4 && !list.includes(String(nextNum))) list.push(String(nextNum));
-    return ROUND_LABELS.filter(l => list.includes(l));
-  })();
+  // The Year / Tournament / Round selector bar replaced the two popup pickers
+  // that used to live here, so the Setup and Dashboard screens switch context
+  // exactly the same way.
 
   // The tournament record may arrive after this screen first mounts (async fetch), and
   // it changes when switching tournaments — pull its saved course setup in whenever
@@ -2231,11 +2172,18 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               </div>
               {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
 
-              {isAdmin && onSwitchTournament && (
-                <button onClick={openTournamentPicker}
-                  style={{ marginTop: 8, width: "100%", fontSize: 12, color: "#0969da", background: "#f6f8fa", border: "1px solid #0969da66", borderRadius: 6, height: 34, padding: "0 16px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
-                  ⇄ Switch Tournament
-                </button>
+              {/* Same Year / Tournament / Round picker the Dashboard uses, so
+                  changing either one works identically on both screens. */}
+              {isAdmin && onOpenRound && (
+                <div style={{ marginTop: 10 }}>
+                  <RoundSelectorBar
+                    tournamentId={tournamentId}
+                    roundLabel={roundLabel}
+                    isAdmin={isAdmin}
+                    onOpen={onOpenRound}
+                    compact
+                  />
+                </div>
               )}
             </div>
 
@@ -2253,12 +2201,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                     </span>
                   ) : null}
                 </span>
-                {isAdmin && tournamentId && (
-                  <button onClick={openRoundPicker}
-                    style={{ flex: 1, minWidth: 0, fontSize: 12, color: "#1a7f37", background: "#f6f8fa", border: "1px solid #1a7f3766", borderRadius: 6, height: 34, padding: "0 12px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
-                    ⇄ Switch Round
-                  </button>
-                )}
+
               </div>
             )}
 
@@ -2750,93 +2693,6 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         </div>
       </div>
 
-      {/* Quick tournament switcher — list only; full management is on the Tournament screen */}
-      {showTournamentPicker && (
-        <div onClick={() => setShowTournamentPicker(false)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, padding: 16, overflowY: "auto" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", marginTop: 24 }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 14 }}>⇄ Switch Tournament</div>
-
-            {tPickerLoading ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#59636e", fontSize: 13 }}>Loading…</div>
-            ) : tPickerList.length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#818b98", fontSize: 13 }}>No other competitions available to you</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 340, overflowY: "auto" }}>
-                {tPickerList.map(t => {
-                  const isCurrent = t.id === tournamentId;
-                  return (
-                    <button key={t.id}
-                      onClick={() => { setShowTournamentPicker(false); if (!isCurrent) onPickTournament?.(t); }}
-                      style={{
-                        textAlign: "left", padding: "11px 13px", borderRadius: 6, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
-                        background: isCurrent ? "#ddf4ff" : "#f6f8fa",
-                        border: `1px solid ${isCurrent ? "#0969da" : "#d1d9e0"}`,
-                      }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>{t.name || "(untitled)"}</span>
-                        {isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da55", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>OPEN HERE</span>}
-                      </div>
-                      {t.host_venue && <div style={{ fontSize: 11, color: "#59636e", marginTop: 2 }}>{t.host_venue}</div>}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setShowTournamentPicker(false)}
-                style={{ flex: 1, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "10px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Round switcher — pick another round of the SAME tournament */}
-      {showRoundPicker && (
-        <div onClick={() => setShowRoundPicker(false)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #1a7f3766", borderRadius: 6, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>⇄ Switch Round</div>
-            <div style={{ fontSize: 12, color: "#59636e", marginBottom: 16 }}>{tournamentName}</div>
-
-            {pickerLoading ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#59636e", fontSize: 13 }}>Loading…</div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
-                {pickerLabels.map(label => {
-                  const r = pickerRounds.find(rr => rr.label === label);
-                  const isCurrent = label === roundLabel;
-                  // Real data presence, not the round's status column.
-                  const hasData = !!r && !!pickerRoundsWithData[r.id];
-                  return (
-                    <button key={label}
-                      onClick={() => { setShowRoundPicker(false); if (!isCurrent) onPickRound?.(label); }}
-                      style={{
-                        padding: "14px 0", borderRadius: 6, cursor: isCurrent ? "default" : "pointer", fontFamily: "inherit",
-                        background: isCurrent ? "#ddf4ff" : label === "Q" ? "#faf2ff" : "#f6f8fa",
-                        border: `1px solid ${isCurrent ? "#0969da" : label === "Q" ? "#8250df55" : hasData ? "#0969da55" : "#d1d9e0"}`,
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-                      }}>
-                      <span style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 1, color: isCurrent ? "#0969da" : label === "Q" ? "#8250df" : "#1f2328" }}>
-                        {label === "Q" ? "Q" : `R${label}`}
-                      </span>
-                      <span style={{ fontSize: 9, letterSpacing: 1, color: isCurrent ? "#0969da" : hasData ? "#0969da" : "#59636e" }}>
-                        {isCurrent ? "OPEN HERE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <button onClick={() => setShowRoundPicker(false)}
-              style={{ width: "100%", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {clearModal && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -8409,6 +8265,7 @@ export default function App() {
       liveGroups={groups}
       onApplyLiveEdits={handleApplyLiveEdits}
       onSwitchTournament={() => setScreen("tournament")}
+      onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       tournamentId={currentTournament?.id || null}
       onPickRound={handlePickRoundFromSetup}
       onPickTournament={handlePickTournamentFromSetup}
