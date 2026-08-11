@@ -5236,7 +5236,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             reachable from the account menu. */}
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 28, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>DASHBOARD</div>
+            <div style={{ fontSize: 22, fontWeight: 600, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>DASHBOARD</div>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
           </div>
           <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
