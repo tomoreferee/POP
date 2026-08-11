@@ -5992,17 +5992,22 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.92)"}
                                   onMouseLeave={e => e.currentTarget.style.filter = ""}
                                 >
-                                  <div style={{
-                                    fontSize: isFit9 ? 14 : fitAllHoles ? 9 : 16,
-                                    lineHeight: 1.15,
-                                    letterSpacing: viewMode === "fit18" ? -0.5 : 0,
-                                    whiteSpace: "nowrap",
-                                  }}>
-                                    {/* Fit 18 columns are only a few characters
-                                        wide, so the "+" is dropped there — the
-                                        fill colour already says late or early. */}
-                                    {viewMode === "fit18" ? diff : (diff > 0 ? `+${diff}` : diff)}
-                                  </div>
+                                  {(() => {
+                                    const text = diff > 0 ? `+${diff}` : `${diff}`;
+                                    // Fit 18 columns are barely wider than three
+                                    // characters, so the longer the value the
+                                    // smaller it's drawn — "+7" stays readable
+                                    // while "+40" still fits with its sign.
+                                    const fit18Size = text.length >= 4 ? 7 : text.length === 3 ? 8 : 10;
+                                    return (
+                                      <div style={{
+                                        fontSize: isFit9 ? 14 : viewMode === "fit18" ? fit18Size : fitAllHoles ? 9 : 16,
+                                        lineHeight: 1.15,
+                                        letterSpacing: viewMode === "fit18" ? -0.6 : 0,
+                                        whiteSpace: "nowrap",
+                                      }}>{text}</div>
+                                    );
+                                  })()}
                                   {holeLogs.map((l, li) => (
                                     <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 1px" : "1px 4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden" }}>
                                       {fitAllHoles
