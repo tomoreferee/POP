@@ -1595,8 +1595,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
   return (
     <div style={{ background: "#f6f8fa", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", color: "#1f2328" }}>
-      {/* Grid so the right-hand column can never be pushed off screen */}
-      <div style={{ borderBottom: "1px solid #d1d9e0" }}>
+      {/* Grid so the right-hand column can never be pushed off screen.
+          Pinned: the title and account menu stay reachable while scrolling a
+          long list. Needs its own background now that content passes under it. */}
+      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0" }}>
         {/* Title + who's signed in */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", gap: 10 }}>
           <div style={{ minWidth: 0 }}>
@@ -2087,7 +2089,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
 
-      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px" }}>
         {/* One 2-column grid for the whole header, so the right-hand column —
             user, Log out and Clear Data — shares a single edge all the way down. */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
@@ -5086,7 +5088,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       {/* Grid, not flex: the left cell is allowed to shrink so the right cell can
           never be pushed off the edge of the screen. */}
-      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", gap: 10 }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", gap: 10 }}>
         {/* Title block hard against the left edge, laid out the same way as the
             Setup screen — no back button in front of it now that Setup is
             reachable from the account menu. */}
