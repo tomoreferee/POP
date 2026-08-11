@@ -5002,7 +5002,10 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   useEffect(() => {
     if (dismissedFor.current !== callSignature) setCallToastDismissed(false);
   }, [callSignature]);
-  const showCallToast = scrolledDown && !callToastDismissed;
+  // In full screen there's no page header to protect, and the overlay has its
+  // own scroller — so show it there regardless of how far the page behind it
+  // has been scrolled.
+  const showCallToast = (scrolledDown || !!fullscreenTable) && !callToastDismissed;
   const setShowCallToast = (v) => {
     if (v === false) { dismissedFor.current = callSignature; setCallToastDismissed(true); }
   };
@@ -5484,7 +5487,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             covers nothing — the same calls are already in view there. */}
         {refereeCalls && refereeCalls.length > 0 && showCallToast && (
           <div style={{
-            position: "fixed", top: 10, left: 12, right: 12, zIndex: 900,
+            position: "fixed", top: 10, left: 12, right: 12, zIndex: 1180,
             background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10,
             boxShadow: "0 6px 20px #1f232833",
             padding: "8px 10px",
@@ -6246,9 +6249,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             return (
               <div key={tableKey} style={{
                 // Below the modals (1200) on purpose: tapping a cell here opens
-                // the record sheet, which has to appear on top.
+                // the record sheet, which has to appear on top. Extra top padding
+                // when the call toast is up, so it can't cover the exit button.
                 position: "fixed", inset: 0, zIndex: 1150, background: "#ffffff",
-                padding: 8, boxSizing: "border-box", overflow: "auto",
+                padding: 8, paddingTop: (refereeCalls?.length && showCallToast) ? 84 : 8,
+                boxSizing: "border-box", overflow: "auto",
               }}>{card}</div>
             );
           };
