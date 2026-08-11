@@ -4436,7 +4436,6 @@ function AnalogClock({ minutes, size = 30 }) {
   };
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" style={{ flexShrink: 0, display: "block" }}>
-      <style>{`@keyframes popClockSweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <circle cx={c} cy={c} r={c - 1} fill="#ffffff" stroke="#1f2328" strokeWidth="1.5" />
       {Array.from({ length: 12 }, (_, i) => {
         const quarter = i % 3 === 0;                       // 12, 3, 6, 9 stand out
@@ -4452,12 +4451,21 @@ function AnalogClock({ minutes, size = 30 }) {
       })}
       {hand(hourAngle, c * 0.46, 2, "#1f2328")}
       {hand(minuteAngle, c * 0.70, 1.5, "#1f2328")}
-      <g style={{
-        transformOrigin: `${c}px ${c}px`,
-        animation: "popClockSweep 60s linear infinite",
-        animationDelay: `-${startSec}s`,
-      }}>
+      {/* SVG's own animateTransform rather than a CSS animation: CSS
+          transform-origin on an SVG group is unreliable in Safari, which left
+          the hand either static or pivoting off-centre. This rotates about the
+          dial centre explicitly, and starts at the true current second. */}
+      <g>
         {hand(0, c * 0.76, 0.8, "#cf222e", c * 0.18)}
+        <animateTransform
+          attributeName="transform"
+          attributeType="XML"
+          type="rotate"
+          from={`${startSec * 6} ${c} ${c}`}
+          to={`${startSec * 6 + 360} ${c} ${c}`}
+          dur="60s"
+          repeatCount="indefinite"
+        />
       </g>
       <circle cx={c} cy={c} r="1.3" fill="#cf222e" />
     </svg>
