@@ -4414,15 +4414,24 @@ function WeatherBar({ hostVenue }) {
    official timekeeper. Deliberately unbranded — a sponsor's mark would need
    their licensed asset dropping in here. */
 function AnalogClock({ minutes, size = 30 }) {
+  // The app's clock only advances by the minute, so the seconds hand keeps its
+  // own tick — otherwise it would jump a whole revolution at a time.
+  const [sec, setSec] = useState(() => new Date().getSeconds());
+  useEffect(() => {
+    const id = setInterval(() => setSec(new Date().getSeconds()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const [h24, m] = [Math.floor((minutes % 1440) / 60), minutes % 60];
-  const minuteAngle = m * 6;                       // 360 / 60
-  const hourAngle = (h24 % 12) * 30 + m * 0.5;     // 360 / 12, plus drift
+  const secondAngle = sec * 6;                            // 360 / 60
+  const minuteAngle = m * 6 + sec * 0.1;                  // drifts with seconds
+  const hourAngle = (h24 % 12) * 30 + m * 0.5;            // 360 / 12, plus drift
   const c = size / 2;
-  const hand = (angle, length, width, color) => {
+  const hand = (angle, length, width, color, tail = 0) => {
     const rad = (angle - 90) * Math.PI / 180;
     return (
       <line
-        x1={c} y1={c}
+        x1={c - Math.cos(rad) * tail} y1={c - Math.sin(rad) * tail}
         x2={c + Math.cos(rad) * length} y2={c + Math.sin(rad) * length}
         stroke={color} strokeWidth={width} strokeLinecap="round"
       />
@@ -4431,20 +4440,22 @@ function AnalogClock({ minutes, size = 30 }) {
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" style={{ flexShrink: 0, display: "block" }}>
       <circle cx={c} cy={c} r={c - 1} fill="#ffffff" stroke="#1f2328" strokeWidth="1.5" />
-      {[0, 3, 6, 9].map(i => {
+      {Array.from({ length: 12 }, (_, i) => {
+        const quarter = i % 3 === 0;                       // 12, 3, 6, 9 stand out
         const rad = (i * 30 - 90) * Math.PI / 180;
-        const r1 = c - 3.5, r2 = c - 1.8;
+        const r1 = c - (quarter ? 4 : 3), r2 = c - 1.8;
         return (
           <line key={i}
             x1={c + Math.cos(rad) * r1} y1={c + Math.sin(rad) * r1}
             x2={c + Math.cos(rad) * r2} y2={c + Math.sin(rad) * r2}
-            stroke="#1f2328" strokeWidth="1.4" strokeLinecap="round"
+            stroke={quarter ? "#1f2328" : "#8c959f"} strokeWidth={quarter ? 1.4 : 0.8} strokeLinecap="round"
           />
         );
       })}
-      {hand(hourAngle, c * 0.48, 2, "#1f2328")}
-      {hand(minuteAngle, c * 0.72, 1.5, "#1f2328")}
-      <circle cx={c} cy={c} r="1.4" fill="#1a7f37" />
+      {hand(hourAngle, c * 0.46, 2, "#1f2328")}
+      {hand(minuteAngle, c * 0.70, 1.5, "#1f2328")}
+      {hand(secondAngle, c * 0.76, 0.8, "#cf222e", c * 0.18)}
+      <circle cx={c} cy={c} r="1.3" fill="#cf222e" />
     </svg>
   );
 }
