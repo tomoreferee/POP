@@ -5726,26 +5726,30 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // At the turn, Fit 9 repeats the group column (the second nine is a
             // drag away from the sticky one, so you'd otherwise lose track of
             // which row you're reading). Fit 18 just leaves a plain spacer.
-            const turnGapW = isFit9 ? nameColW : fitAllHoles ? 5 : 0;
+            // Fit 9 repeats the group number at the turn; Fit 18 has no room for
+            // that, but it gets the same ruled column so the turn still reads as
+            // a real divider rather than a gap in the rows.
+            const turnGapW = isFit9 ? nameColW : fitAllHoles ? 10 : 0;
             const gapRule = { borderLeft: "1px solid #d1d9e0", borderRight: "1px solid #d1d9e0" };
-            const gapHead = isFit9
-              ? { ...gapRule, background: "#f6f8fa", borderBottom: "2px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#59636e", textAlign: "center" }
-              : fitAllHoles ? { borderBottom: "2px solid #d1d9e0" } : null;
-            const gapBody = isFit9
-              ? { ...gapRule, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#1f2328", textAlign: "center" }
-              : fitAllHoles ? { borderBottom: "1px solid #d1d9e0" } : null;
-            const gapFoot = isFit9
-              ? { ...gapRule, background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#59636e", textAlign: "center" }
-              : fitAllHoles ? { borderTop: "1px solid #d1d9e0" } : null;
+            const gapText = { padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#59636e", textAlign: "center" };
+            const gapHead = fitAllHoles
+              ? { ...gapRule, ...gapText, background: "#f6f8fa", borderBottom: "2px solid #d1d9e0" }
+              : null;
+            const gapBody = fitAllHoles
+              ? { ...gapRule, ...gapText, background: "#ffffff", borderBottom: "1px solid #d1d9e0", color: "#1f2328" }
+              : null;
+            const gapFoot = fitAllHoles
+              ? { ...gapRule, ...gapText, background: "#f6f8fa", borderTop: "1px solid #d1d9e0" }
+              : null;
             // Par sits in its own quieter row above the first group and below the
             // last, so it reads as reference data rather than another hole line.
             const parTh = { ...th, color: "#59636e", fontWeight: 500, borderBottom: "1px solid #d1d9e0", ...(fitAllHoles ? {} : { padding: "5px 6px", fontSize: 12 }) };
-            const gapPar = isFit9
-              ? { ...gapRule, background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 500, color: "#59636e", textAlign: "center" }
-              : fitAllHoles ? { borderBottom: "1px solid #d1d9e0" } : null;
-            const gapParFoot = isFit9
-              ? { ...gapRule, background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 500, color: "#59636e", textAlign: "center" }
-              : fitAllHoles ? { borderTop: "1px solid #d1d9e0" } : null;
+            const gapPar = fitAllHoles
+              ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderBottom: "1px solid #d1d9e0" }
+              : null;
+            const gapParFoot = fitAllHoles
+              ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderTop: "1px solid #d1d9e0" }
+              : null;
             return (
               <div key={tableKey} style={{ background: "#ffffff", border: `1px solid ${colColor}22`, borderRadius: 6, marginTop: 8, overflow: "hidden" }}>
                 <div
