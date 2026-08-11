@@ -80,8 +80,8 @@ function statusFillForDiff(d) {
   return STATUS_FILL.slow;
 }
 
-const thStyle = { padding: "8px 6px", color: "#59636e", fontWeight: 700, textAlign: "center", borderBottom: "2px solid #d1d9e0", minWidth: 46 };
-const tdStyle = { padding: "9px 6px", textAlign: "center", borderBottom: "1px solid #d1d9e0" };
+const thStyle = { padding: "8px 3px", color: "#59636e", fontWeight: 700, textAlign: "center", borderBottom: "2px solid #d1d9e0", minWidth: 40 };
+const tdStyle = { padding: "9px 3px", textAlign: "center", borderBottom: "1px solid #d1d9e0" };
 
 function buildSchedule(startTimeStr, parTimes) {
   const [h, m] = startTimeStr.split(":").map(Number);
@@ -5734,8 +5734,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const holeColW = isFit9 ? `calc((100vw - ${isFullscreen ? 104 : 128}px) / 9)` : 0;
             const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
             const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined, overflow: "hidden" } : tdStyle;
-            const nameColW = fitAllHoles ? (isFit9 ? 44 : 32) : 80;
-            const startColW = fitAllHoles ? (isFit9 ? 42 : 24) : 56;
+            const nameColW = fitAllHoles ? (isFit9 ? 44 : 32) : 64;
+            const startColW = fitAllHoles ? (isFit9 ? 42 : 24) : 62;
             // At the turn, Fit 9 repeats the group column (the second nine is a
             // drag away from the sticky one, so you'd otherwise lose track of
             // which row you're reading). Fit 18 just leaves a plain spacer.
@@ -5976,20 +5976,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   onUpdateGroupData(g.id, { delayMin: n });
                                 };
                                 return (
-                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, marginTop: 4 }}>
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, marginTop: 4 }}>
                                     <button
                                       onClick={() => setDelay(delayMin - 1)}
-                                      style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 4, width: 16, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0 }}
+                                      style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 4, width: 15, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0, flexShrink: 0 }}
                                     >−</button>
                                     <input
                                       type="number" min="0" value={delayMin}
                                       onChange={e => setDelay(e.target.value)}
                                       onClick={e => e.stopPropagation()}
-                                      style={{ width: 28, background: "#f6f8fa", border: `1px solid ${delayMin > 0 ? "#9a670066" : "#d1d9e0"}`, color: "#9a6700", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 12, fontWeight: 700, textAlign: "center", borderRadius: 4, padding: "1px 0", outline: "none" }}
+                                      style={{ width: 24, background: "#f6f8fa", border: `1px solid ${delayMin > 0 ? "#9a670066" : "#d1d9e0"}`, color: "#9a6700", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 12, fontWeight: 700, textAlign: "center", borderRadius: 4, padding: "1px 0", outline: "none" }}
                                     />
                                     <button
                                       onClick={() => setDelay(delayMin + 1)}
-                                      style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 4, width: 16, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0 }}
+                                      style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 4, width: 15, height: 16, lineHeight: "14px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", padding: 0, flexShrink: 0 }}
                                     >+</button>
                                   </div>
                                 );
