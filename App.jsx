@@ -5720,13 +5720,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // (82) — so nine hole columns exactly fill the first screen.
             const holeColW = isFit9 ? "calc((100vw - 128px) / 9)" : 0;
             const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
-            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined } : tdStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined, overflow: "hidden" } : tdStyle;
             const nameColW = fitAllHoles ? (isFit9 ? 44 : 32) : 80;
-            const startColW = fitAllHoles ? (isFit9 ? 42 : 28) : 56;
+            const startColW = fitAllHoles ? (isFit9 ? 42 : 24) : 56;
             // At the turn, Fit 9 repeats the group column (the second nine is a
             // drag away from the sticky one, so you'd otherwise lose track of
             // which row you're reading). Fit 18 just leaves a plain spacer.
-            const turnGapW = isFit9 ? nameColW : fitAllHoles ? 8 : 0;
+            const turnGapW = isFit9 ? nameColW : fitAllHoles ? 5 : 0;
             const gapRule = { borderLeft: "1px solid #d1d9e0", borderRight: "1px solid #d1d9e0" };
             const gapHead = isFit9
               ? { ...gapRule, background: "#f6f8fa", borderBottom: "2px solid #d1d9e0", padding: "5px 0", fontSize: 11, fontWeight: 700, color: "#59636e", textAlign: "center" }
@@ -5992,9 +5992,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.92)"}
                                   onMouseLeave={e => e.currentTarget.style.filter = ""}
                                 >
-                                  <div style={{ fontSize: isFit9 ? 14 : fitAllHoles ? 11 : 16, lineHeight: 1.2 }}>{diff > 0 ? `+${diff}` : diff}</div>
+                                  <div style={{
+                                    fontSize: isFit9 ? 14 : fitAllHoles ? 9 : 16,
+                                    lineHeight: 1.15,
+                                    letterSpacing: viewMode === "fit18" ? -0.5 : 0,
+                                    whiteSpace: "nowrap",
+                                  }}>
+                                    {/* Fit 18 columns are only a few characters
+                                        wide, so the "+" is dropped there — the
+                                        fill colour already says late or early. */}
+                                    {viewMode === "fit18" ? diff : (diff > 0 ? `+${diff}` : diff)}
+                                  </div>
                                   {holeLogs.map((l, li) => (
-                                    <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                    <div key={li} style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: logColor(l.type), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55`, borderRadius: 3, padding: fitAllHoles ? "0 1px" : "1px 4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden" }}>
                                       {fitAllHoles
                                         ? shortLogLabel(l)
                                         : (l.badTime ? `BT ${l.target || ""}${l.name ? ` - ${l.name}` : ""}` : l.off ? `Off ${l.type}${l.name ? ` - ${l.name}` : ""}` : <>{l.type}{l.target ? ` ${l.target}` : ""}{l.name ? ` - ${l.name}` : ""}</>)}
@@ -6004,12 +6014,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       — same chip as a logged one, since to a referee
                                       reading the row it means the same thing. */}
                                   {inMnRun(slot) && !holeLogs.some(l => l.type === "MN") && (
-                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ffffffdd", border: "1px solid #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ffffffdd", border: "1px solid #0969da55", borderRadius: 3, padding: fitAllHoles ? "0 1px" : "1px 4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden" }}>
                                       {fitAllHoles ? "M" : "MN"}
                                     </div>
                                   )}
                                   {inTmRun(slot) && !holeLogs.some(l => l.type === "TM") && (
-                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffffffdd", border: "1px solid #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 2px" : "1px 4px", whiteSpace: "nowrap" }}>
+                                    <div style={{ marginTop: fitAllHoles ? 1 : 3, fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#bf3989", background: "#ffffffdd", border: "1px solid #bf398955", borderRadius: 3, padding: fitAllHoles ? "0 1px" : "1px 4px", whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden" }}>
                                       {fitAllHoles ? "T" : "TM"}
                                     </div>
                                   )}
