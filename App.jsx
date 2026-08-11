@@ -5767,11 +5767,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 ...(isFullscreen ? { height: "100%", display: "flex", flexDirection: "column" } : {}),
               }}>
                 <div
-                  onClick={() => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
-                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+                  onClick={isFullscreen ? undefined : () => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
+                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: isFullscreen ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
                 >
                   <span>{holeLabel}</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     {isFit9 && (
                       <span onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                         {[0, 1].map(half => (
@@ -5791,7 +5791,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                       </span>
                     )}
                     {!isFullscreen && (
-                      <span style={{ fontSize: 14, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+                      <span style={{ fontSize: 18, lineHeight: 1, padding: "4px 6px", transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                     )}
                     {/* iOS Safari won't put an arbitrary element into real
                         fullscreen, so this is an in-app overlay — works the same
@@ -5799,7 +5799,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     <span
                       onClick={e => { e.stopPropagation(); setFullscreenTable(isFullscreen ? null : tableKey); }}
                       title={isFullscreen ? "Exit full screen" : "Full screen"}
-                      style={{ color: isFullscreen ? "#0969da" : "#59636e", cursor: "pointer", fontSize: 15, lineHeight: 1, padding: "0 2px", userSelect: "none" }}
+                      style={{ color: isFullscreen ? "#0969da" : "#59636e", cursor: "pointer", fontSize: 19, lineHeight: 1, padding: "4px 6px", userSelect: "none" }}
                     >{isFullscreen ? "✕" : "⛶"}</span>
                   </span>
                 </div>
@@ -6099,7 +6099,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             if (!isFullscreen) return card;
             return (
               <div key={tableKey} style={{
-                position: "fixed", inset: 0, zIndex: 1300, background: "#ffffff",
+                // Below the modals (1200) on purpose: tapping a cell here opens
+                // the record sheet, which has to appear on top.
+                position: "fixed", inset: 0, zIndex: 1150, background: "#ffffff",
                 padding: 8, boxSizing: "border-box", overflow: "auto",
               }}>{card}</div>
             );
