@@ -5836,35 +5836,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               }}>
                 <div
                   onClick={isFullscreen ? undefined : () => setCollapsedTables(prev => ({ ...prev, [tableKey]: !prev[tableKey] }))}
-                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: isFullscreen ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+                  style={{ padding: "12px 16px", borderBottom: isCollapsed ? "none" : "1px solid #d1d9e0", fontSize: 12, color: colColor, letterSpacing: 0, fontWeight: 700, cursor: isFullscreen ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, userSelect: "none" }}
                 >
-                  <span>{holeLabel}</span>
-                  {/* Referee calls are repeated on every table header: a marshal
-                      watching the schedule shouldn't have to scroll back up to
-                      the notifications panel to notice one. */}
-                  {refereeCalls && refereeCalls.length > 0 && (
-                    <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center", flexWrap: "wrap", minWidth: 0 }}>
-                      <style>{`@keyframes popCallFlash {
-                        0%, 100% { background: #ffebe9; border-color: #cf222e; }
-                        50%      { background: #ffffff; border-color: #cf222e55; }
-                      }`}</style>
-                      {refereeCalls.slice(0, 2).map(call => (
-                        <button key={call.id}
-                          onClick={() => setOpenCall(call)}
-                          title="Tap to attend this call"
-                          style={{
-                            border: "1px solid #cf222e", borderRadius: 4, padding: "2px 8px", cursor: "pointer",
-                            animation: "popCallFlash 1s ease-in-out infinite",
-                            color: "#cf222e", fontFamily: "inherit", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
-                          }}>
-                          REFEREE H{call.hole}{shortAreas(call.areas) ? ` · ${shortAreas(call.areas)}` : ""}
-                        </button>
-                      ))}
-                      {refereeCalls.length > 2 && (
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#cf222e" }}>+{refereeCalls.length - 2}</span>
-                      )}
-                    </span>
-                  )}
+                  <span style={{ whiteSpace: "nowrap" }}>{holeLabel}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     {isFit9 && (
                       <span onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -5897,6 +5871,30 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     >{isFullscreen ? "✕" : "⛶"}</span>
                   </span>
                 </div>
+
+                {/* Referee calls sit on their own line: on a portrait phone the
+                    label, the nine-selector and these chips can't share one row
+                    without overlapping. */}
+                {refereeCalls && refereeCalls.length > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "0 16px 10px" }}>
+                    <style>{`@keyframes popCallFlash {
+                      0%, 100% { background: #ffebe9; border-color: #cf222e; }
+                      50%      { background: #ffffff; border-color: #cf222e55; }
+                    }`}</style>
+                    {refereeCalls.map(call => (
+                      <button key={call.id}
+                        onClick={() => setOpenCall(call)}
+                        title="Tap to attend this call"
+                        style={{
+                          border: "1px solid #cf222e", borderRadius: 4, padding: "2px 8px", cursor: "pointer",
+                          animation: "popCallFlash 1s ease-in-out infinite",
+                          color: "#cf222e", fontFamily: "inherit", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+                        }}>
+                        REFEREE H{call.hole}{shortAreas(call.areas) ? ` · ${shortAreas(call.areas)}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {!isCollapsed && (
                 <div id={`scroll-${tableKey}`}
                   onScroll={isFit9 ? (e) => {
