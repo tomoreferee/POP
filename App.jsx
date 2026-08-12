@@ -219,9 +219,9 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
 
     summaryRows.push({
       Group: g.name,
-      "Start Hole": g.startHole || 1,
-      "Tee Time": g.startTime,
-      "Holes Completed": `${completed}/18`,
+      "Start hole": g.startHole || 1,
+      "Tee time": g.startTime,
+      "Holes completed": `${completed}/18`,
       "Last Diff (min)": lastDiff !== null ? lastDiff : "",
       Status: statusLabel,
       "MN Active": gd.mnActive ? (gd.mnName || "Yes") : "",
@@ -237,9 +237,9 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
         Group: g.name,
         Hole: hi + 1,
         Par: pars?.[hi] ?? "",
-        "Scheduled Time": sched != null ? minToTime(sched) : "",
-        "Start Time": hd.startTime || "",
-        "End Time": hd.endTime || "",
+        "Scheduled time": sched != null ? minToTime(sched) : "",
+        "Start time": hd.startTime || "",
+        "End time": hd.endTime || "",
         "Diff (min)": diff !== null ? diff : "",
         Status: diff !== null ? { ok: "On time", warn: "Less OOP", late: "OOP" }[getRelativeStatus(diff, frontDiff)] : "",
       });
@@ -269,9 +269,9 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
 function buildDashboardExcelBlob({ summaryRows, detailRows, logRows }) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "Summary");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), "Hole Details");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), "Hole details");
   if (logRows.length) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(logRows), "Action Logs");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(logRows), "Action logs");
   }
 
   const ts = new Date();
@@ -891,7 +891,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
     <div style={{ background:"#ffffff", border:"1px solid #0969da33", borderRadius:6, padding:"18px 20px", marginBottom:16 }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-        <div style={{ fontSize:12, color:"#0969da", letterSpacing:2, fontWeight:700 }}>Auto Generate Groups</div>
+        <div style={{ fontSize:12, color:"#0969da", letterSpacing:2, fontWeight:700 }}>Auto generate groups</div>
         {/* Mode toggle */}
         <div style={{ display:"flex", gap:6 }}>
           {[["h1only", <span style={{ color: getStartHoleMeta(1).color }}>H1 only</span>],
@@ -914,7 +914,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         <div>
           {/* Morning section */}
           <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("Morning Section", "#1a7f37")}
+            {sectionLabel("Morning section", "#1a7f37")}
             {row("Number of H1 groups", numInput(countH1Only, setCountH1Only))}
             {row("First group start time", timeInput(startH1Only, setStartH1Only, "#1a7f37"))}
             {row("Gap between groups",
@@ -936,7 +936,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
 
           {useAfternoonH1 && (
             <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", border:"1px solid #9a670033" }}>
-              {sectionLabel("Afternoon Section", "#9a6700")}
+              {sectionLabel("Afternoon section", "#9a6700")}
               {row("Number of H1 groups", numInput(afternoonCountH1, setAfternoonCountH1))}
               {row("First group start time", timeInput(afternoonStartH1, setAfternoonStartH1, "#9a6700"))}
               <div style={{ fontSize:11, color:"#59636e", marginTop:2 }}>Gap uses the same value as the morning section ({gapH1Only} min)</div>
@@ -950,7 +950,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         <div>
           {/* Morning section */}
           <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("Morning Section", "#0969da")}
+            {sectionLabel("Morning section", "#0969da")}
             {row("Number of H10 groups", numInput(countH10Only, setCountH10Only))}
             {row("First group start time", timeInput(startH10Only, setStartH10Only, "#0969da"))}
             {row("Gap between groups",
@@ -972,7 +972,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
 
           {useAfternoonH10 && (
             <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", border:"1px solid #9a670033" }}>
-              {sectionLabel("Afternoon Section", "#9a6700")}
+              {sectionLabel("Afternoon section", "#9a6700")}
               {row("Number of H10 groups", numInput(afternoonCountH10, setAfternoonCountH10))}
               {row("First group start time", timeInput(afternoonStartH10, setAfternoonStartH10, "#9a6700"))}
               <div style={{ fontSize:11, color:"#59636e", marginTop:2 }}>Gap uses the same value as the morning section ({gapH10Only} min)</div>
@@ -986,7 +986,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         <div>
           {/* Morning section */}
           <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-            {sectionLabel("Morning Section", "#1a7f37")}
+            {sectionLabel("Morning section", "#1a7f37")}
             <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
               <div>
                 <div style={{ fontSize:11, color: getStartHoleMeta(1).color, marginBottom:6, fontWeight:700 }}>H1 group</div>
@@ -1018,7 +1018,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
 
           {useAfternoonBoth && (
             <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", border:"1px solid #9a670033" }}>
-              {sectionLabel("Afternoon Section", "#9a6700")}
+              {sectionLabel("Afternoon section", "#9a6700")}
               <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
                 <div>
                   <div style={{ fontSize:11, color: getStartHoleMeta(1).color, marginBottom:6, fontWeight:700 }}>H1 group</div>
@@ -1217,7 +1217,7 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
       )}
 
       <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:10 }}>
-        <div style={{ fontSize:11, color:"#1a7f37", fontWeight:700, letterSpacing:1, marginBottom:10 }}>Morning Section</div>
+        <div style={{ fontSize:11, color:"#1a7f37", fontWeight:700, letterSpacing:1, marginBottom:10 }}>Morning section</div>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
           <span style={{ fontSize:12, color:"#59636e", minWidth:110 }}>Tee-off time</span>
           <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
@@ -1249,7 +1249,7 @@ function ShotgunStartPanel({ pars, onGenerate, existingGroups }) {
 
       {useAfternoon && (
         <div style={{ background:"#f6f8fa", borderRadius:6, padding:"14px 16px", marginBottom:14, border:"1px solid #9a670033" }}>
-          <div style={{ fontSize:11, color:"#9a6700", fontWeight:700, letterSpacing:1, marginBottom:10 }}>Afternoon Section</div>
+          <div style={{ fontSize:11, color:"#9a6700", fontWeight:700, letterSpacing:1, marginBottom:10 }}>Afternoon section</div>
           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
             <span style={{ fontSize:12, color:"#59636e", minWidth:110 }}>Tee-off time</span>
             <input type="time" value={afternoonStartTime} onChange={e => setAfternoonStartTime(e.target.value)}
@@ -1632,12 +1632,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 20, marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
             <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 1, fontWeight: 700 }}>
-              {isAdmin ? "Manage Tournaments" : "Your competition"}
+              {isAdmin ? "Manage tournaments" : "Your competition"}
             </div>
             {isAdmin && (
               <button onClick={() => { resetForm(); setShowCreate(true); }}
                 style={{ marginLeft: "auto", padding: "8px 14px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "#f6f8fa", border: "1px dashed #0969da66", color: "#0969da" }}>
-                + New Tournaments
+                + New tournaments
               </button>
             )}
           </div>
@@ -1703,7 +1703,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                   accepts anything. */}
               <label
                 style={{ display: "block", width: "100%", textAlign: "center", background: "#fff8c5", border: "1px solid #9a670066", color: "#9a6700", borderRadius: 6, padding: "10px 0", cursor: importBusy ? "wait" : "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, boxSizing: "border-box" }}>
-                {importBusy ? "Importing…" : "Import Tournament from Backup"}
+                {importBusy ? "Importing…" : "Import tournament from backup"}
                 <input type="file" onChange={handleImportTournament} disabled={importBusy}
                   style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", clip: "rect(0 0 0 0)" }} />
               </label>
@@ -1728,7 +1728,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
         <div onClick={() => { setShowCreate(false); resetForm(); }} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1100, padding: 16, overflowY: "auto" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px #1f2328", marginTop: 24 }}>
             <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 16 }}>
-              {editingTournamentId ? "Edit Tournament" : "+ New Tournaments"}
+              {editingTournamentId ? "Edit tournament" : "+ New tournaments"}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1784,7 +1784,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <button onClick={handleSaveTournament} disabled={!newName.trim() || busy}
                   style={{ flex: 1, padding: "11px 0", borderRadius: 6, cursor: newName.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "#dafbe1", border: "1px solid #1a7f3766", color: "#1a7f37" }}>
-                  {editingTournamentId ? "✓ Save Changes" : "✓ Create Tournament"}
+                  {editingTournamentId ? "✓ Save changes" : "✓ Create tournament"}
                 </button>
                 <button onClick={() => { setShowCreate(false); resetForm(); }}
                   style={{ padding: "11px 16px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 14, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e" }}>
@@ -1800,7 +1800,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       {roundPickerFor && (
         <div onClick={() => setRoundPickerFor(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px #1f2328" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Select Round</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Select round</div>
             <div style={{ fontSize: 12, color: "#59636e", marginBottom: 16 }}>
               {roundPickerFor.name}{roundPickerFor.host_venue ? ` · ${roundPickerFor.host_venue}` : ""}
             </div>
@@ -2144,14 +2144,14 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "12px 20px", display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
           <button onClick={() => { if (window.confirm("Clear all group data and session?")) { onClearSession(); } }}
             style={{ minHeight: 56, background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, letterSpacing: 1, padding: "10px 8px", lineHeight: 1.4 }}
-          >🗑<br />Clear Data in Dashboard</button>
+          >🗑<br />Clear data in dashboard</button>
         </div>
       )}
 
       {/* Legend */}
       <div style={{ padding: "16px 24px 0" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#59636e" }}>
-          <span style={{ color: "#0969da", fontWeight: 700, letterSpacing: 1 }}>Status Criteria:</span>
+          <span style={{ color: "#0969da", fontWeight: 700, letterSpacing: 1 }}>Status criteria:</span>
           {/* Swatches match the solid cell fills used in the schedule table */}
           {[
             { k: "fast", label: "In Position (Fast) (< -10 min)" },
@@ -2291,7 +2291,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               >↺ Reset ({playersPerGroup}-ball)</button>
             )}
             {!isAdmin && (
-              <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1 }}>View Only</span>
+              <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1 }}>View only</span>
             )}
           </div>
 
@@ -2376,7 +2376,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {/* Transit time — the two turn walks are different distances on most
               courses, so each direction gets its own value. */}
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, marginBottom: 8 }}>Transit Time</div>
+            <div style={{ fontSize: 12, color: "#9a6700", fontWeight: 700, marginBottom: 8 }}>Transit time</div>
             {[
               { label: "H9 → H10", sub: "starting hole 1", val: turnTime, set: setTurnTime },
               { label: "H18 → H1", sub: "starting hole 10", val: turnTimeBack, set: setTurnTimeBack },
@@ -2420,14 +2420,14 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
               if (fromH1 === fromH10) {
                 return (
                   <>
-                    <div style={{ fontSize: 11, color: "#1a7f37", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
+                    <div style={{ fontSize: 11, color: "#1a7f37", letterSpacing: 1 }}>TOTAL (Included transit time)</div>
                     <div style={{ fontSize: 16, color: "#1a7f37", fontWeight: 700, whiteSpace: "nowrap" }}>{minToHM(fromH1)}</div>
                   </>
                 );
               }
               return (
                 <>
-                  <div style={{ fontSize: 11, color: "#1a7f37", letterSpacing: 1 }}>TOTAL (Included Transit Time)</div>
+                  <div style={{ fontSize: 11, color: "#1a7f37", letterSpacing: 1 }}>TOTAL (Included transit time)</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8, whiteSpace: "nowrap" }}>
                       <span style={{ fontSize: 10, color: "#59636e" }}>from H1</span>
@@ -2587,7 +2587,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                         <span style={{ fontSize: 12, color: "#59636e" }}>
                           Set {setGroups.length > 1 ? `${firstName} – ${lastName}` : firstName}
                         </span>
-                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#59636e" }}>Switch Start Point for Whole Set →</span>
+                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#59636e" }}>Switch Start point for Whole Set →</span>
                         <div style={{ display: "flex", gap: 4 }}>
                           {shotgunHoles.map(h => {
                             const hMeta = getStartHoleMeta(h);
@@ -3321,7 +3321,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             background: "#ffffff", border: "1px solid #9a670033",
             borderRadius: 6, padding: "10px 16px", marginBottom: 16,
           }}>
-            <div style={{ fontSize: 11, color: "#9a6700", letterSpacing: 0, marginBottom: 8, fontWeight: 700 }}>Pause History</div>
+            <div style={{ fontSize: 11, color: "#9a6700", letterSpacing: 0, marginBottom: 8, fontWeight: 700 }}>Pause history</div>
             {suspensions.map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#59636e", marginBottom: 4 }}>
                 <span style={{ color: "#9a6700" }}>#{i + 1}</span>
@@ -3459,7 +3459,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
           {/* Delay input */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 10, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
-            <span style={{ fontSize: 12, color: "#cf222e", flex: 1, textAlign: "left" }}>Delay Time</span>
+            <span style={{ fontSize: 12, color: "#cf222e", flex: 1, textAlign: "left" }}>Delay time</span>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, flexShrink: 0 }}>
               <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
               <input
@@ -3505,7 +3505,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           </div>
 
           <div style={{ display: "flex", gap: 8, marginBottom: compact ? 10 : 14 }}>
-            {[["stamp", "Timestamp Now"], ["manual", "Enter Difference Manually"]].map(([mode, label]) => (
+            {[["stamp", "Timestamp now"], ["manual", "Enter difference manually"]].map(([mode, label]) => (
               <button key={mode} onClick={() => { setInputMode(mode); setRecordedEnd(null); }}
                 style={{
                   flex: 1, padding: compact ? "7px 0" : "8px 0", borderRadius: 6, cursor: "pointer",
@@ -3540,7 +3540,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               <div style={{ background: "#f6f8fa", borderRadius: 6, padding: "16px 20px", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#59636e", marginBottom: 4 }}>Recorded Finish Time</div>
+                    <div style={{ fontSize: 11, color: "#59636e", marginBottom: 4 }}>Recorded finish time</div>
                     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 36, fontWeight: 600, color: "#1f2328", lineHeight: 1 }}>{minToTime(recordedEnd)}</div>
                     <div style={{ fontSize: 14, fontWeight: 700, marginTop: 6, color: diffColor(diffDisplay) }}>
                       {diffDisplay === 0 ? "On time" : diffDisplay > 0 ? `${diffDisplay} min late` : `${Math.abs(diffDisplay)} min early`}
@@ -4264,7 +4264,7 @@ function WeatherBar({ hostVenue }) {
 }
 
 /* Supabase-style account menu: tap the user chip, get a panel with
-   Change Password / Manage Users / Logout instead of loose header buttons. */
+   Change password / Manage users / Logout instead of loose header buttons. */
 /* Analogue clock face for the header, in the style tournament apps use for an
    official timekeeper. Deliberately unbranded — a sponsor's mark would need
    their licensed asset dropping in here. */
@@ -4579,9 +4579,9 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
 
             <div style={{ padding: "4px 0" }}>
               {onGoToSetup && item("Setup", onGoToSetup)}
-              {item("Change Password", onChangePassword)}
-              {onManageTournaments && item("Manage Tournaments", onManageTournaments)}
-              {onManageUsers && item("Manage Users", onManageUsers)}
+              {item("Change password", onChangePassword)}
+              {onManageTournaments && item("Manage tournaments", onManageTournaments)}
+              {onManageUsers && item("Manage users", onManageUsers)}
             </div>
 
             <div style={{ borderTop: "1px solid #d1d9e0", padding: "4px 0" }}>
@@ -4753,11 +4753,11 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th style={thS}>Start Point</th>
+                <th style={thS}>Start point</th>
                 <th style={thS}>Groups</th>
                 <th style={thS}>Total<br />(Time Allowed)</th>
-                <th style={thS}>1st Group<br />Finish Time (Δ)</th>
-                <th style={thS}>Last Group<br />Finish Time (Δ)</th>
+                <th style={thS}>1st Group<br />Finish time (Δ)</th>
+                <th style={thS}>Last group<br />Finish time (Δ)</th>
               </tr>
             </thead>
             <tbody>
@@ -4803,8 +4803,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             <thead>
               <tr>
                 <th style={thS}>#</th>
-                <th style={thS}>Stop Time</th>
-                <th style={thS}>Resume Time</th>
+                <th style={thS}>Stop time</th>
+                <th style={thS}>Resume time</th>
                 <th style={thS}>Duration</th>
               </tr>
             </thead>
@@ -4832,7 +4832,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             {(suspensions.length > 0 || isSuspended) && (
               <tfoot>
                 <tr>
-                  <td colSpan={3} style={{ ...tdS, textAlign: "right", color: "#59636e", fontWeight: 700, borderBottom: "none" }}>Total Suspended</td>
+                  <td colSpan={3} style={{ ...tdS, textAlign: "right", color: "#59636e", fontWeight: 700, borderBottom: "none" }}>Total suspended</td>
                   <td style={{ ...tdS, color: "#1a7f37", fontWeight: 700, borderBottom: "none" }}>{minToHM(totalOffsetMin)}</td>
                 </tr>
               </tfoot>
@@ -4872,9 +4872,9 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                     <thead>
                       <tr>
                         <th style={thS}>Player</th>
-                        <th style={thS}>TM Hole Range</th>
+                        <th style={thS}>TM hole range</th>
                         <th style={thS}>Bad Time</th>
-                        <th style={thS}>Recorded By</th>
+                        <th style={thS}>Recorded by</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -5103,7 +5103,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const isFit9 = viewMode === "fit9";
   // Fit 9 renders the whole round but sizes columns so nine holes fill the
   // screen; nineHalfByTable only tracks which chip is highlighted.
-  const VIEW_LABEL = { normal: "Normal View", fit9: "Fit 9 Holes", fit18: "Fit 18 Holes" };
+  const VIEW_LABEL = { normal: "Normal view", fit9: "Fit 9 holes", fit18: "Fit 18 holes" };
   const cycleView = () => {
     setViewMode(v => {
       const next = v === "normal" ? "fit9" : v === "fit9" ? "fit18" : "normal";
@@ -5154,7 +5154,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [suspendStopInput, setSuspendStopInput] = useState(minToTime(nowInMin()));
   const [suspendResumeInput, setSuspendResumeInput] = useState(minToTime(nowInMin()));
   const [exportModal, setExportModal] = useState(false); // false | true
-  const [callModal, setCallModal] = useState(false);     // "Call Referee" form
+  const [callModal, setCallModal] = useState(false);     // "Call referee" form
   const [callHole, setCallHole] = useState(1);
   const [callArea, setCallArea] = useState("");          // Tee Off | Fairway | Putting Green
   const [notifOpen, setNotifOpen] = useState(true);
@@ -5310,23 +5310,23 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         )}
       </div>
 
-      {/* Action grid — Summary / Export Data down the left, Stopping Play /
-          Call Referee down the right. Short rows so the whole block matches the
+      {/* Action grid — Summary / Export data down the left, Stopping play /
+          Call referee down the right. Short rows so the whole block matches the
           height of the conditions strip above it. */}
       <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "8px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {onNavigateSummary && (
           <button onClick={onNavigateSummary} style={actionBtn}>Summary</button>
         )}
         {!isSuspended ? (
-          <button onClick={openStop} style={actionBtn}>Stopping Play</button>
+          <button onClick={openStop} style={actionBtn}>Stopping play</button>
         ) : (
-          <button onClick={openResume} style={{ ...actionBtn, background: "#dafbe1", border: "1px solid #1a7f3788", color: "#1a7f37", boxShadow: "0 0 12px #1a7f3733" }}>Resume Play</button>
+          <button onClick={openResume} style={{ ...actionBtn, background: "#dafbe1", border: "1px solid #1a7f3788", color: "#1a7f37", boxShadow: "0 0 12px #1a7f3733" }}>Resume play</button>
         )}
-        <button onClick={() => setExportModal(true)} style={actionBtn}>Export Data</button>
+        <button onClick={() => setExportModal(true)} style={actionBtn}>Export data</button>
         <button
           onClick={() => { setCallHole(1); setCallArea(""); setCallModal(true); }}
           style={{ ...actionBtn, background: "#fff1e5", border: "1px solid #bc4c0088", color: "#bc4c00" }}
-        >Call Referee</button>
+        >Call referee</button>
       </div>
 
       {!isSuspended && suspensions.length > 0 && (
@@ -5382,8 +5382,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
             {[
               { key: "summary", label: "Summary", tsv: exportData.summaryTSV, rows: exportData.summaryRows },
-              { key: "detail", label: "Hole Details", tsv: exportData.detailTSV, rows: exportData.detailRows },
-              { key: "logs", label: "Action Logs", tsv: exportData.logsTSV, rows: exportData.logRows },
+              { key: "detail", label: "Hole details", tsv: exportData.detailTSV, rows: exportData.detailRows },
+              { key: "logs", label: "Action logs", tsv: exportData.logsTSV, rows: exportData.logRows },
             ].map(sheet => (
               <div key={sheet.key} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 14, marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -5424,7 +5424,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             marginLeft: "auto", background: "#dafbe1", border: "1px solid #1a7f3788",
             color: "#1a7f37", borderRadius: 6, padding: "5px 14px",
             cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-          }}>▶ Resume Play</button>
+          }}>▶ Resume play</button>
           {onSuspendCancel && (
             <button onClick={() => { if (window.confirm("Cancel this stoppage?\n\nUse this if it was pressed by mistake — nothing is recorded and the schedule is not shifted.")) onSuspendCancel(); }}
               title="Pressed by mistake? Cancel without recording"
@@ -5483,7 +5483,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
       )}
 
-      {/* Call Referee — pick the hole on a slider and tick where on it */}
+      {/* Call referee — pick the hole on a slider and tick where on it */}
       {callModal && (
         <div onClick={() => setCallModal(false)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #bc4c00", borderRadius: 10, padding: 20, width: "100%", maxWidth: 380 }}>
@@ -5531,7 +5531,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   background: !callArea ? "#f6f8fa" : "#ffebe9",
                   border: `1px solid ${!callArea ? "#d1d9e0" : "#cf222e"}`,
                   color: !callArea ? "#8c959f" : "#cf222e",
-                }}>Send Call</button>
+                }}>Send call</button>
               <button onClick={() => setCallModal(false)}
                 style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
                 Cancel
@@ -5807,7 +5807,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             My ROTA{focusHoles.length ? ` (${focusHoles.length})` : ""}
           </button>
           <button onClick={cycleView}
-            title="Tap to cycle: Normal View → Fit 9 Holes → Fit 18 Holes"
+            title="Tap to cycle: Normal view → Fit 9 holes → Fit 18 holes"
             style={{
               background: "#ddf4ff",
               border: "1px solid #0969da",
@@ -5819,7 +5819,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           {focusHoles.length > 0 && (
             <button onClick={() => saveFocusHoles([])}
               style={{ marginLeft: "auto", background: "#f6f8fa", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>
-              ✕ Show All
+              ✕ Show all
             </button>
           )}
         </div>
@@ -5854,7 +5854,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             <button onClick={() => saveFocusHoles(Array.from({ length: 9 }, (_, i) => i + 9))}
               style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>H10–H18</button>
             <button onClick={() => saveFocusHoles([])}
-              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show All</button>
+              style={{ background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Show all</button>
             <button onClick={() => setShowFocusPicker(false)}
               style={{ marginLeft: "auto", background: "#dafbe1", border: "1px solid #1a7f3766", color: "#1a7f37", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
           </div>
@@ -6366,7 +6366,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {suspendModal === "stop" && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #9a670088", borderRadius: 6, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>⏸ Stopping Play</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>⏸ Stopping play</div>
             <div style={{ fontSize: 13, color: "#59636e", marginBottom: 20 }}>All groups will be paused together; hole finish times will shift when play resumes</div>
             <div style={{ fontSize: 13, color: "#9a6700", marginBottom: 8 }}>Stop time</div>
             <TimeInput value={suspendStopInput} onChange={setSuspendStopInput} color="#9a6700" />
@@ -6386,7 +6386,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
       {suspendModal === "resume" && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #1a7f3788", borderRadius: 6, padding: 28, minWidth: 320, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>▶ Resume Play</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 6 }}>▶ Resume play</div>
             <div style={{ fontSize: 13, color: "#59636e", marginBottom: 6 }}>
               Paused since <b style={{ color: "#9a6700" }}>{pendingStopTime}</b>
             </div>
@@ -6608,7 +6608,7 @@ function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", marginTop: 24 }}>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Change Password</div>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Change password</div>
         <div style={{ fontSize: 12, color: "#59636e", marginBottom: 16 }}>{currentUser}</div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
@@ -6894,7 +6894,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {/* Header */}
       <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "16px 24px", display: "flex", alignItems: "center", gap: 16 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: "#0969da", cursor: "pointer", fontSize: 18 }}>←</button>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>Manage Users</div>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>Manage users</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, color: "#9a6700", fontWeight: 700 }}>ADMIN</span>
           <span style={{ fontSize: 13, color: "#59636e", fontWeight: 700 }}>{currentUser}</span>
@@ -6995,7 +6995,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
           <div style={{ fontSize: 11, color: "#59636e", marginTop: 10 }}>
             The password is visible while typing · reset will set it back to <span style={{ color: "#9a6700" }}>{DEFAULT_RESET_PASSWORD}</span>
             <br />
-            <span style={{ color: "#0969da" }}>User</span> — View Only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
+            <span style={{ color: "#0969da" }}>User</span> — View only, cannot edit Par/time or add player groups &nbsp;|&nbsp;
             <span style={{ color: "#9a6700" }}>Admin</span> — Full access to all functions
           </div>
         </div>
@@ -7657,7 +7657,7 @@ export default function App() {
   const [turnTime, setTurnTime] = useState(1);
   const [turnTimeBack, setTurnTimeBack] = useState(1);
   const [rolesMap, setRolesMap] = useState({});   // { tournamentId: { TD: "NP", ... } } — App-level copy
-  const [usersReturnTo, setUsersReturnTo] = useState("setup"); // where Manage Users should go Back to
+  const [usersReturnTo, setUsersReturnTo] = useState("setup"); // where Manage users should go Back to
   const [onlineUsers, setOnlineUsers] = useState([]); // [{ username, isAdmin, since }] — live presence
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
   const [currentRound, setCurrentRound] = useState(null);           // { id, tournament_id, label, status, is_qualifying }
@@ -8097,7 +8097,7 @@ export default function App() {
       const existedBefore = previousGroups.some(pg => pg.id === g.id);
       // Keep previously recorded times/logs for any group that already
       // existed in the live session. Only brand-new groups (or a fresh
-      // session started right after "Clear Data in Dashboard") get a
+      // session started right after "Clear data in dashboard") get a
       // blank scorecard.
       data[g.id] = (existedBefore && existingData)
         ? existingData
@@ -8206,7 +8206,7 @@ export default function App() {
   };
 
   // Loads a round (and its tournament) into the app. Shared by the Tournament
-  // picker screen and the Switch Round popup on the Setup screen, so both paths
+  // picker screen and the Switch round popup on the Setup screen, so both paths
   // behave identically.
   const loadRound = async (tournament, round, action, rolesOverride) => {
       // Every round now owns its data, so switching is simply "load that round".
@@ -8268,7 +8268,7 @@ export default function App() {
       setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
   };
 
-  // Switch Round popup on the Setup screen: resolve (or create) the round for a
+  // Switch round popup on the Setup screen: resolve (or create) the round for a
   // label within the CURRENT tournament, then load it.
   // Quick switch from the Setup page: open the chosen tournament at its most
   // recent round without going via the Tournament screen.
