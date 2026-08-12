@@ -1602,13 +1602,13 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       <RefereeCallToast calls={refereeCalls} headerH={headerH} onClear={onClearRefereeCall} />
       <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0" }}>
         {/* Title + who's signed in */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", padding: "16px 20px", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", padding: "10px 20px", gap: 10 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>TOURNAMENT</div>
+              <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328", whiteSpace: "nowrap" }}>TOURNAMENT</div>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, flexShrink: 0 }}>BETA</span>
             </div>
-            <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
@@ -2093,17 +2093,17 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
 
       <RefereeCallToast calls={refereeCalls} headerH={headerH} onClear={onClearRefereeCall} />
-      <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px" }}>
+      <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 20px" }}>
         {/* One 2-column grid for the whole header, so the right-hand column —
             user, Log out and Clear Data — shares a single edge all the way down. */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center" }}>
           {/* Left column: title */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 28, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>SETUP</div>
+              <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>SETUP</div>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
             </div>
-            <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
+            <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
           </div>
 
           {/* Right column: user sits above Log out. Capped width so rotating to
@@ -5172,16 +5172,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       {/* Grid, not flex: the left cell is allowed to shrink so the right cell can
           never be pushed off the edge of the screen. */}
-      <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "14px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "start", gap: 10 }}>
+      <div ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
         {/* Title block hard against the left edge, laid out the same way as the
             Setup screen — no back button in front of it now that Setup is
             reachable from the account menu. */}
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 22, fontWeight: 600, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>DASHBOARD</div>
+            <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>DASHBOARD</div>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
           </div>
-          <div style={{ fontSize: 11, color: "#59636e", marginTop: 2, lineHeight: 1.4 }}>Golf Referee · Pace of Play System</div>
+          <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
         </div>
         {/* Right side: clock sits beside the account menu. */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, justifyContent: "flex-end" }}>
