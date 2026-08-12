@@ -5910,11 +5910,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // Par sits in its own quieter row above the first group and below the
             // last, so it reads as reference data rather than another hole line.
             const parTh = { ...th, color: "#59636e", fontWeight: 500, borderBottom: "1px solid #d1d9e0", ...(fitAllHoles ? {} : { padding: "5px 6px", fontSize: 12 }) };
+            // Time is reference data like Par, drawn a shade lighter so the two
+            // read as a pair without competing with the recorded times below.
+            const timeTh = { ...parTh, color: "#8c959f", ...(fitAllHoles ? {} : { fontSize: 11 }) };
+            const gapTime = fitAllHoles
+              ? { ...gapRule, ...gapText, fontWeight: 500, color: "#8c959f", background: "#f6f8fa", borderBottom: "1px solid #d1d9e0" }
+              : null;
+            const gapTimeFoot = fitAllHoles
+              ? { ...gapRule, ...gapText, fontWeight: 500, color: "#8c959f", background: "#f6f8fa", borderTop: "1px solid #d1d9e0" }
+              : null;
             const gapPar = fitAllHoles
               ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderBottom: "1px solid #d1d9e0" }
-              : null;
-            const gapParFoot = fitAllHoles
-              ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderTop: "1px solid #d1d9e0" }
               : null;
             // Log chips used to set the column width: "MN - NP" at 11px is wider
             // than a hole column, so any cell carrying one pushed the whole table
@@ -6028,6 +6034,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...parTh, borderLeft: `2px solid ${colColor}88` } : parTh}>{pars?.[hi] ?? "—"}</th>
                           )
                         )), turnGapW, `hp-${tableKey}`, "th", gapPar, isFit9 ? "Par" : null)}
+                      </tr>
+                      {/* Minutes allowed for each hole, under its par — the pair
+                          is what a marshal checks a slow hole against. */}
+                      <tr style={{ background: "#f6f8fa" }}>
+                        <th style={{ ...timeTh, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>Time</th>
+                        <th style={{ ...timeTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }} />
+                        {withTurnGap(order.map((hi, i) => (
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
+                            <th key={hi} style={!fitAllHoles && i === 9 ? { ...timeTh, borderLeft: `2px solid ${colColor}88` } : timeTh}>{parTimes?.[hi] ?? "—"}</th>
+                          )
+                        )), turnGapW, `ht-${tableKey}`, "th", gapTime, isFit9 ? "Time" : null)}
                       </tr>
                     </thead>
                     <tbody>
@@ -6260,13 +6277,22 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         hole each column belongs to. */}
                     <tfoot>
                       <tr style={{ background: "#f6f8fa" }}>
-                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderTop: "1px solid #d1d9e0" }}>Par</th>
-                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderTop: "1px solid #d1d9e0" }} />
+                        <th style={{ ...timeTh, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderTop: "1px solid #d1d9e0" }}>Time</th>
+                        <th style={{ ...timeTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderTop: "1px solid #d1d9e0" }} />
                         {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={{ ...parTh, borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{pars?.[hi] ?? "—"}</th>
+                            <th key={hi} style={{ ...timeTh, borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{parTimes?.[hi] ?? "—"}</th>
                           )
-                        )), turnGapW, `fp-${tableKey}`, "th", gapParFoot, isFit9 ? "Par" : null)}
+                        )), turnGapW, `ft-${tableKey}`, "th", gapTimeFoot, isFit9 ? "Time" : null)}
+                      </tr>
+                      <tr style={{ background: "#f6f8fa" }}>
+                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>Par</th>
+                        <th style={{ ...parTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }} />
+                        {withTurnGap(order.map((hi, i) => (
+                          focusHoles.length && !focusHoles.includes(hi) ? null : (
+                            <th key={hi} style={{ ...parTh, ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{pars?.[hi] ?? "—"}</th>
+                          )
+                        )), turnGapW, `fp-${tableKey}`, "th", gapPar, isFit9 ? "Par" : null)}
                       </tr>
                       <tr style={{ background: "#f6f8fa" }}>
                         <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Grp" : "Group"}</th>
