@@ -2173,10 +2173,18 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, marginBottom: 24, overflow: "hidden" }}>
             {/* Tournament block */}
             <div style={{ padding: "14px 20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>{tournamentName || "(untitled tournament)"}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>
+                {tournamentName || "(untitled tournament)"}
+                {roundLabel && <span style={{ color: "#59636e" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
               </div>
               {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
+              {playersPerGroup ? (
+                <div style={{ marginTop: 5 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#59636e", background: "#f6f8fa", border: "1px solid #59636e33", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
+                    {playersPerGroup}-BALL
+                  </span>
+                </div>
+              ) : null}
 
               {/* Same Year / Tournament / Round picker the Dashboard uses, so
                   changing either one works identically on both screens. */}
@@ -2192,24 +2200,6 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 </div>
               )}
             </div>
-
-            {/* Divider between the two levels */}
-            {roundLabel && <div style={{ borderTop: "1px solid #d1d9e0" }} />}
-
-            {/* Round block — left-aligned with the tournament above it */}
-            {roundLabel && (
-              <div style={{ padding: "12px 20px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ flex: 1, minWidth: 0, justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 6, height: 34, padding: "0 12px", display: "inline-flex", alignItems: "center" }}>
-                  {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}
-                  {playersPerGroup ? (
-                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#1a7f37", background: "#ffffffcc", border: "1px solid #1a7f3744", borderRadius: 4, padding: "0 5px", height: 17, display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
-                      {playersPerGroup}-BALL
-                    </span>
-                  ) : null}
-                </span>
-
-              </div>
-            )}
 
             {/* Course conditions for the round — green speed and whether
                 preferred lies are in play. They sit with the round because they
