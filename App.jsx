@@ -6288,11 +6288,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             return (
               <div key={tableKey} style={{
                 // Below the modals (1200) on purpose: tapping a cell here opens
-                // the record sheet, which has to appear on top. Extra top padding
-                // when the call toast is up, so it can't cover the exit button.
+                // the record sheet, which has to appear on top. No extra top
+                // padding for the call toast — it can be dragged off the exit
+                // button instead of the table being pushed down for it.
                 position: "fixed", inset: 0, zIndex: 1150, background: "#ffffff",
-                padding: 8, paddingTop: refereeCalls?.length ? (refereeCalls.length > 3 ? 124 : 92) : 8,
-                boxSizing: "border-box", overflow: "auto",
+                padding: 8, boxSizing: "border-box", overflow: "auto",
               }}>{card}</div>
             );
           };
