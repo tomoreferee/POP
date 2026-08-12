@@ -5087,27 +5087,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [nineHalfByTable, setNineHalfByTable] = useState({});
   const [fullscreenTable, setFullscreenTable] = useState(null);   // tableKey shown edge-to-edge
   const [openCall, setOpenCall] = useState(null);                 // call opened from the Notifications list
-  // The toast is hidden at the very top of the page — the calls are already
-  // visible there, and covering the header would hide the tournament details.
-  const [scrolledDown, setScrolledDown] = useState(false);
-  useEffect(() => {
-    // #root is the scroller here (height:100% + overflow-y:auto in index.html),
-    // so window.scrollY never moves — listening to the window meant the toast
-    // never appeared at all.
-    const el = document.getElementById("root");
-    const read = () => setScrolledDown(((el?.scrollTop ?? 0) || window.scrollY || 0) > 90);
-    read();
-    el?.addEventListener("scroll", read, { passive: true });
-    window.addEventListener("scroll", read, { passive: true });
-    return () => {
-      el?.removeEventListener("scroll", read);
-      window.removeEventListener("scroll", read);
-    };
-  }, []);
-  // In full screen there's no page header to protect, and the overlay has its
-  // own scroller — so show it there regardless of how far the page behind it
-  // has been scrolled.
-  const showCallToast = scrolledDown || !!fullscreenTable;
+  // Always on while a call is open — it can be dragged aside now, so there's no
+  // need to hide it at the top of the page the way it used to be.
   const [headerRef, headerH] = useHeaderHeight();
   useEffect(() => {
     if (!fullscreenTable) return;
@@ -5560,7 +5541,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
       <div style={{ padding: "10px 20px 16px" }}>
         <RefereeCallToast
-          calls={showCallToast ? refereeCalls : []}
+          calls={refereeCalls}
           offsetTop={fullscreenTable ? 0 : headerH}
           onClear={onClearRefereeCall}
         />
@@ -6310,7 +6291,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 // the record sheet, which has to appear on top. Extra top padding
                 // when the call toast is up, so it can't cover the exit button.
                 position: "fixed", inset: 0, zIndex: 1150, background: "#ffffff",
-                padding: 8, paddingTop: (refereeCalls?.length && showCallToast) ? (refereeCalls.length > 3 ? 124 : 92) : 8,
+                padding: 8, paddingTop: refereeCalls?.length ? (refereeCalls.length > 3 ? 124 : 92) : 8,
                 boxSizing: "border-box", overflow: "auto",
               }}>{card}</div>
             );
