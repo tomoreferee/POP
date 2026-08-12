@@ -119,12 +119,12 @@ function resolveShotgunStartHoles(pars) {
 
 // Color and label for each start point (supports the 4 shotgun points + any other start points)
 const START_HOLE_META = {
-  1:  { color: "#1a7f37", label: "🟢 H1 → 18",          shortLabel: "🟢 Start hole 1 → 18" },
-  5:  { color: "#9a6700", label: "🟡 H5 → 18 → 1 → 4",  shortLabel: "🟡 Start hole 5 → 18 → 1 → 4" },
-  6:  { color: "#9a6700", label: "🟡 H6 → 18 → 1 → 5",  shortLabel: "🟡 Start hole 6 → 18 → 1 → 5" },
-  10: { color: "#0969da", label: "🔵 H10 → 18 → 1 → 9", shortLabel: "🔵 Start hole 10 → 18 → 1 → 9" },
-  14: { color: "#c084fc", label: "🟣 H14 → 18 → 1 → 13",shortLabel: "🟣 Start hole 14 → 18 → 1 → 13" },
-  15: { color: "#c084fc", label: "🟣 H15 → 18 → 1 → 14",shortLabel: "🟣 Start hole 15 → 18 → 1 → 14" },
+  1:  { color: "#1a7f37", label: "H1 → 18",          shortLabel: "Start hole 1 → 18" },
+  5:  { color: "#9a6700", label: "H5 → 18 → 1 → 4",  shortLabel: "Start hole 5 → 18 → 1 → 4" },
+  6:  { color: "#9a6700", label: "H6 → 18 → 1 → 5",  shortLabel: "Start hole 6 → 18 → 1 → 5" },
+  10: { color: "#0969da", label: "H10 → 18 → 1 → 9", shortLabel: "Start hole 10 → 18 → 1 → 9" },
+  14: { color: "#c084fc", label: "H14 → 18 → 1 → 13",shortLabel: "Start hole 14 → 18 → 1 → 13" },
+  15: { color: "#c084fc", label: "H15 → 18 → 1 → 14",shortLabel: "Start hole 15 → 18 → 1 → 14" },
 };
 function getStartHoleMeta(startHole) {
   return START_HOLE_META[startHole] || { color: "#666666", label: `H${startHole} → ...`, shortLabel: `Start hole ${startHole}` };
@@ -894,7 +894,10 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         <div style={{ fontSize:12, color:"#0969da", letterSpacing:2, fontWeight:700 }}>Auto Generate Groups</div>
         {/* Mode toggle */}
         <div style={{ display:"flex", gap:6 }}>
-          {[["h1only","🟢 H1 only"],["h10only","🔵 H10 only"],["both","🟢 H1 + 🔵 H10"],["shotgun","Shotgun 4 Holes"]].map(([m,label]) => (
+          {[["h1only", <span style={{ color: getStartHoleMeta(1).color }}>H1 only</span>],
+            ["h10only", <span style={{ color: getStartHoleMeta(10).color }}>H10 only</span>],
+            ["both", <><span style={{ color: getStartHoleMeta(1).color }}>H1</span> + <span style={{ color: getStartHoleMeta(10).color }}>H10</span></>],
+            ["shotgun", "Shotgun 4 Holes"]].map(([m,label]) => (
             <button key={m} onClick={() => setMode(m)} style={{
               padding:"5px 12px", borderRadius:6, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
               background: mode===m ? "#ddf4ff" : "#f6f8fa",
@@ -986,11 +989,11 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
             {sectionLabel("Morning Section", "#1a7f37")}
             <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
               <div>
-                <div style={{ fontSize:11, color:"#1a7f37", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
+                <div style={{ fontSize:11, color: getStartHoleMeta(1).color, marginBottom:6, fontWeight:700 }}>H1 group</div>
                 {numInput(countH1, setCountH1)}
               </div>
               <div>
-                <div style={{ fontSize:11, color:"#0969da", marginBottom:6, fontWeight:700 }}>🔵 H10 group</div>
+                <div style={{ fontSize:11, color: getStartHoleMeta(10).color, marginBottom:6, fontWeight:700 }}>H10 group</div>
                 {numInput(countH10, setCountH10)}
               </div>
             </div>
@@ -1018,11 +1021,11 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
               {sectionLabel("Afternoon Section", "#9a6700")}
               <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:10 }}>
                 <div>
-                  <div style={{ fontSize:11, color:"#1a7f37", marginBottom:6, fontWeight:700 }}>🟢 H1 group</div>
+                  <div style={{ fontSize:11, color: getStartHoleMeta(1).color, marginBottom:6, fontWeight:700 }}>H1 group</div>
                   {numInput(afternoonCountH1B, setAfternoonCountH1B, 0)}
                 </div>
                 <div>
-                  <div style={{ fontSize:11, color:"#0969da", marginBottom:6, fontWeight:700 }}>🔵 H10 group</div>
+                  <div style={{ fontSize:11, color: getStartHoleMeta(10).color, marginBottom:6, fontWeight:700 }}>H10 group</div>
                   {numInput(afternoonCountH10B, setAfternoonCountH10B, 0)}
                 </div>
               </div>
@@ -2476,7 +2479,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {isAdmin && genMode !== "shotgun" && (
           <div style={{ background: "#ffffff", border: "1px solid #1a7f3733", borderRadius: 6, padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ fontSize: 13, color: "#1a7f37", letterSpacing: 0, fontWeight: 700 }}>🟢 Start hole 1 → 18</div>
+              <div style={{ fontSize: 13, color: getStartHoleMeta(1).color, letterSpacing: 0, fontWeight: 700 }}>{getStartHoleMeta(1).shortLabel}</div>
               {groups1.length > 0 && (
                 <button
                   onClick={() => setClearModal("h1")}
@@ -2513,7 +2516,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
           {isAdmin && genMode !== "shotgun" && (
           <div style={{ background: "#ffffff", border: "1px solid #0969da33", borderRadius: 6, padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 0, fontWeight: 700 }}>🔵 Start hole 10 → 18 → 1 → 9</div>
+              <div style={{ fontSize: 13, color: getStartHoleMeta(10).color, letterSpacing: 0, fontWeight: 700 }}>{getStartHoleMeta(10).shortLabel}</div>
               {groups10.length > 0 && (
                 <button
                   onClick={() => setClearModal("h10")}
