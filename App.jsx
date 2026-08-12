@@ -6027,7 +6027,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   } : undefined}
                   style={{
                     overflowX: viewMode === "fit18" ? "hidden" : "auto",
-                    WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain",
+                    WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y pinch-zoom", overscrollBehaviorX: "contain",
                     ...(isFullscreen ? { flex: 1, overflowY: "auto" } : {}),
                   }}>
                   <table style={{ borderCollapse: "collapse", fontSize: 13, ...(viewMode === "fit18" ? { width: "100%", tableLayout: "fixed" } : {}) }}>
