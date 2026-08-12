@@ -6336,6 +6336,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 // button instead of the table being pushed down for it.
                 position: "fixed", inset: 0, zIndex: 1150, background: "#ffffff",
                 padding: 8, boxSizing: "border-box", overflow: "auto",
+                // Spelt out rather than left to default: the overlay is the
+                // scroller in full screen, and an implicit pan-only value here
+                // would swallow the pinch before the table ever sees it.
+                touchAction: "pan-x pan-y pinch-zoom",
+                WebkitOverflowScrolling: "touch",
               }}>{card}</div>
             );
           };
