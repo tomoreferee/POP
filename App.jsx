@@ -5911,20 +5911,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // last, so it reads as reference data rather than another hole line.
             const parTh = {
               ...th, color: "#59636e", fontWeight: 500, borderBottom: "1px solid #d1d9e0",
-              lineHeight: 1, padding: fitAllHoles ? "2px 0" : "4px 6px",
+              lineHeight: 1, padding: fitAllHoles ? "1px 0" : "2px 6px",
               ...(fitAllHoles ? { fontSize: 9 } : { fontSize: 12 }),
             };
             // Time is reference data like Par, drawn a shade lighter so the two
             // read as a pair without competing with the recorded times below.
-            const timeTh = { ...parTh, color: "#8c959f", ...(fitAllHoles ? {} : { fontSize: 11 }) };
+            const timeTh = { ...parTh, color: "#8c959f", ...(fitAllHoles ? {} : { fontSize: 12 }) };
             const gapTime = fitAllHoles
-              ? { ...gapRule, ...gapText, fontWeight: 500, color: "#8c959f", background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "2px 0", fontSize: 9, lineHeight: 1 }
+              ? { ...gapRule, ...gapText, fontWeight: 500, color: "#8c959f", background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "1px 0", fontSize: 9, lineHeight: 1 }
               : null;
             const gapTimeFoot = fitAllHoles
-              ? { ...gapRule, ...gapText, fontWeight: 500, color: "#8c959f", background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "2px 0", fontSize: 9, lineHeight: 1 }
+              ? { ...gapRule, ...gapText, fontWeight: 500, color: "#8c959f", background: "#f6f8fa", borderTop: "1px solid #d1d9e0", padding: "1px 0", fontSize: 9, lineHeight: 1 }
               : null;
             const gapPar = fitAllHoles
-              ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "2px 0", fontSize: 9, lineHeight: 1 }
+              ? { ...gapRule, ...gapText, fontWeight: 500, background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "1px 0", fontSize: 9, lineHeight: 1 }
               : null;
             // Log chips used to set the column width: "MN - NP" at 11px is wider
             // than a hole column, so any cell carrying one pushed the whole table
@@ -6021,7 +6021,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     <thead>
                       <tr style={{ background: "#f6f8fa" }}>
                         <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW }}>{fitAllHoles ? "Grp" : "Group"}</th>
-                        <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
+                        <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", ...(fitAllHoles ? { fontSize: 8, letterSpacing: -0.3 } : {}) }}>Start</th>
                         {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={!fitAllHoles && i === 9 ? { ...th, borderLeft: `2px solid ${colColor}88` } : th}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
@@ -6300,7 +6300,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                       </tr>
                       <tr style={{ background: "#f6f8fa" }}>
                         <th style={{ ...th, position: viewMode === "fit18" ? "static" : "sticky", left: 0, zIndex: 2, background: "#f6f8fa", width: nameColW, minWidth: nameColW, borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Grp" : "Group"}</th>
-                        <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderBottom: "none", borderTop: "1px solid #d1d9e0" }}>{fitAllHoles ? "Time" : "Start"}</th>
+                        <th style={{ ...th, color: "#59636e", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, borderRight: "1px solid #d1d9e0", borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(fitAllHoles ? { fontSize: 8, letterSpacing: -0.3 } : {}) }}>Start</th>
                         {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
                             <th key={hi} style={{ ...th, borderBottom: "none", borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{viewMode === "fit18" ? hi + 1 : `H${hi + 1}`}</th>
