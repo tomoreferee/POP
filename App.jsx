@@ -5046,8 +5046,8 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
       </select>
 
       <select value={label} onChange={e => setLabel(e.target.value)} disabled={!tid || loadingRounds}
-        style={{ ...sel, width: 74, flexShrink: 0, opacity: tid ? 1 : 0.5, textAlign: "center", textAlignLast: "center" }}>
-        {(!label || loadingRounds) && <option value="">{loadingRounds ? "…" : "Round"}</option>}
+        style={{ ...sel, width: 52, flexShrink: 0, opacity: tid ? 1 : 0.5, textAlign: "center", textAlignLast: "center" }}>
+        {(!label || loadingRounds) && <option value="">{loadingRounds ? "…" : "—"}</option>}
         {rounds.map(r => (
           <option key={r.id} value={r.label}>
             {r.label === "Q" ? "Q" : `R${r.label}`}
