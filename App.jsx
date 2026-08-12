@@ -5890,8 +5890,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             const fit9Reserved = (isFullscreen ? 16 : 40) + 2 + 44 + 42;
             const holeColW = isFit9 ? `calc((100vw - ${fit9Reserved}px) / 9)` : 0;
             const fitColSize = isFit9 ? { minWidth: holeColW, width: holeColW, maxWidth: holeColW } : { minWidth: 0 };
-            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, ...fitColSize } : thStyle;
-            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", ...fitColSize, overflow: "hidden" } : tdStyle;
+            // Nine columns still have to fit a 320px phone (iPhone SE), where
+            // each is only ~21px — so the type steps down rather than the
+            // columns overflowing. clamp() scales it with the viewport instead
+            // of guessing at breakpoints.
+            const fit9Font = "clamp(8px, calc((100vw - " + fit9Reserved + "px) / 9 * 0.38), 11px)";
+            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? fit9Font : 9, ...fitColSize } : thStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", ...fitColSize, overflow: "hidden", ...(isFit9 ? { fontSize: fit9Font } : {}) } : tdStyle;
             const nameColW = fitAllHoles ? (isFit9 ? 44 : 32) : 64;
             const startColW = fitAllHoles ? (isFit9 ? 42 : 24) : 62;
             // At the turn, Fit 9 repeats the group column (the second nine is a
