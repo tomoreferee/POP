@@ -8136,7 +8136,11 @@ export default function App() {
       setPendingStopTime("");
     }
 
-    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
+    saveAppState({ groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch, suspensions: nextSuspensions, isSuspended: nextIsSuspended, pendingStopTime: nextPendingStopTime, refereeCalls,
+      // The setters above don't update these variables within this call, so the
+      // values Setup just passed in are used directly.
+      greenSpeed: gs ?? greenSpeed, preferredLies: pl ?? preferredLies,
+      roundId: currentRound?.id });
     const seedWrittenAt = new Date().toISOString();
     grps.forEach(g => { lastLocalWriteAt.current[g.id] = seedWrittenAt; saveGroupData(currentRound?.id, g.id, data[g.id], seedWrittenAt); });
   };
@@ -8258,6 +8262,12 @@ export default function App() {
         setSuspensions([]);
         setIsSuspended(false);
         setPendingStopTime("");
+        // Green speed and preferred lies are measured on the day, so a round
+        // that hasn't been set up starts blank rather than inheriting the
+        // previous round's readings.
+        setGreenSpeed({});
+        setPreferredLies(false);
+        setRefereeCalls([]);
       }
 
       let tournamentForSetup = tournament;
