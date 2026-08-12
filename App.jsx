@@ -5882,11 +5882,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // Fit 18 squeezes all 18 columns onto one screen. Fit 9 renders the
             // same 18 columns but each is a ninth of the viewport, so nine fill
             // the screen and the rest is a drag away.
-            // 100vw less the page padding (40) and the sticky Grp + Time columns
-            // (82) — so nine hole columns exactly fill the first screen.
-            const holeColW = isFit9 ? `calc((100vw - ${isFullscreen ? 104 : 128}px) / 9)` : 0;
-            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, minWidth: holeColW, width: holeColW || undefined } : thStyle;
-            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", minWidth: holeColW, width: holeColW || undefined, overflow: "hidden" } : tdStyle;
+            // 100vw less the page padding, card border and the sticky Grp + ST
+            // columns, so nine hole columns exactly fill the first screen.
+            // maxWidth matters as much as width here: thStyle carries a 40px
+            // minWidth for the normal view, and without capping it the columns
+            // stay 40px wide and the last two are pushed off screen.
+            const fit9Reserved = (isFullscreen ? 16 : 40) + 2 + 44 + 42;
+            const holeColW = isFit9 ? `calc((100vw - ${fit9Reserved}px) / 9)` : 0;
+            const fitColSize = isFit9 ? { minWidth: holeColW, width: holeColW, maxWidth: holeColW } : { minWidth: 0 };
+            const th = fitAllHoles ? { ...thStyle, padding: isFit9 ? "5px 0" : "4px 0", fontSize: isFit9 ? 11 : 9, ...fitColSize } : thStyle;
+            const td = fitAllHoles ? { ...tdStyle, padding: isFit9 ? "5px 0" : "3px 0", ...fitColSize, overflow: "hidden" } : tdStyle;
             const nameColW = fitAllHoles ? (isFit9 ? 44 : 32) : 64;
             const startColW = fitAllHoles ? (isFit9 ? 42 : 24) : 62;
             // At the turn, Fit 9 repeats the group column (the second nine is a
