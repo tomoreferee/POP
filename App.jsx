@@ -224,8 +224,8 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
       "Holes completed": `${completed}/18`,
       "Last Diff (min)": lastDiff !== null ? lastDiff : "",
       Status: statusLabel,
-      "MN Active": gd.mnActive ? (gd.mnName || "Yes") : "",
-      "TM Active": gd.tmActive ? (gd.tmName || "Yes") : "",
+      "MN active": gd.mnActive ? (gd.mnName || "Yes") : "",
+      "TM active": gd.tmActive ? (gd.tmName || "Yes") : "",
     });
 
     order.forEach(hi => {
@@ -897,7 +897,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
           {[["h1only", <span style={{ color: getStartHoleMeta(1).color }}>H1 only</span>],
             ["h10only", <span style={{ color: getStartHoleMeta(10).color }}>H10 only</span>],
             ["both", <><span style={{ color: getStartHoleMeta(1).color }}>H1</span> + <span style={{ color: getStartHoleMeta(10).color }}>H10</span></>],
-            ["shotgun", "Shotgun 4 Holes"]].map(([m,label]) => (
+            ["shotgun", "Shotgun 4 holes"]].map(([m,label]) => (
             <button key={m} onClick={() => setMode(m)} style={{
               padding:"5px 12px", borderRadius:6, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
               background: mode===m ? "#ddf4ff" : "#f6f8fa",
@@ -1036,7 +1036,7 @@ function QuickGeneratePanel({ onGenerate, existingGroups1, existingGroups10, par
         </div>
       )}
 
-      {/* ── Shotgun 4 Holes ── */}
+      {/* ── Shotgun 4 holes ── */}
       {mode === "shotgun" && (
         <ShotgunStartPanel
           pars={pars}
@@ -1749,11 +1749,11 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                 <button onClick={() => setNewFormat("stroke")}
                   style={{ flex: 1, padding: "9px 0", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                     background: newFormat === "stroke" ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${newFormat === "stroke" ? "#0969da" : "#d1d9e0"}`, color: newFormat === "stroke" ? "#1f2328" : "#59636e" }}>
-                  Stroke Play
+                  Stroke play
                 </button>
-                <button disabled title="Match Play — coming soon"
+                <button disabled title="Match play — coming soon"
                   style={{ flex: 1, padding: "9px 0", borderRadius: 6, cursor: "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#444" }}>
-                  Match Play
+                  Match play
                 </button>
               </div>
 
@@ -2948,7 +2948,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // immediately shows the TM status right on the CURRENT hole (the log is stamped with
   // type "TM" + badTime:true at holeIdx = currentHole), then keeps following forward on
   // every hole after that too, without switching off the group's MN status (MN and TM
-  // can run at the same time here). A player can be Bad-Timed more than once — every
+  // can run at the same time here). A player can be Bad-timed more than once — every
   // press logs a fresh occurrence (see badTimeOccurrence below for the "#N" count,
   // which is derived from the current log list so it re-numbers correctly if an entry
   // is later deleted).
@@ -3200,7 +3200,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
   // Players who have been flagged via a Bad Time press (as opposed to just being part of a
   // normal TM selection) — used so the P1–P4 quick-select buttons can show a visibly different
-  // state for "Bad-Timed" vs merely "under TM", since otherwise pressing Bad Time on a player
+  // state for "Bad-timed" vs merely "under TM", since otherwise pressing Bad Time on a player
   // who's already in the TM target list looks like nothing happened (the button stayed the
   // same pink "already selected" color).
   const badTimePlayers = new Set(actionLogs.filter(l => l.type === "TM" && l.badTime).map(l => l.target));
@@ -3307,7 +3307,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           padding: "8px 20px", display: "flex", alignItems: "center", gap: 10,
         }}>
           <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#9a6700", boxShadow: "0 0 8px #9a6700", animation: "pulse 1.5s infinite" }} />
-          <span style={{ fontSize: 13, color: "#9a6700", fontWeight: 700 }}>⏸ Match Paused</span>
+          <span style={{ fontSize: 13, color: "#9a6700", fontWeight: 700 }}>⏸ Match paused</span>
           <span style={{ fontSize: 12, color: "#59636e" }}>Since <b style={{ color: "#1f2328" }}>{pendingStopTime}</b></span>
           <span style={{ fontSize: 12, color: "#59636e" }}>— Go back to the main screen to resume play</span>
         </div>
@@ -3534,7 +3534,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 onMouseEnter={e => { e.currentTarget.style.background = "#aceebb"; e.currentTarget.style.borderColor = "#1a7f37aa"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "#dafbe1"; e.currentTarget.style.borderColor = "#1a7f3766"; }}
               >
-                Record Holed Time
+                Record holed time
               </button>
             ) : (
               <div style={{ background: "#f6f8fa", borderRadius: 6, padding: "16px 20px", marginBottom: 12 }}>
@@ -3639,7 +3639,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           )}
 
           <div style={{ marginTop: canConfirm ? 16 : 0 }}>
-          {/* MN Active Banner */}
+          {/* MN active Banner */}
         {mnActive && (
           <div style={{
             background: "#ddf4ff", border: "1px solid #0969daaa",
@@ -3689,7 +3689,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           </div>
         )}
 
-        {/* TM Active Banner */}
+        {/* TM active Banner */}
         {tmActive && (
           <div style={{
             background: "#ffeff7", border: "1px solid #ff6ec7aa",
@@ -4665,11 +4665,11 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   tmRows.sort((a, b) => (a.groupName || "").localeCompare(b.groupName || "") || (a.holeIdx - b.holeIdx));
 
   // Split distinct-player counting into two non-overlapping buckets, since Bad Time is
-  // always a subset of TM (a Bad-Timed player is also "under TM") but should be reported
+  // always a subset of TM (a Bad-timed player is also "under TM") but should be reported
   // as its own category rather than double-counted inside the "normal TM" bucket:
   //   - badTimePlayers: players ever flagged via a Bad Time press, per group
   //   - normalTmPlayers: players targeted via a normal TM selection, MINUS anyone who was
-  //     also Bad-Timed (so the two buckets never overlap)
+  //     also Bad-timed (so the two buckets never overlap)
   // "All" is treated as covering all 4 player slots (P1–P4) offered in the TM/Bad-Time controls.
   const totalBadTimePlayers = groups.reduce((sum, g) => {
     const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM" && l.badTime);
@@ -4696,7 +4696,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   const totalBadTime = tmRows.filter(r => r.badTime).length;
 
   // Per-group, per-player breakdown: which holes a player was under TM (first → last hole
-  // logged) and how many times they were specifically Bad-Timed. "All" is expanded to all
+  // logged) and how many times they were specifically Bad-timed. "All" is expanded to all
   // 4 player slots. Used to render the collapsible group-by-group summary below.
   const tmGroupSummaries = groups.map(g => {
     const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM");
@@ -4755,7 +4755,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
               <tr>
                 <th style={thS}>Start point</th>
                 <th style={thS}>Groups</th>
-                <th style={thS}>Total<br />(Time Allowed)</th>
+                <th style={thS}>Total<br />(Time allowed)</th>
                 <th style={thS}>1st Group<br />Finish time (Δ)</th>
                 <th style={thS}>Last group<br />Finish time (Δ)</th>
               </tr>
@@ -5417,7 +5417,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           padding: "10px 24px", display: "flex", alignItems: "center", gap: 12,
         }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#9a6700", boxShadow: "0 0 8px #9a6700", animation: "pulse 1.5s infinite" }} />
-          <span style={{ color: "#9a6700", fontWeight: 700, fontSize: 14 }}>⏸ Match Paused</span>
+          <span style={{ color: "#9a6700", fontWeight: 700, fontSize: 14 }}>⏸ Match paused</span>
           <span style={{ color: "#59636e", fontSize: 13 }}>Since <b style={{ color: "#1f2328" }}>{pendingStopTime}</b></span>
           <span style={{ color: "#59636e", fontSize: 12 }}>— All groups paused together</span>
           <button onClick={openResume} style={{
@@ -6906,7 +6906,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
         {/* Add User Card */}
         <div style={{ background: "#ffffff", border: "1px solid #0969da33", borderRadius: 6, padding: 24, marginBottom: 24 }}>
-          <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 0, fontWeight: 700, marginBottom: 18 }}>➕ Add New User</div>
+          <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 0, fontWeight: 700, marginBottom: 18 }}>➕ Add new user</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 10 }}>
             {/* Username with autocomplete */}
             <div style={{ position: "relative" }}>
@@ -7110,7 +7110,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {resetConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #9a670088", borderRadius: 6, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 8 }}>↺ Reset Password</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 8 }}>↺ Reset password</div>
             <div style={{ fontSize: 14, color: "#59636e", marginBottom: 6 }}>
               User: <span style={{ color: "#1f2328", fontWeight: 700 }}>{resetConfirm}</span>
             </div>
@@ -7135,7 +7135,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {deleteConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: "1px solid #cf222eaa", borderRadius: 6, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 8 }}>✕ Delete User</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 8 }}>✕ Delete user</div>
             <div style={{ fontSize: 14, color: "#59636e", marginBottom: 6 }}>
               User: <span style={{ color: "#1f2328", fontWeight: 700 }}>{deleteConfirm}</span>
             </div>
