@@ -5037,7 +5037,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
       </select>
 
       <select value={tid} onChange={e => setTid(e.target.value)} style={{ ...sel, flex: 1, minWidth: 0 }}>
-        <option value="">Select tournament</option>
+        {!tid && <option value="">Select tournament</option>}
         {forYear.map(t => (
           <option key={t.id} value={t.id}>
             {t.name || "(untitled)"}
@@ -5047,7 +5047,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 
       <select value={label} onChange={e => setLabel(e.target.value)} disabled={!tid || loadingRounds}
         style={{ ...sel, width: 74, flexShrink: 0, opacity: tid ? 1 : 0.5, textAlign: "center", textAlignLast: "center" }}>
-        <option value="">{loadingRounds ? "…" : "Round"}</option>
+        {(!label || loadingRounds) && <option value="">{loadingRounds ? "…" : "Round"}</option>}
         {rounds.map(r => (
           <option key={r.id} value={r.label}>
             {r.label === "Q" ? "Q" : `R${r.label}`}
