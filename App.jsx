@@ -5020,14 +5020,15 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 
   const sel = {
     background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6,
-    padding: "0 8px", height: compact ? 34 : 40, fontFamily: "inherit", fontSize: 12, outline: "none",
+    padding: "0 6px", height: compact ? 34 : 40, fontFamily: "inherit", fontSize: 12,
+    fontWeight: 600, outline: "none", boxSizing: "border-box",
   };
 
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
       <select value={year}
         onChange={e => { setYear(e.target.value); const first = tournaments.find(t => yearOf(t) === e.target.value); setTid(first?.id || ""); }}
-        style={{ ...sel, width: 84, flexShrink: 0 }}>
+        style={{ ...sel, width: 74, flexShrink: 0, textAlign: "center", textAlignLast: "center" }}>
         {years.map(y => (
           <option key={y} value={y}>
             {y}
@@ -5035,8 +5036,8 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
         ))}
       </select>
 
-      <select value={tid} onChange={e => setTid(e.target.value)} style={{ ...sel, flex: 1, minWidth: 120 }}>
-        <option value="">— Tournament —</option>
+      <select value={tid} onChange={e => setTid(e.target.value)} style={{ ...sel, flex: 1, minWidth: 0 }}>
+        <option value="">Select tournament</option>
         {forYear.map(t => (
           <option key={t.id} value={t.id}>
             {t.name || "(untitled)"}
@@ -5045,8 +5046,8 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
       </select>
 
       <select value={label} onChange={e => setLabel(e.target.value)} disabled={!tid || loadingRounds}
-        style={{ ...sel, width: 96, flexShrink: 0, opacity: tid ? 1 : 0.5 }}>
-        <option value="">{loadingRounds ? "…" : "— Round —"}</option>
+        style={{ ...sel, width: 74, flexShrink: 0, opacity: tid ? 1 : 0.5, textAlign: "center", textAlignLast: "center" }}>
+        <option value="">{loadingRounds ? "…" : "Round"}</option>
         {rounds.map(r => (
           <option key={r.id} value={r.label}>
             {r.label === "Q" ? "Q" : `R${r.label}`}
