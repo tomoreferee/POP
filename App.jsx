@@ -4338,19 +4338,84 @@ function RefereeCallToast({ calls, headerH = 0, offsetTop = null, onClear }) {
     if (dismissedFor.current !== signature) setDismissed(false);
   }, [signature]);
 
+  // It sits over the schedule, so it has to be movable — drag it aside to read
+  // what's underneath. The position is remembered per device, because whoever
+  // parks it somewhere wants it there for the rest of the round.
+  const [pos, setPos] = useState(() => {
+    try {
+      const raw = localStorage.getItem("pop_call_toast_pos");
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  const boxRef = useRef(null);
+  const drag = useRef(null);
+
+  const startDrag = (clientX, clientY) => {
+    const el = boxRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    drag.current = { dx: clientX - r.left, dy: clientY - r.top, w: r.width, h: r.height, moved: false };
+  };
+  const moveDrag = (clientX, clientY) => {
+    const d = drag.current;
+    if (!d) return;
+    d.moved = true;
+    // Keep it on screen whichever way it's flung
+    const left = Math.max(6, Math.min(window.innerWidth - d.w - 6, clientX - d.dx));
+    const top = Math.max(6, Math.min(window.innerHeight - d.h - 6, clientY - d.dy));
+    d.last = { left, top };            // read on release; `pos` there would be stale
+    setPos({ left, top });
+  };
+  const endDrag = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (d?.moved && d.last) {
+      try { localStorage.setItem("pop_call_toast_pos", JSON.stringify(d.last)); } catch {}
+    }
+  };
+
+  useEffect(() => {
+    // Re-park it if the window shrinks past where it was left
+    const onResize = () => setPos(p => {
+      if (!p) return p;
+      const el = boxRef.current;
+      const w = el?.offsetWidth ?? 0, h = el?.offsetHeight ?? 0;
+      return {
+        left: Math.max(6, Math.min(window.innerWidth - w - 6, p.left)),
+        top: Math.max(6, Math.min(window.innerHeight - h - 6, p.top)),
+      };
+    });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   if (!calls || calls.length === 0) return null;
 
   const top = (offsetTop !== null ? offsetTop : headerH) + 8;
+  const placement = pos
+    ? { top: pos.top, left: pos.left, width: "calc(100% - 24px)", maxWidth: 460 }
+    : { top, left: 12, right: 12 };
 
   return (
     <>
       {!dismissed && (
-        <div style={{
-          position: "fixed", top, left: 12, right: 12, zIndex: 1180,
+        <div ref={boxRef}
+          onPointerDown={e => {
+            // Only the card itself drags — the chips and ✕ keep working.
+            if (e.target.closest("button") || e.target.dataset?.noDrag) return;
+            e.currentTarget.setPointerCapture(e.pointerId);
+            startDrag(e.clientX, e.clientY);
+          }}
+          onPointerMove={e => { if (drag.current) { e.preventDefault(); moveDrag(e.clientX, e.clientY); } }}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          style={{
+          position: "fixed", ...placement, zIndex: 1180,
           background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10,
           boxShadow: "0 6px 20px #1f232833",
           padding: "8px 10px",
           animation: "popCallToast 1.1s ease-in-out infinite",
+          touchAction: "none", cursor: "grab", userSelect: "none",
         }}>
           <style>{`
             @keyframes popCallFlash {
@@ -4363,14 +4428,29 @@ function RefereeCallToast({ calls, headerH = 0, offsetTop = null, onClear }) {
             }
           `}</style>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#cf222e" }}>
-              REFEREE NEEDED · {calls.length}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+              {/* Grip: says the card can be dragged, which isn't obvious otherwise */}
+              <span style={{ color: "#8c959f", fontSize: 12, lineHeight: 1, letterSpacing: -1 }}>⠿</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#cf222e" }}>
+                REFEREE NEEDED · {calls.length}
+              </span>
             </span>
-            <span
-              onClick={() => { dismissedFor.current = signature; setDismissed(true); }}
-              title="Hide until the next call"
-              style={{ fontSize: 14, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}
-            >✕</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              {pos && (
+                <span
+                  data-no-drag="1"
+                  onClick={() => { setPos(null); try { localStorage.removeItem("pop_call_toast_pos"); } catch {} }}
+                  title="Move back to the top"
+                  style={{ fontSize: 11, fontWeight: 700, color: "#0969da", cursor: "pointer", padding: "0 6px", userSelect: "none" }}
+                >RESET</span>
+              )}
+              <span
+                data-no-drag="1"
+                onClick={() => { dismissedFor.current = signature; setDismissed(true); }}
+                title="Hide until the next call"
+                style={{ fontSize: 14, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}
+              >✕</span>
+            </span>
           </div>
           {/* One call gets the full width, two split it, three or more fill the
               row and wrap — so a single call is never a small chip lost in space. */}
