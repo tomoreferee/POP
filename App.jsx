@@ -2149,25 +2149,6 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
         </div>
       )}
 
-      {/* Legend */}
-      <div style={{ padding: "16px 24px 0" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#59636e" }}>
-          <span style={{ color: "#0969da", fontWeight: 700, letterSpacing: 1 }}>Status criteria:</span>
-          {/* Swatches match the solid cell fills used in the schedule table */}
-          {[
-            { k: "fast", label: "In Position (Fast) (< -10 min)" },
-            { k: "ok",   label: "In Position / On Time (-9 to 0 min)" },
-            { k: "warn", label: "Less Out of Position (+1 to +2 min)" },
-            { k: "late", label: "Out of Position (+3 to +5 min)" },
-            { k: "slow", label: "Out of Position (Slow) (+6 min and above)" },
-          ].map(row => (
-            <span key={row.k} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-              <span style={{ width: 26, height: 16, borderRadius: 4, flexShrink: 0, background: STATUS_FILL[row.k].bg, border: "1px solid #00000022" }} />
-              <span style={{ color: "#59636e" }}>{row.label}</span>
-            </span>
-          ))}
-        </div>
-      </div>
 
       <div style={{ padding: "24px 24px" }}>
         {/* ─── Tournament / Round context ──────────────────────────────────────
@@ -4521,7 +4502,77 @@ function useHeaderHeight() {
   return [ref, h];
 }
 
+/* Reference material a referee needs occasionally rather than constantly: the
+   colour key, what each whistle means, and how the table reads. Lives behind a
+   menu item so it doesn't take permanent space on any screen. */
+function HelpGuideModal({ onClose }) {
+  const section = (title, children) => (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#59636e", marginBottom: 8 }}>{title}</div>
+      {children}
+    </div>
+  );
+  const row = (swatch, label, note) => (
+    <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 9, marginBottom: 7 }}>
+      {swatch}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13, color: "#1f2328", fontWeight: 600 }}>{label}</div>
+        {note && <div style={{ fontSize: 11, color: "#59636e", lineHeight: 1.5 }}>{note}</div>}
+      </div>
+    </div>
+  );
+  const chip = (text, color, bg) => (
+    <span style={{ width: 34, flexShrink: 0, textAlign: "center", fontSize: 10, fontWeight: 700, color, background: bg, border: `1px solid ${color}55`, borderRadius: 4, padding: "2px 0" }}>{text}</span>
+  );
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 10, width: "100%", maxWidth: 420, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #d1d9e0" }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>Help guides</span>
+          <span onClick={onClose} style={{ fontSize: 18, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}>✕</span>
+        </div>
+
+        <div style={{ padding: "16px 18px", overflowY: "auto" }}>
+          {section("STATUS COLOURS", [
+            { k: "fast", label: "In position (fast)", note: "More than 10 minutes ahead" },
+            { k: "ok",   label: "In position / on time", note: "9 minutes ahead to on time" },
+            { k: "warn", label: "Less out of position", note: "1 to 2 minutes behind" },
+            { k: "late", label: "Out of position", note: "3 to 5 minutes behind" },
+            { k: "slow", label: "Out of position (slow)", note: "6 minutes behind or more" },
+          ].map(r => row(
+            <span style={{ width: 34, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 1, background: STATUS_FILL[r.k].bg, border: "1px solid #00000022" }} />,
+            r.label, r.note
+          )))}
+
+          {section("WHISTLES", <>
+            {row(chip("WN", "#9a6700", "#fff8c5"), "Warning", "First notice to a group that has fallen behind")}
+            {row(chip("MN", "#0969da", "#ddf4ff"), "Monitoring", "Timed hole by hole until the referee turns it off")}
+            {row(chip("TM", "#bf3989", "#ffeff7"), "Timing", "Individual players timed; runs until turned off")}
+            {row(chip("BT", "#cf222e", "#ffebe9"), "Bad time", "A player exceeded the time allowed for a stroke")}
+            {row(chip("EST", "#bc4c00", "#fff1e5"), "Established", "One-off note against a player")}
+          </>)}
+
+          {section("READING THE TABLE", <>
+            {row(chip("Par", "#59636e", "#f6f8fa"), "Par row", "Par for each hole")}
+            {row(chip("Time", "#8c959f", "#f6f8fa"), "Time row", "Minutes allowed for the hole. The 10th hole played includes the walk between nines.")}
+            {row(chip("St", "#59636e", "#f6f8fa"), "St column", "The group's tee time")}
+            {row(chip("+5", "#cf222e", "#ffebe9"), "Coloured cell", "Minutes ahead or behind at that hole. A plain time means it hasn't been recorded yet.")}
+          </>)}
+
+          {section("VIEWS", <>
+            {row(chip("⛶", "#59636e", "#f6f8fa"), "Full screen", "Opens one table edge to edge; recording still works")}
+            {row(chip("⇄", "#59636e", "#f6f8fa"), "View switch", "Normal → Fit 9 holes → Fit 18 holes")}
+            {row(chip("▾", "#59636e", "#f6f8fa"), "Collapse", "Hides a table you aren't watching")}
+          </>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToDashboard, onGoToSetup, badges = null, align = "right" }) {
+  const [showHelp, setShowHelp] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -4584,6 +4635,7 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
               {onManageTournaments && item("Manage tournaments", onManageTournaments)}
               {onGoToDashboard && item("Dashboard", onGoToDashboard)}
               {onGoToSetup && item("Setup", onGoToSetup)}
+              {item("Help guides", () => setShowHelp(true))}
             </div>
 
             <div style={{ borderTop: "1px solid #d1d9e0", padding: "4px 0" }}>
@@ -4592,6 +4644,8 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
           </div>
         </>
       )}
+
+      {showHelp && <HelpGuideModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
