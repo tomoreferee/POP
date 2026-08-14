@@ -5070,7 +5070,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -5261,6 +5261,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               currentUser={currentUser}
               onChangePassword={onChangePassword}
               onLogout={onLogout}
+              onManageUsers={isTrueAdmin ? onManageUsers : null}
               onManageTournaments={isTrueAdmin ? onManageTournaments : null}
               onGoToSetup={onBack}
             />
@@ -8468,6 +8469,7 @@ export default function App() {
       refereeCalls={refereeCalls}
       onCallReferee={handleCallReferee}
       onManageTournaments={() => setScreen("tournament")}
+      onManageUsers={() => { setUsersReturnTo("dashboard"); setScreen("users"); }}
       onClearRefereeCall={handleClearRefereeCall}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
       onSelectGroup={handleSelectGroup}
