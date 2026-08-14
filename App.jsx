@@ -51,9 +51,11 @@ function formatGreenSpeed(gs) {
 function parTimeTable(playersPerGroup) {
   return PAR_TIMES_BY_PLAYERS[playersPerGroup] ?? PAR_TIMES_BY_PLAYERS[3];
 }
-// Bump this whenever App.jsx is updated — shown at the bottom of the Setup page so
-// you can confirm at a glance whether the browser is running the newest deploy.
-const APP_BUILD = "2026-08-03-s (beta · github)";
+// Injected by Vite at build time (see vite.config.js) — shown at the bottom of
+// the Setup page so you can confirm at a glance whether the browser is running
+// the newest deploy. The dev fallback covers `vite dev`, where the define is
+// still applied but a stale bundle can't happen anyway.
+const APP_BUILD = typeof __APP_BUILD__ !== "undefined" ? `${__APP_BUILD__} (beta)` : "dev";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
 const PAR_TIME_CHOICES = Array.from({ length: 16 }, (_, i) => i + 10); // 10…25
@@ -5136,7 +5138,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -5329,7 +5331,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               onLogout={onLogout}
               onManageUsers={isTrueAdmin ? onManageUsers : null}
               onManageTournaments={isTrueAdmin ? onManageTournaments : null}
-              onGoToSetup={onBack}
+              onGoToSetup={canEditSetup_ ? onBack : null}
             />
           )}
         </div>
@@ -7910,7 +7912,10 @@ export default function App() {
           const blocked = false;
 
           if (tournament && round && mayReopen && !blocked && !notRunning) {
-            setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
+            // Setup is read-only for anyone who can't edit it, and the Dashboard
+            // now shows the same information — so only editors land there.
+            const mayEditSetup = canEditSetup(roles, tournament.id, savedUser, savedIsAdmin);
+            setScreen((state?.groups?.length ?? 0) || !mayEditSetup ? "dashboard" : "setup");
           } else {
             if (!mayReopen) {
               setCurrentTournament(null);
@@ -8357,7 +8362,10 @@ export default function App() {
       }
       setCurrentTournament(tournamentForSetup);
       setCurrentRound(loadedRound);
-      setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
+      // Only someone who can actually edit the setup is sent to it; everyone
+      // else goes to the Dashboard, which now carries the same information.
+      const mayEditSetup = canEditSetup(rolesMap, tournamentForSetup?.id, currentUser, isAdmin);
+      setScreen((state?.groups?.length ?? 0) || !mayEditSetup ? "dashboard" : "setup");
   };
 
   // Switch round popup on the Setup screen: resolve (or create) the round for a
@@ -8535,6 +8543,7 @@ export default function App() {
       refereeCalls={refereeCalls}
       onCallReferee={handleCallReferee}
       onManageTournaments={() => setScreen("tournament")}
+      canEditSetup_={canEditSetup(rolesMap, currentTournament?.id, currentUser, isAdmin)}
       onManageUsers={() => { setUsersReturnTo("dashboard"); setScreen("users"); }}
       onClearRefereeCall={handleClearRefereeCall}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
