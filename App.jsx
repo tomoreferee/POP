@@ -4579,8 +4579,8 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
 
             <div style={{ padding: "4px 0" }}>
               {item("Change password", onChangePassword)}
-              {onManageTournaments && item("Manage tournaments", onManageTournaments)}
               {onManageUsers && item("Manage users", onManageUsers)}
+              {onManageTournaments && item("Manage tournaments", onManageTournaments)}
               {onGoToSetup && item("Setup", onGoToSetup)}
             </div>
 
