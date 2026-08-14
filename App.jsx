@@ -4187,7 +4187,7 @@ function WeatherBar({ hostVenue }) {
     let cancelled = false;
     const load = async () => {
       try {
-        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,cloud_cover,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=precipitation_probability&forecast_days=1&wind_speed_unit=ms&timezone=auto`);
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,cloud_cover,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=precipitation_probability&forecast_days=1&wind_speed_unit=kmh&timezone=auto`);
         const j = await r.json();
         if (cancelled || !j?.current) return;
         // Rain chance is an hourly figure — line it up with the hour we're in now.
@@ -4257,7 +4257,7 @@ function WeatherBar({ hostVenue }) {
       {wx && row([
         cell("temp", "Temp", `${Math.round(wx.temperature_2m)}°C`, "#cf222e"),
         cell("humidity", "Humidity", wx.relative_humidity_2m === undefined ? "—" : `${Math.round(wx.relative_humidity_2m)}%`),
-        cell("wind", "Wind", `${wx.wind_speed_10m?.toFixed(1)} m/s ${windArrow(wx.wind_direction_10m)}${windCompass(wx.wind_direction_10m)}`, "#0969da"),
+        cell("wind", "Wind", `${Math.round(wx.wind_speed_10m ?? 0)} km/h ${windArrow(wx.wind_direction_10m)}${windCompass(wx.wind_direction_10m)}`, "#0969da"),
       ])}
     </div>
   );
@@ -5070,7 +5070,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, onChangePassword, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -5931,6 +5931,15 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // Time is reference data like Par, drawn a shade lighter so the two
             // read as a pair without competing with the recorded times below.
             const timeTh = { ...parTh, color: "#8c959f", ...(fitAllHoles ? {} : { fontSize: 12 }) };
+            const allowedAt = (hi, i) => {
+              const base = parTimes?.[hi];
+              if (base === undefined || base === null) return "—";
+              if (i !== 9) return base;
+              const walk = startHole === 1 ? (turnTime ?? 0)
+                : startHole === 10 ? (turnTimeBack ?? turnTime ?? 0)
+                : 0;
+              return base + walk;
+            };
             const gapTime = fitAllHoles
               ? { ...gapRule, ...gapText, fontWeight: 500, color: "#8c959f", background: "#f6f8fa", borderBottom: "1px solid #d1d9e0", padding: "1px 0", fontSize: 9, lineHeight: 1 }
               : null;
@@ -6060,7 +6069,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         <th style={{ ...timeTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, maxWidth: startColW, borderRight: "1px solid #d1d9e0" }} />
                         {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={!fitAllHoles && i === 9 ? { ...timeTh, borderLeft: `2px solid ${colColor}88` } : timeTh}>{parTimes?.[hi] ?? "—"}</th>
+                            <th key={hi} style={!fitAllHoles && i === 9 ? { ...timeTh, borderLeft: `2px solid ${colColor}88` } : timeTh}>{allowedAt(hi, i)}</th>
                           )
                         )), turnGapW, `ht-${tableKey}`, "th", gapTime, isFit9 ? "Time" : null)}
                       </tr>
@@ -6299,7 +6308,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                         <th style={{ ...timeTh, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 2, background: "#f6f8fa", width: startColW, minWidth: startColW, maxWidth: startColW, borderRight: "1px solid #d1d9e0", borderTop: "1px solid #d1d9e0" }} />
                         {withTurnGap(order.map((hi, i) => (
                           focusHoles.length && !focusHoles.includes(hi) ? null : (
-                            <th key={hi} style={{ ...timeTh, borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{parTimes?.[hi] ?? "—"}</th>
+                            <th key={hi} style={{ ...timeTh, borderTop: "1px solid #d1d9e0", ...(!fitAllHoles && i === 9 ? { borderLeft: `2px solid ${colColor}88` } : {}) }}>{allowedAt(hi, i)}</th>
                           )
                         )), turnGapW, `ft-${tableKey}`, "th", gapTimeFoot, isFit9 ? "Time" : null)}
                       </tr>
@@ -8452,6 +8461,8 @@ export default function App() {
       onChangePassword={() => setShowChangePassword(true)}
       tournamentId={currentTournament?.id || null}
       isTrueAdmin={isAdmin}
+      turnTime={turnTime}
+      turnTimeBack={turnTimeBack}
       greenSpeed={greenSpeed}
       preferredLies={preferredLies}
       refereeCalls={refereeCalls}
