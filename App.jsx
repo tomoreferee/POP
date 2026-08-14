@@ -2119,6 +2119,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                 onLogout={onLogout}
                 onManageUsers={isTrueAdmin ? onManageUsers : null}
                 onManageTournaments={isTrueAdmin ? onSwitchTournament : null}
+                onGoToDashboard={hasLiveSession ? onGoToDashboard : null}
                 badges={
                   <>
                     <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#9a6700" : "#0969da", background: isTrueAdmin ? "#fff8c5" : "#ddf4ff", border: `1px solid ${isTrueAdmin ? "#9a670044" : "#0969da44"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1 }}>
@@ -4520,7 +4521,7 @@ function useHeaderHeight() {
   return [ref, h];
 }
 
-function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToSetup, badges = null, align = "right" }) {
+function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToDashboard, onGoToSetup, badges = null, align = "right" }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -4581,6 +4582,7 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
               {item("Change password", onChangePassword)}
               {onManageUsers && item("Manage users", onManageUsers)}
               {onManageTournaments && item("Manage tournaments", onManageTournaments)}
+              {onGoToDashboard && item("Dashboard", onGoToDashboard)}
               {onGoToSetup && item("Setup", onGoToSetup)}
             </div>
 
