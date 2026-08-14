@@ -4506,6 +4506,8 @@ function useHeaderHeight() {
    colour key, what each whistle means, and how the table reads. Lives behind a
    menu item so it doesn't take permanent space on any screen. */
 function HelpGuideModal({ onClose }) {
+  const supportsDvh = typeof CSS !== "undefined" && CSS.supports?.("height", "1dvh");
+  const maxH = supportsDvh ? "82dvh" : "82vh";
   const section = (title, children) => (
     <div style={{ marginBottom: 18 }}>
       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#59636e", marginBottom: 8 }}>{title}</div>
@@ -4526,9 +4528,17 @@ function HelpGuideModal({ onClose }) {
   );
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 16 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 10, width: "100%", maxWidth: 420, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #d1d9e0" }}>
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "#1f232899",
+      display: "flex", alignItems: "flex-start", justifyContent: "center",
+      zIndex: 1200, padding: "16px 16px 24px", overflowY: "auto",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: "#ffffff", borderRadius: 10, width: "100%", maxWidth: 420,
+        maxHeight: maxH, display: "flex", flexDirection: "column", overflow: "hidden",
+        marginTop: "env(safe-area-inset-top, 0px)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #d1d9e0", flexShrink: 0, background: "#ffffff" }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>Help guides</span>
           <span onClick={onClose} style={{ fontSize: 18, color: "#59636e", cursor: "pointer", padding: "0 4px", userSelect: "none" }}>✕</span>
         </div>
