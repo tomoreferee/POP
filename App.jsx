@@ -286,6 +286,9 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
       Status: statusLabel,
       "MN active": gd.mnActive ? (gd.mnName || "Yes") : "",
       "TM active": gd.tmActive ? (gd.tmName || "Yes") : "",
+      // EST entries are one-offs, so the count is what's useful at group level;
+      // the individual entries are in the Action logs sheet.
+      "EST count": (gd.actionLogs || []).filter(l => l.type === "EST").length || "",
     });
 
     order.forEach(hi => {
@@ -5070,19 +5073,27 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   // logged) and how many times they were specifically Bad-timed. "All" is expanded to all
   // 4 player slots. Used to render the collapsible group-by-group summary below.
   const tmGroupSummaries = groups.map(g => {
-    const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM");
+    // EST belongs here too: it's a one-off note against a player, so a report
+    // that only listed TM left those entries with nowhere to appear.
+    const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM" || l.type === "EST");
     if (logs.length === 0) return null;
     const playerMap = {};
     logs.forEach(l => {
       const labels = l.target === "All"
-        ? groupRoster(g, groupData[g.id], playersPerGroup).map(r => r.tag)
-        : (l.target || "").split(",").map(s => s.trim()).filter(Boolean);
+        ? groupRoster(g, groupData[g.id], playersPerGroup).map(r => playerCode(g, r.tag))
+        : (l.target || "").split(",").map(s => playerCode(g, s.trim())).filter(Boolean);
       labels.forEach(label => {
-        if (!playerMap[label]) playerMap[label] = { holes: [], badTimeCount: 0, names: new Set(), badTimeHoles: [] };
-        playerMap[label].holes.push(l.holeIdx);
-        if (l.badTime) {
-          playerMap[label].badTimeCount += 1;
-          playerMap[label].badTimeHoles.push({ holeIdx: l.holeIdx, time: l.time, name: l.name || "—" });
+        if (!playerMap[label]) playerMap[label] = { holes: [], badTimeCount: 0, names: new Set(), badTimeHoles: [], estHoles: [] };
+        // EST is a note, not a period of timing — it shouldn't widen the
+        // "timed from hole X to Y" range, so it's tracked separately.
+        if (l.type === "EST") {
+          playerMap[label].estHoles.push({ holeIdx: l.holeIdx, time: l.time, name: l.name || "—" });
+        } else {
+          playerMap[label].holes.push(l.holeIdx);
+          if (l.badTime) {
+            playerMap[label].badTimeCount += 1;
+            playerMap[label].badTimeHoles.push({ holeIdx: l.holeIdx, time: l.time, name: l.name || "—" });
+          }
         }
         if (l.name) playerMap[label].names.add(l.name);
       });
@@ -5090,12 +5101,16 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     const players = Object.keys(playerMap).sort().map(label => {
       const holes = playerMap[label].holes;
       const badTimeHoles = playerMap[label].badTimeHoles.slice().sort((a, b) => a.holeIdx - b.holeIdx);
+      const estHoles = playerMap[label].estHoles.slice().sort((a, b) => a.holeIdx - b.holeIdx);
       return {
         label,
-        firstHole: Math.min(...holes) + 1,
-        lastHole: Math.max(...holes) + 1,
+        // A player with only an EST has no timed range at all — Math.min of an
+        // empty list is Infinity, which would render as garbage.
+        firstHole: holes.length ? Math.min(...holes) + 1 : null,
+        lastHole: holes.length ? Math.max(...holes) + 1 : null,
         badTimeCount: playerMap[label].badTimeCount,
         badTimeHoles,
+        estHoles,
         recordedBy: Array.from(playerMap[label].names).join(", ") || "—",
       };
     });
@@ -5104,6 +5119,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       groupName: g.name,
       players,
       totalBadTime: players.reduce((s, p) => s + p.badTimeCount, 0),
+      totalEst: players.reduce((s, p) => s + p.estHoles.length, 0),
     };
   }).filter(Boolean);
 
@@ -5221,10 +5237,10 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>TM &amp; BAD TIME SUMMARY</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>TM, BAD TIME &amp; EST SUMMARY</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px", overflowX: "auto" }}>
           {tmGroupSummaries.length === 0 && (
-            <div style={{ color: "#59636e", padding: 20, textAlign: "center", fontSize: 14 }}>No TM records yet</div>
+            <div style={{ color: "#59636e", padding: 20, textAlign: "center", fontSize: 14 }}>No TM or EST records yet</div>
           )}
           {tmGroupSummaries.map(gs => {
             const isOpen = expandedTMGroups.has(gs.groupId);
@@ -5245,6 +5261,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
                     <span style={{ color: "#bf3989" }}>{gs.players.length} Timing</span>
                     {gs.totalBadTime > 0 && <span style={{ color: "#9a6700" }}>{gs.totalBadTime} Bad Time</span>}
+                    {gs.totalEst > 0 && <span style={{ color: "#bc4c00" }}>{gs.totalEst} EST</span>}
                   </span>
                 </button>
                 {isOpen && (
@@ -5254,6 +5271,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                         <th style={thS}>Player</th>
                         <th style={thS}>TM hole range</th>
                         <th style={thS}>Bad Time</th>
+                        <th style={thS}>EST</th>
                         <th style={thS}>Recorded by</th>
                       </tr>
                     </thead>
@@ -5265,7 +5283,11 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                           <Fragment key={p.label}>
                             <tr>
                               <td style={{ ...tdS, color: "#bf3989", fontWeight: 700 }}>{p.label}</td>
-                              <td style={tdS}>{p.firstHole === p.lastHole ? `H${p.firstHole}` : `H${p.firstHole} → H${p.lastHole}`}</td>
+                              <td style={tdS}>
+                                {p.firstHole === null ? "—"
+                                  : p.firstHole === p.lastHole ? `H${p.firstHole}`
+                                  : `H${p.firstHole} → H${p.lastHole}`}
+                              </td>
                               <td style={tdS}>
                                 {p.badTimeCount > 0 ? (
                                   <button
@@ -5281,11 +5303,19 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                                   </button>
                                 ) : "–"}
                               </td>
+                              <td style={tdS}>
+                                {p.estHoles.length > 0 ? (
+                                  <span title={p.estHoles.map(e => `H${e.holeIdx + 1} · ${e.time} · ${e.name}`).join("\n")}
+                                    style={{ color: "#bc4c00", fontWeight: 700 }}>
+                                    {p.estHoles.map(e => `H${e.holeIdx + 1}`).join(", ")}
+                                  </span>
+                                ) : "–"}
+                              </td>
                               <td style={tdS}>{p.recordedBy}</td>
                             </tr>
                             {badTimeOpen && p.badTimeHoles.length > 0 && (
                               <tr>
-                                <td colSpan={4} style={{ padding: "6px 12px 12px", borderBottom: "1px solid #f6f8fa", background: "#f6f8fa" }}>
+                                <td colSpan={5} style={{ padding: "6px 12px 12px", borderBottom: "1px solid #f6f8fa", background: "#f6f8fa" }}>
                                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                     {p.badTimeHoles.map((bt, bi) => (
                                       <span key={bi} style={{
