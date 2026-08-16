@@ -2828,11 +2828,6 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // shouldn't offer a P3 button, because a log against a player who isn't there
   // is simply wrong data. Falls back to the round default for groups that have
   // never been edited.
-  // Derived from the draw plus whatever has happened on the course, so slots
-  // keep their identity when someone leaves.
-  const roster = groupRoster(group, { actionLogs }, playersPerGroup);
-  const numPlayers = roster.length;
-  const playerNums = roster.map(r => r.tag);
 
   // Withdrawals and regrouping happen on the course, mid-round, so they're done
   // from here rather than back in Setup — this is the screen a referee already
@@ -3019,6 +3014,12 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
 
   // WN / MN / TM logs: { holeIdx, type, name, time, target? }
   const [actionLogs, setActionLogs] = useState(group.actionLogs ?? []);
+
+  // Must come after actionLogs: the roster is derived from it, and a `const` is
+  // not hoisted — reading it earlier threw before anything could render.
+  const roster = groupRoster(group, { actionLogs }, playersPerGroup);
+  const numPlayers = roster.length;
+  const playerNums = roster.map(r => r.tag);
   const [actionModal, setActionModal] = useState(null); // { type: "WN"|"MN"|"TM", holeIdx }
   const [actionName, setActionName] = useState("");
   const [mnActive, setMnActive] = useState(group.mnActive ?? false);
