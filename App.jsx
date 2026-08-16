@@ -2835,6 +2835,21 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     setRosterFor(null);
   };
 
+  // A player can only realistically join the group immediately in front of or
+  // behind their own — and only on the same side of the course, since the two
+  // draws are interleaved by number (Group 13 off H1 is nowhere near Group 14
+  // off H10). Neighbours are worked out by tee time within the same start
+  // point, not by group number.
+  const moveTargets = (() => {
+    const sameDraw = (allGroups || [])
+      .filter(g => (g.startHole || 1) === (group.startHole || 1)
+                && (g.section || "") === (group.section || ""))
+      .sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)));
+    const i = sameDraw.findIndex(g => String(g.id) === String(group.id));
+    if (i === -1) return [];
+    return [sameDraw[i - 1], sameDraw[i + 1]].filter(Boolean);
+  })();
+
   const undoRosterEvent = (entry) => {
     const label = entry.type === "WD" ? `withdrawal of ${entry.target}`
       : entry.type === "OUT" ? `move of ${entry.target} ${entry.reason || ""}`
@@ -3635,17 +3650,16 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               </div>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <select value={moveTo} onChange={e => setMoveTo(e.target.value)}
+                  disabled={moveTargets.length === 0}
                   style={{ flex: 1, minWidth: 120, background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 12 }}>
                   <option value="">
-                    {(allGroups || []).length > 1 ? "Move to group…" : "No other groups"}
+                    {moveTargets.length ? "Move to group…" : "No adjacent group"}
                   </option>
-                  {(allGroups || [])
-                    .filter(x => String(x.id) !== String(group.id))
-                    .map(x => (
-                      <option key={x.id} value={x.id}>
-                        {x.name}{x.startTime ? ` · ${x.startTime}` : ""}
-                      </option>
-                    ))}
+                  {moveTargets.map(x => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}{x.startTime ? ` · ${x.startTime}` : ""}
+                    </option>
+                  ))}
                 </select>
                 <button onClick={() => moveTo && movePlayer(rosterFor, moveTo)} disabled={!moveTo}
                   style={{ background: moveTo ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${moveTo ? "#0969da" : "#d1d9e0"}`, color: moveTo ? "#0969da" : "#8c959f", borderRadius: 6, height: 34, padding: "0 14px", cursor: moveTo ? "pointer" : "default", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
