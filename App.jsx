@@ -2835,10 +2835,31 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     setRosterFor(null);
   };
 
+  const undoRosterEvent = (entry) => {
+    const label = entry.type === "WD" ? `withdrawal of ${entry.target}`
+      : entry.type === "OUT" ? `move of ${entry.target} ${entry.reason || ""}`
+      : `arrival of ${entry.target} ${entry.reason || ""}`;
+    if (!window.confirm(`Undo the ${label}?\n\nThe player count goes back up and the entry is removed.`)) return;
+
+    const nextLogs = actionLogs.filter(l => l !== entry);
+    // WD and OUT each took a player off this group; IN had added one.
+    const delta = entry.type === "IN" ? -1 : 1;
+    onUpdate({
+      holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
+      mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
+      players: Math.max(1, Math.min(4, numPlayers + delta)),
+    });
+    // A move touched two groups, so undoing it has to put the other one back too
+    if (entry.type === "OUT" && entry.movedTo) {
+      onMovePlayer?.({ undo: true, toGroupId: entry.movedTo, target: entry.target });
+    }
+    setRosterFor(null);
+  };
+
   const movePlayer = (target, toGroupId) => {
     const to = allGroups?.find(g => String(g.id) === String(toGroupId));
     if (!to) return;
-    const nextLogs = logRosterEvent({ type: "OUT", target, reason: `to ${to.name}` });
+    const nextLogs = logRosterEvent({ type: "OUT", target, reason: `to ${to.name}`, movedTo: to.id });
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
       mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
@@ -3582,9 +3603,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               );
             })}
             {actionLogs.filter(l => l.type === "WD" || l.type === "OUT" || l.type === "IN").map((l, i) => (
-              <span key={i} title={`${l.type} at H${(l.holeIdx ?? 0) + 1} · ${l.time}${l.reason ? ` · ${l.reason}` : ""}`}
-                style={{ fontSize: 10, fontWeight: 700, color: l.type === "IN" ? "#1a7f37" : "#cf222e", background: l.type === "IN" ? "#dafbe1" : "#ffebe9", border: `1px solid ${l.type === "IN" ? "#1a7f37" : "#cf222e"}44`, borderRadius: 4, padding: "2px 6px" }}>
-                {l.type} {l.target}
+              <span key={i}
+                onClick={() => undoRosterEvent(l)}
+                title={`${l.type} at H${(l.holeIdx ?? 0) + 1} · ${l.time}${l.reason ? ` · ${l.reason}` : ""} — tap to undo`}
+                style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", color: l.type === "IN" ? "#1a7f37" : "#cf222e", background: l.type === "IN" ? "#dafbe1" : "#ffebe9", border: `1px solid ${l.type === "IN" ? "#1a7f37" : "#cf222e"}44`, borderRadius: 4, padding: "2px 6px" }}>
+                {l.type} {l.target} <span style={{ opacity: 0.55 }}>✕</span>
               </span>
             ))}
           </div>
@@ -8663,14 +8686,21 @@ export default function App() {
   // The receiving half of a move: the player joins the target group, so its
   // count goes up and the arrival is logged there as well. Recording it on both
   // sides means either group's history explains the change on its own.
-  const handleMovePlayer = ({ fromGroup, toGroupId, target, holeIdx, time, by }) => {
+  const handleMovePlayer = ({ fromGroup, toGroupId, target, holeIdx, time, by, undo }) => {
     setGroups(prev => {
       const next = prev.map(g => String(g.id) === String(toGroupId)
-        ? { ...g, players: Math.min(4, groupPlayers(g, playersPerGroup) + 1) }
+        ? { ...g, players: Math.max(1, Math.min(4, groupPlayers(g, playersPerGroup) + (undo ? -1 : 1))) }
         : g);
       persistGroups(next);
       return next;
     });
+    if (undo) {
+      // Drop the matching arrival entry from the receiving group
+      const gdU = groupDataRef.current[toGroupId] || {};
+      const kept = (gdU.actionLogs || []).filter(l => !(l.type === "IN" && l.target === target));
+      handleUpdateGroup(toGroupId, { actionLogs: kept });
+      return;
+    }
     const gd = groupDataRef.current[toGroupId] || {};
     const logs = [...(gd.actionLogs || []), {
       type: "IN", target, holeIdx, time, name: by,
