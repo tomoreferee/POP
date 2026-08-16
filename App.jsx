@@ -3117,8 +3117,10 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // press logs a fresh occurrence (see badTimeOccurrence below for the "#N" count,
   // which is derived from the current log list so it re-numbers correctly if an entry
   // is later deleted).
-  const triggerBadTimeFor = (playerNum) => {
-    const playerLabel = `P${playerNum}`;
+  const triggerBadTimeFor = (playerTag) => {
+    // The pickers now pass a tag ("P2", or a visitor's "G13P1") rather than a
+    // number — prefixing it again produced "PP2", which matched no player.
+    const playerLabel = playerTag;
     const deadline = (adjustedSchedule[currentHole] ?? 0) + (parTimes?.[currentHole] ?? 14);
     const diffAtLog = nowInMin() - deadline + 1;
 
