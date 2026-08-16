@@ -2793,7 +2793,7 @@ function TimeInput({ value, onChange, label, color = "#0969da" }) {
 }
 
 // ─── Group Monitor ────────────────────────────────────────────────────────────
-function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpdate, onBack, currentUser,
+function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpdate, onBack, currentUser, onMovePlayer,
   isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel, compact, statusOverride }) {
   const initHoleData = () =>
     group.holeData ?? Array(18).fill(null).map(() => ({ startTime: null, endTime: null }));
@@ -2803,6 +2803,52 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // never been edited.
   const numPlayers = groupPlayers(group, playersPerGroup);
   const playerNums = Array.from({ length: numPlayers }, (_, i) => i + 1);
+
+  // Withdrawals and regrouping happen on the course, mid-round, so they're done
+  // from here rather than back in Setup — this is the screen a referee already
+  // has open. Both adjust the group's player count, which feeds the summary
+  // benchmark and the player picker.
+  const [rosterFor, setRosterFor] = useState(null);   // "P2" while choosing what to do
+  const [moveTo, setMoveTo] = useState("");
+
+  const logRosterEvent = (entry) => {
+    const nextLogs = [...actionLogs, {
+      ...entry,
+      holeIdx: currentHole,
+      time: minToTime(now),
+      name: currentUser || "",
+    }];
+    setActionLogs(nextLogs);
+    return nextLogs;
+  };
+
+  const withdrawPlayer = (target, reason) => {
+    const nextLogs = logRosterEvent({ type: "WD", target, reason });
+    // The count drops so the picker stops offering them and the summary knows
+    // this group no longer sets a fair benchmark. Existing logs stay — they
+    // record what genuinely happened before the withdrawal.
+    onUpdate({
+      holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
+      mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
+      players: Math.max(1, numPlayers - 1),
+    });
+    setRosterFor(null);
+  };
+
+  const movePlayer = (target, toGroupId) => {
+    const to = allGroups?.find(g => String(g.id) === String(toGroupId));
+    if (!to) return;
+    const nextLogs = logRosterEvent({ type: "OUT", target, reason: `to ${to.name}` });
+    onUpdate({
+      holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
+      mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
+      players: Math.max(1, numPlayers - 1),
+    });
+    // The receiving group is updated by the parent, which owns every group's data
+    onMovePlayer?.({ fromGroup: group, toGroupId: to.id, target, holeIdx: currentHole, time: minToTime(now), by: currentUser || "" });
+    setRosterFor(null);
+    setMoveTo("");
+  };
 
   const holeOrder = getHoleOrder(group.startHole || 1);
   const [currentSlot, setCurrentSlot] = useState(group.currentHole ?? 0);
@@ -3515,6 +3561,67 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               </span>
             )}
           </div>
+
+          {/* Roster: who is actually in this group. Withdrawals and moves are
+              recorded here because they happen on the course, and both change
+              the count the summary and the player picker rely on. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, color: "#59636e", fontWeight: 700 }}>Players:</span>
+            {playerNums.map(n => {
+              const tag = `P${n}`;
+              const open = rosterFor === tag;
+              return (
+                <button key={n} onClick={() => { setRosterFor(open ? null : tag); setMoveTo(""); }}
+                  style={{
+                    background: open ? "#ddf4ff" : "#f6f8fa",
+                    border: `1px solid ${open ? "#0969da" : "#d1d9e0"}`,
+                    color: open ? "#0969da" : "#1f2328",
+                    borderRadius: 6, padding: "5px 10px", cursor: "pointer",
+                    fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                  }}>{tag}</button>
+              );
+            })}
+            {actionLogs.filter(l => l.type === "WD" || l.type === "OUT" || l.type === "IN").map((l, i) => (
+              <span key={i} title={`${l.type} at H${(l.holeIdx ?? 0) + 1} · ${l.time}${l.reason ? ` · ${l.reason}` : ""}`}
+                style={{ fontSize: 10, fontWeight: 700, color: l.type === "IN" ? "#1a7f37" : "#cf222e", background: l.type === "IN" ? "#dafbe1" : "#ffebe9", border: `1px solid ${l.type === "IN" ? "#1a7f37" : "#cf222e"}44`, borderRadius: 4, padding: "2px 6px" }}>
+                {l.type} {l.target}
+              </span>
+            ))}
+          </div>
+
+          {rosterFor && (
+            <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 12, marginBottom: compact ? 10 : 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#1f2328", marginBottom: 8 }}>
+                {rosterFor} — at hole {currentHole + 1}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                {["Withdrawn", "Disqualified", "Injury"].map(r => (
+                  <button key={r} onClick={() => withdrawPlayer(rosterFor, r)}
+                    style={{ background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "7px 11px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <select value={moveTo} onChange={e => setMoveTo(e.target.value)}
+                  style={{ flex: 1, minWidth: 120, background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 12 }}>
+                  <option value="">Move to group…</option>
+                  {(allGroups || []).filter(x => String(x.id) !== String(group.id)).map(x => (
+                    <option key={x.id} value={x.id}>{x.name}</option>
+                  ))}
+                </select>
+                <button onClick={() => moveTo && movePlayer(rosterFor, moveTo)} disabled={!moveTo}
+                  style={{ background: moveTo ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${moveTo ? "#0969da" : "#d1d9e0"}`, color: moveTo ? "#0969da" : "#8c959f", borderRadius: 6, height: 34, padding: "0 14px", cursor: moveTo ? "pointer" : "default", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                  Move
+                </button>
+                <button onClick={() => { setRosterFor(null); setMoveTo(""); }}
+                  style={{ background: "none", border: "none", color: "#59636e", cursor: "pointer", fontFamily: "inherit", fontSize: 12, padding: "0 6px" }}>Cancel</button>
+              </div>
+              <div style={{ fontSize: 10, color: "#8c959f", marginTop: 8, lineHeight: 1.5 }}>
+                Times already recorded stay with this group — they are what happened before the change.
+              </div>
+            </div>
+          )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14 }}>
             <span style={{ fontSize: 12, color: "#59636e", fontWeight: 700 }}>Whistle:</span>
@@ -5231,7 +5338,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -6738,6 +6845,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div onClick={() => setQuickRecord(null)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#1f2328aa", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
             <div onClick={e => e.stopPropagation()} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, width: "100%", maxWidth: 440, boxShadow: "0 24px 70px #000a" }}>
               <GroupMonitor
+                onMovePlayer={onMovePlayer}
                 key={quickRecord.groupId}
                 group={{
                   ...qGroup,
@@ -6755,7 +6863,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 pars={pars}
                 parTimes={parTimes}
                 playersPerGroup={playersPerGroup}
-                schedule={schedules[quickRecord.groupId]}
+                          schedule={schedules[quickRecord.groupId]}
                 onUpdate={(update) => onUpdateGroupData(quickRecord.groupId, update)}
                 onBack={() => setQuickRecord(null)}
                 currentUser={currentUser}
@@ -8519,15 +8627,56 @@ export default function App() {
     setScreen("group");
   };
 
+  // Groups live in round_state, so a roster change has to write the whole array.
+  const persistGroups = (nextGroups) => {
+    saveAppState({
+      groups: nextGroups, pars, parTimes, baseSchedules, schedules,
+      suspensions, isSuspended, pendingStopTime, refereeCalls, greenSpeed, preferredLies,
+      roundId: currentRound?.id, playersPerGroup, turnTime, turnTimeBack,
+    });
+  };
+
   const handleUpdateGroup = (id, update) => {
+    // `players` belongs to the group itself (the draw), not to its recorded
+    // times — it's edited in Setup too, and the summary reads it from there.
+    // Split it out so a withdrawal from the group screen lands in the right place.
+    const { players, ...timedUpdate } = update;
+    if (players !== undefined) {
+      setGroups(prev => {
+        const next = prev.map(g => (String(g.id) === String(id) ? { ...g, players } : g));
+        persistGroups(next);
+        return next;
+      });
+    }
+    if (Object.keys(timedUpdate).length === 0) return;
+
     const writtenAt = new Date().toISOString();
     lastLocalWriteAt.current[id] = writtenAt;
     // Build the next value first, then save. Doing the write inside the state
     // updater meant React could run it more than once, and made the save order
     // hard to reason about.
-    const next = { ...(groupDataRef.current[id] || {}), ...update };
-    setGroupData(prev => ({ ...prev, [id]: { ...prev[id], ...update } }));
+    const next = { ...(groupDataRef.current[id] || {}), ...timedUpdate };
+    setGroupData(prev => ({ ...prev, [id]: { ...prev[id], ...timedUpdate } }));
     saveGroupData(currentRound?.id, id, next, writtenAt);
+  };
+
+  // The receiving half of a move: the player joins the target group, so its
+  // count goes up and the arrival is logged there as well. Recording it on both
+  // sides means either group's history explains the change on its own.
+  const handleMovePlayer = ({ fromGroup, toGroupId, target, holeIdx, time, by }) => {
+    setGroups(prev => {
+      const next = prev.map(g => String(g.id) === String(toGroupId)
+        ? { ...g, players: Math.min(4, groupPlayers(g, playersPerGroup) + 1) }
+        : g);
+      persistGroups(next);
+      return next;
+    });
+    const gd = groupDataRef.current[toGroupId] || {};
+    const logs = [...(gd.actionLogs || []), {
+      type: "IN", target, holeIdx, time, name: by,
+      reason: `from ${fromGroup?.name ?? "another group"}`,
+    }];
+    handleUpdateGroup(toGroupId, { actionLogs: logs });
   };
 
   // Clear the entire session (admin only)
@@ -8662,6 +8811,7 @@ export default function App() {
       onCallReferee={handleCallReferee}
       onManageTournaments={() => setScreen("tournament")}
       canEditSetup_={canEditSetup(rolesMap, currentTournament?.id, currentUser, isAdmin)}
+      onMovePlayer={handleMovePlayer}
       onManageUsers={() => { setUsersReturnTo("dashboard"); setScreen("users"); }}
       onClearRefereeCall={handleClearRefereeCall}
       onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
@@ -8706,6 +8856,7 @@ export default function App() {
     const targetSlot = activeGroup.targetSlot;
     return (
       <GroupMonitor
+        onMovePlayer={handleMovePlayer}
         key={activeGroup.id}
         group={{
           ...activeGroup,
