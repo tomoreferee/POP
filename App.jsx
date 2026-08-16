@@ -2841,7 +2841,15 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       : `arrival of ${entry.target} ${entry.reason || ""}`;
     if (!window.confirm(`Undo the ${label}?\n\nThe player count goes back up and the entry is removed.`)) return;
 
-    const nextLogs = actionLogs.filter(l => l !== entry);
+    // Match on content, not object identity: a realtime echo replaces the log
+    // array with fresh objects, so `!==` would silently match nothing and the
+    // entry would stay on screen.
+    const sameEntry = (l) => l.type === entry.type && l.target === entry.target
+      && l.holeIdx === entry.holeIdx && l.time === entry.time;
+    const nextLogs = actionLogs.filter(l => !sameEntry(l));
+    // The chip is driven by this local copy, so it has to be updated here too —
+    // without it the entry stayed visible even though the save had gone through.
+    setActionLogs(nextLogs);
     // WD and OUT each took a player off this group; IN had added one.
     const delta = entry.type === "IN" ? -1 : 1;
     onUpdate({
@@ -7968,6 +7976,9 @@ export default function App() {
   // that was silently dropping WN/MN/TM/Bad Time log entries recorded in quick succession).
   const lastLocalWriteAt = useRef({});
   const groupDataRef = useRef({});
+  // Mirrors groups so a roster change can build the next array without going
+  // through the state updater.
+  const groupsRef = useRef([]);
   // Don't let someone close the app while recorded times are still queued.
   useEffect(() => {
     const warn = (e) => {
@@ -8000,6 +8011,7 @@ export default function App() {
   // Mirrors groupData so a save can read the latest value without having to run
   // inside the state updater.
   useEffect(() => { groupDataRef.current = groupData; }, [groupData]);
+  useEffect(() => { groupsRef.current = groups; }, [groups]);
   const [activeGroup, setActiveGroup] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -8665,11 +8677,12 @@ export default function App() {
     // Split it out so a withdrawal from the group screen lands in the right place.
     const { players, ...timedUpdate } = update;
     if (players !== undefined) {
-      setGroups(prev => {
-        const next = prev.map(g => (String(g.id) === String(id) ? { ...g, players } : g));
-        persistGroups(next);
-        return next;
-      });
+      // Compute first, then set and save. A save fired inside the updater can
+      // run twice (React may invoke updaters more than once), which would send
+      // the same write to the server twice.
+      const nextGroups = groupsRef.current.map(g => (String(g.id) === String(id) ? { ...g, players } : g));
+      setGroups(nextGroups);
+      persistGroups(nextGroups);
     }
     if (Object.keys(timedUpdate).length === 0) return;
 
@@ -8687,13 +8700,11 @@ export default function App() {
   // count goes up and the arrival is logged there as well. Recording it on both
   // sides means either group's history explains the change on its own.
   const handleMovePlayer = ({ fromGroup, toGroupId, target, holeIdx, time, by, undo }) => {
-    setGroups(prev => {
-      const next = prev.map(g => String(g.id) === String(toGroupId)
-        ? { ...g, players: Math.max(1, Math.min(4, groupPlayers(g, playersPerGroup) + (undo ? -1 : 1))) }
-        : g);
-      persistGroups(next);
-      return next;
-    });
+    const nextGroups = groupsRef.current.map(g => String(g.id) === String(toGroupId)
+      ? { ...g, players: Math.max(1, Math.min(4, groupPlayers(g, playersPerGroup) + (undo ? -1 : 1))) }
+      : g);
+    setGroups(nextGroups);
+    persistGroups(nextGroups);
     if (undo) {
       // Drop the matching arrival entry from the receiving group
       const gdU = groupDataRef.current[toGroupId] || {};
