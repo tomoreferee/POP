@@ -48,6 +48,24 @@ function formatGreenSpeed(gs) {
   return parts.join("  |  ");
 }
 
+// How many players are actually in a group. A group only carries its own count
+// once someone edits it, so anything created before this existed — or created
+// by the generator — falls back to the round's field size. Reading it through
+// here means no group literal has to be touched and old rounds keep working.
+function groupPlayers(g, roundDefault) {
+  const n = Number(g?.players);
+  return Number.isFinite(n) && n >= 1 && n <= 4 ? n : (roundDefault ?? 3);
+}
+
+// Round-wide identifier for a player: group 11, player 2 → "G11P2". Used where
+// a log has left the context of its group (summary, exports); inside a group's
+// own table "P2" is enough.
+function playerCode(group, target) {
+  const num = String(group?.name ?? "").match(/(\d+)/)?.[1] ?? "?";
+  if (!target || target === "All") return `G${num}All`;
+  return `G${num}${target}`;
+}
+
 function parTimeTable(playersPerGroup) {
   return PAR_TIMES_BY_PLAYERS[playersPerGroup] ?? PAR_TIMES_BY_PLAYERS[3];
 }
@@ -191,7 +209,7 @@ function rowsToTSV(rows) {
   return lines.join("\n");
 }
 
-function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules }) {
+function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules, playersPerGroup }) {
   const summaryRows = [];
   const detailRows = [];
   const logRows = [];
@@ -223,6 +241,9 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
       Group: g.name,
       "Start hole": g.startHole || 1,
       "Tee time": g.startTime,
+      // Short groups play faster, so anyone analysing the round needs to see
+      // this next to the pace figures rather than have to ask.
+      Players: groupPlayers(g, playersPerGroup),
       "Holes completed": `${completed}/18`,
       "Last Diff (min)": lastDiff !== null ? lastDiff : "",
       Status: statusLabel,
@@ -255,6 +276,9 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
         Time: log.time,
         Name: log.name || "",
         Target: log.target || "",
+        // Unique across the whole round, so rows can be sorted or filtered by
+        // player once they're out of the app and in a spreadsheet.
+        "Player code": log.target ? playerCode(g, log.target) : "",
         "Diff at log (min)": log.diff ?? "",
       });
     });
@@ -2009,6 +2033,30 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   const removeGroupShotgun = (id) => setGroupsShotgun(g => g.filter(x => x.id !== id));
 
   const updateGroup1  = (id, field, val) => setGroups1(g => g.map(x => x.id === id ? { ...x, [field]: val } : x));
+  // Players in this particular group. Most groups match the round, so this only
+  // needs touching when a field is short or someone withdraws — but the count
+  // has to be recorded for the summary to know which groups set a fair
+  // benchmark, and for the player picker to offer the right people.
+  const playersCell = (g, update) => {
+    const n = groupPlayers(g, playersPerGroup);
+    const short = n !== playersPerGroup;
+    const step = (d) => update(g.id, "players", Math.max(1, Math.min(4, n + d)));
+    return (
+      <div title={short ? `Short group — round is ${playersPerGroup}` : "Players in this group"}
+        style={{
+          display: "flex", alignItems: "center", gap: 1, flexShrink: 0,
+          background: short ? "#fff8c5" : "#f6f8fa",
+          border: `1px solid ${short ? "#9a6700" : "#d1d9e0"}`,
+          borderRadius: 6, padding: "0 2px", height: 30,
+        }}>
+        <button onClick={() => step(-1)} disabled={!isAdmin}
+          style={{ width: 18, border: "none", background: "none", color: "#59636e", cursor: isAdmin ? "pointer" : "default", fontSize: 13, fontFamily: "inherit", padding: 0 }}>−</button>
+        <span style={{ minWidth: 26, textAlign: "center", fontSize: 12, fontWeight: 700, color: short ? "#9a6700" : "#1f2328" }}>{n}P</span>
+        <button onClick={() => step(1)} disabled={!isAdmin}
+          style={{ width: 18, border: "none", background: "none", color: "#59636e", cursor: isAdmin ? "pointer" : "default", fontSize: 13, fontFamily: "inherit", padding: 0 }}>+</button>
+      </div>
+    );
+  };
   const updateGroup10 = (id, field, val) => setGroups10(g => g.map(x => x.id === id ? { ...x, [field]: val } : x));
   const updateGroupShotgun = (id, field, val) => setGroupsShotgun(g => g.map(x => x.id === id ? { ...x, [field]: val } : x));
 
@@ -2075,7 +2123,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
   // button press needed. Debounced so typing a time doesn't spam the server, and
   // it never fires for an empty list (which would wipe the live session).
   const liveEditKey = JSON.stringify({
-    g: allGroups.map(g => [g.id, g.name, g.startTime, g.startHole, g.section || ""]),
+    g: allGroups.map(g => [g.id, g.name, g.startTime, g.startHole, g.section || "", g.players ?? null]),
     // playersPerGroup belongs here: without it, changing the field size never
     // triggered the save, so the new count only reached the server if some other
     // value happened to change at the same time.
@@ -2487,6 +2535,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                   onChange={e => updateGroup1(g.id, "startTime", e.target.value)}
                   style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
                 />
+                {playersCell(g, updateGroup1)}
                 <button onClick={() => removeGroup1(g.id)} style={{ background: "#ffebe9", border: "none", color: "#cf222e", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
               </div>
             ))}
@@ -2524,6 +2573,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                   onChange={e => updateGroup10(g.id, "startTime", e.target.value)}
                   style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
                 />
+                {playersCell(g, updateGroup10)}
                 <button onClick={() => removeGroup10(g.id)} style={{ background: "#ffebe9", border: "none", color: "#cf222e", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
               </div>
             ))}
@@ -2614,7 +2664,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
                               onChange={e => updateGroupShotgun(g.id, "startTime", e.target.value)}
                               style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "4px 8px", fontFamily: "inherit", fontSize: 13, flexShrink: 0 }}
                             />
-                            <button onClick={() => removeGroupShotgun(g.id)} style={{ background: "#ffebe9", border: "none", color: "#cf222e", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
+                            {playersCell(g, updateGroupShotgun)}
+                <button onClick={() => removeGroupShotgun(g.id)} style={{ background: "#ffebe9", border: "none", color: "#cf222e", borderRadius: 6, padding: "5px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0 }}>✕</button>
                           </div>
                         );
                       })}
@@ -2746,7 +2797,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   isSuspended, suspensions, totalOffsetMin, pendingStopTime, onLogout, allGroups, onSwitchGroup, hideLog, onRecorded, closeLabel, compact, statusOverride }) {
   const initHoleData = () =>
     group.holeData ?? Array(18).fill(null).map(() => ({ startTime: null, endTime: null }));
-  const numPlayers = playersPerGroup || 3; // how many P1..Pn quick-select buttons to offer for TM / Bad Time
+  // This group's own field size, not the round's — a group playing as a 2-ball
+  // shouldn't offer a P3 button, because a log against a player who isn't there
+  // is simply wrong data. Falls back to the round default for groups that have
+  // never been edited.
+  const numPlayers = groupPlayers(group, playersPerGroup);
   const playerNums = Array.from({ length: numPlayers }, (_, i) => i + 1);
 
   const holeOrder = getHoleOrder(group.startHole || 1);
@@ -4705,12 +4760,27 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   };
 
   const sideStats = sides.map(side => {
-    const first3 = side.groups.slice(0, 3);
+    // The first three groups are the field's benchmark, so a short group can't
+    // be one of them — two players go round faster than three, and a withdrawal
+    // in an early group would otherwise drag the whole reference pace with it.
+    // Skip them and take the next full groups instead, recording which were
+    // skipped so the report can say why.
+    // Walk the draw in order, taking full groups until there are three; note any
+    // short ones passed on the way so the report can explain the gap.
+    const chosen = [], skipped = [];
+    for (const g of side.groups) {
+      if (chosen.length === 3) break;
+      if (groupPlayers(g, playersPerGroup) >= playersPerGroup) chosen.push(g);
+      else skipped.push(g);
+    }
+    // If the whole side is short groups there's nothing to compare — fall back
+    // to the draw order rather than showing an empty benchmark.
+    const first3 = chosen.length ? chosen : side.groups.slice(0, 3);
     const lastGroup = side.groups[side.groups.length - 1];
 
     const first3Details = first3.map(g => {
       const p = computeGroupProgress(g, groupData[g.id], parTimes);
-      return { name: g.name, diff: p.lastDiff, isComplete: p.isComplete };
+      return { name: g.name, diff: p.lastDiff, isComplete: p.isComplete, players: groupPlayers(g, playersPerGroup) };
     });
 
     const lastProgress = lastGroup ? computeGroupProgress(lastGroup, groupData[lastGroup.id], parTimes) : null;
@@ -4719,6 +4789,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       ...side,
       groupCount: side.groups.length,
       first3Details,
+      skippedShort: skipped.map(g => ({ name: g.name, players: groupPlayers(g, playersPerGroup) })),
       lastDiff: lastProgress?.lastDiff ?? null,
       lastComplete: lastProgress?.isComplete ?? false,
     };
@@ -4784,7 +4855,9 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     if (logs.length === 0) return null;
     const playerMap = {};
     logs.forEach(l => {
-      const labels = l.target === "All" ? Array.from({ length: playersPerGroup || 3 }, (_, i) => i + 1).map(n => `P${n}`) : (l.target || "").split(",").map(s => s.trim()).filter(Boolean);
+      const labels = l.target === "All"
+        ? Array.from({ length: groupPlayers(g, playersPerGroup) }, (_, i) => i + 1).map(n => `P${n}`)
+        : (l.target || "").split(",").map(s => s.trim()).filter(Boolean);
       labels.forEach(label => {
         if (!playerMap[label]) playerMap[label] = { holes: [], badTimeCount: 0, names: new Set(), badTimeHoles: [] };
         playerMap[label].holes.push(l.holeIdx);
@@ -4859,6 +4932,13 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                             {d.diff !== null && !d.isComplete ? "*" : ""}
                           </span>
                         ))}
+                        {/* Anyone reading this later needs to know why the
+                            benchmark skipped the first groups out. */}
+                        {s.skippedShort.length > 0 && (
+                          <span style={{ fontSize: 10, color: "#9a6700", whiteSpace: "nowrap" }}>
+                            skipped {s.skippedShort.map(g => `${g.name} (${g.players}P)`).join(", ")}
+                          </span>
+                        )}
                       </div>
                     ) : <span style={{ color: "#59636e" }}>–</span>}
                   </td>
@@ -5280,7 +5360,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   };
   const [exportCopied, setExportCopied] = useState(""); // which sheet was just copied, for a brief checkmark
 
-  const exportData = exportModal ? buildDashboardExportData({ groups, groupData, pars, parTimes, schedules }) : null;
+  const exportData = exportModal ? buildDashboardExportData({ groups, groupData, pars, parTimes, schedules, playersPerGroup }) : null;
 
   const handleCopySheet = (label, text) => {
     copyTextToClipboard(text)
