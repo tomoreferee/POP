@@ -60,10 +60,37 @@ function groupPlayers(g, roundDefault) {
 // Round-wide identifier for a player: group 11, player 2 → "G11P2". Used where
 // a log has left the context of its group (summary, exports); inside a group's
 // own table "P2" is enough.
+function groupNum(group) {
+  return String(group?.name ?? "").match(/(\d+)/)?.[1] ?? "?";
+}
 function playerCode(group, target) {
-  const num = String(group?.name ?? "").match(/(\d+)/)?.[1] ?? "?";
-  if (!target || target === "All") return `G${num}All`;
-  return `G${num}${target}`;
+  if (!target || target === "All") return `G${groupNum(group)}All`;
+  // A visitor already carries their home code — don't stamp this group's on top
+  return /^G\d/.test(target) ? target : `G${groupNum(group)}${target}`;
+}
+
+// Who is actually in a group right now, as a list rather than a count. Slots are
+// never renumbered: if P1 withdraws from a three-ball the others stay P2 and P3,
+// because a log recorded against P2 an hour ago must still mean the same person.
+// A player moved in from elsewhere keeps their original code (G13P1) so both
+// groups' records line up.
+function groupRoster(group, gd, roundDefault) {
+  const drawn = Number(group?.players);
+  const size = Number.isFinite(drawn) && drawn >= 1 && drawn <= 4 ? drawn : (roundDefault ?? 3);
+  const logs = gd?.actionLogs || [];
+
+  const gone = new Set(
+    logs.filter(l => l.type === "WD" || l.type === "OUT").map(l => l.target)
+  );
+  const home = Array.from({ length: size }, (_, i) => `P${i + 1}`)
+    .filter(tag => !gone.has(tag))
+    .map(tag => ({ tag, label: tag, visitor: false }));
+
+  const visitors = logs
+    .filter(l => l.type === "IN" && !gone.has(l.target))
+    .map(l => ({ tag: l.target, label: l.target, visitor: true }));
+
+  return [...home, ...visitors];
 }
 
 function parTimeTable(playersPerGroup) {
@@ -243,7 +270,7 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
       "Tee time": g.startTime,
       // Short groups play faster, so anyone analysing the round needs to see
       // this next to the pace figures rather than have to ask.
-      Players: groupPlayers(g, playersPerGroup),
+      Players: groupRoster(g, gd, playersPerGroup).length,
       "Holes completed": `${completed}/18`,
       "Last Diff (min)": lastDiff !== null ? lastDiff : "",
       Status: statusLabel,
@@ -2801,8 +2828,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // shouldn't offer a P3 button, because a log against a player who isn't there
   // is simply wrong data. Falls back to the round default for groups that have
   // never been edited.
-  const numPlayers = groupPlayers(group, playersPerGroup);
-  const playerNums = Array.from({ length: numPlayers }, (_, i) => i + 1);
+  // Derived from the draw plus whatever has happened on the course, so slots
+  // keep their identity when someone leaves.
+  const roster = groupRoster(group, { actionLogs }, playersPerGroup);
+  const numPlayers = roster.length;
+  const playerNums = roster.map(r => r.tag);
 
   // Withdrawals and regrouping happen on the course, mid-round, so they're done
   // from here rather than back in Setup — this is the screen a referee already
@@ -2823,14 +2853,14 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   };
 
   const withdrawPlayer = (target, reason) => {
+    // The log is the record: the roster reads from it, so the picker stops
+    // offering this player and the summary sees a short group without a second
+    // count having to be kept in step. Earlier logs stay — they record what
+    // genuinely happened before the withdrawal.
     const nextLogs = logRosterEvent({ type: "WD", target, reason });
-    // The count drops so the picker stops offering them and the summary knows
-    // this group no longer sets a fair benchmark. Existing logs stay — they
-    // record what genuinely happened before the withdrawal.
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
       mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
-      players: Math.max(1, numPlayers - 1),
     });
     setRosterFor(null);
   };
@@ -2865,16 +2895,14 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     // The chip is driven by this local copy, so it has to be updated here too —
     // without it the entry stayed visible even though the save had gone through.
     setActionLogs(nextLogs);
-    // WD and OUT each took a player off this group; IN had added one.
-    const delta = entry.type === "IN" ? -1 : 1;
+    // Removing the log is enough: the roster is derived from it.
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
       mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
-      players: Math.max(1, Math.min(4, numPlayers + delta)),
     });
     // A move touched two groups, so undoing it has to put the other one back too
     if (entry.type === "OUT" && entry.movedTo) {
-      onMovePlayer?.({ undo: true, toGroupId: entry.movedTo, target: entry.target });
+      onMovePlayer?.({ undo: true, toGroupId: entry.movedTo, code: playerCode(group, entry.target) });
     }
     setRosterFor(null);
   };
@@ -2886,10 +2914,14 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
       mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
-      players: Math.max(1, numPlayers - 1),
     });
-    // The receiving group is updated by the parent, which owns every group's data
-    onMovePlayer?.({ fromGroup: group, toGroupId: to.id, target, holeIdx: currentHole, time: minToTime(now), by: currentUser || "" });
+    // The receiving group is updated by the parent, which owns every group's
+    // data. The player travels under their home code so both records match.
+    onMovePlayer?.({
+      fromGroup: group, toGroupId: to.id,
+      target, code: playerCode(group, target),
+      holeIdx: currentHole, time: minToTime(now), by: currentUser || "",
+    });
     setRosterFor(null);
     setMoveTo("");
   };
@@ -3015,7 +3047,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   const targetLabel = (targets) => {
     if (!targets || targets.length === 0) return "";
     if (targets.includes("ALL")) return "All";
-    return targets.slice().sort((a, b) => a - b).map(n => `P${n}`).join(", ");
+    // Targets are already tags ("P2", or a visitor's "G13P1"), so they're used
+    // as-is. Sorting by the trailing player number keeps P2 before P3 and puts
+    // visitors in a sensible place rather than sorting on the "G".
+    const num = (t) => Number(String(t).match(/P(\d+)$/)?.[1] ?? 99);
+    return targets.slice().sort((a, b) => num(a) - num(b)).join(", ");
   };
 
   const confirmAction = () => {
@@ -3611,18 +3647,18 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               the count the summary and the player picker rely on. */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12, color: "#59636e", fontWeight: 700 }}>Players:</span>
-            {playerNums.map(n => {
-              const tag = `P${n}`;
-              const open = rosterFor === tag;
+            {roster.map(r => {
+              const open = rosterFor === r.tag;
               return (
-                <button key={n} onClick={() => { setRosterFor(open ? null : tag); setMoveTo(""); }}
+                <button key={r.tag} onClick={() => { setRosterFor(open ? null : r.tag); setMoveTo(""); }}
+                  title={r.visitor ? "Moved in from another group" : undefined}
                   style={{
-                    background: open ? "#ddf4ff" : "#f6f8fa",
-                    border: `1px solid ${open ? "#0969da" : "#d1d9e0"}`,
-                    color: open ? "#0969da" : "#1f2328",
+                    background: open ? "#ddf4ff" : r.visitor ? "#fff8c5" : "#f6f8fa",
+                    border: `1px solid ${open ? "#0969da" : r.visitor ? "#9a6700" : "#d1d9e0"}`,
+                    color: open ? "#0969da" : r.visitor ? "#9a6700" : "#1f2328",
                     borderRadius: 6, padding: "5px 10px", cursor: "pointer",
                     fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                  }}>{tag}</button>
+                  }}>{r.label}</button>
               );
             })}
             {actionLogs.filter(l => l.type === "WD" || l.type === "OUT" || l.type === "IN").map((l, i) => (
@@ -3860,7 +3896,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>Bad Time →</span>
                 {playerNums.map(n => {
-                  const label = `P${n}`;
+                  const label = n;
                   const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label));
                   const isBadTimed = badTimePlayers.has(label);
                   const count = badTimeCounts[label] || 0;
@@ -3911,7 +3947,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>Bad Time →</span>
                 {playerNums.map(n => {
-                  const label = `P${n}`;
+                  const label = n;
                   const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label);
                   const isBadTimed = badTimePlayers.has(label);
                   const count = badTimeCounts[label] || 0;
@@ -4176,7 +4212,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                         border: `1px solid ${logColor(actionModal.type)}aa`, borderRadius: 6, padding: "6px 12px",
                         cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                       }}
-                    >P{n}</button>
+                    >{n}</button>
                   ))}
                 </div>
                 <div style={{ fontSize: 11, color: "#59636e", marginTop: 6 }}>Multiple players can be selected</div>
@@ -4928,7 +4964,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     const chosen = [], skipped = [];
     for (const g of side.groups) {
       if (chosen.length === 3) break;
-      if (groupPlayers(g, playersPerGroup) >= playersPerGroup) chosen.push(g);
+      if (groupRoster(g, groupData[g.id], playersPerGroup).length >= playersPerGroup) chosen.push(g);
       else skipped.push(g);
     }
     // If the whole side is short groups there's nothing to compare — fall back
@@ -4938,7 +4974,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 
     const first3Details = first3.map(g => {
       const p = computeGroupProgress(g, groupData[g.id], parTimes);
-      return { name: g.name, diff: p.lastDiff, isComplete: p.isComplete, players: groupPlayers(g, playersPerGroup) };
+      return { name: g.name, diff: p.lastDiff, isComplete: p.isComplete, players: groupRoster(g, groupData[g.id], playersPerGroup).length };
     });
 
     const lastProgress = lastGroup ? computeGroupProgress(lastGroup, groupData[lastGroup.id], parTimes) : null;
@@ -4947,7 +4983,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       ...side,
       groupCount: side.groups.length,
       first3Details,
-      skippedShort: skipped.map(g => ({ name: g.name, players: groupPlayers(g, playersPerGroup) })),
+      skippedShort: skipped.map(g => ({ name: g.name, players: groupRoster(g, groupData[g.id], playersPerGroup).length })),
       lastDiff: lastProgress?.lastDiff ?? null,
       lastComplete: lastProgress?.isComplete ?? false,
     };
@@ -4993,7 +5029,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     const allSet = new Set();
     logs.forEach(l => {
       if (l.target === "All") {
-        Array.from({ length: playersPerGroup || 3 }, (_, i) => i + 1).forEach(n => allSet.add(`P${n}`));
+        groupRoster(g, groupData[g.id], playersPerGroup).forEach(r => allSet.add(r.tag));
       } else {
         (l.target || "").split(",").map(s => s.trim()).filter(Boolean).forEach(p => allSet.add(p));
       }
@@ -5014,7 +5050,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     const playerMap = {};
     logs.forEach(l => {
       const labels = l.target === "All"
-        ? Array.from({ length: groupPlayers(g, playersPerGroup) }, (_, i) => i + 1).map(n => `P${n}`)
+        ? groupRoster(g, groupData[g.id], playersPerGroup).map(r => r.tag)
         : (l.target || "").split(",").map(s => s.trim()).filter(Boolean);
       labels.forEach(label => {
         if (!playerMap[label]) playerMap[label] = { holes: [], badTimeCount: 0, names: new Set(), badTimeHoles: [] };
@@ -8717,25 +8753,20 @@ export default function App() {
     saveGroupData(currentRound?.id, id, next, writtenAt);
   };
 
-  // The receiving half of a move: the player joins the target group, so its
-  // count goes up and the arrival is logged there as well. Recording it on both
-  // sides means either group's history explains the change on its own.
-  const handleMovePlayer = ({ fromGroup, toGroupId, target, holeIdx, time, by, undo }) => {
-    const nextGroups = groupsRef.current.map(g => String(g.id) === String(toGroupId)
-      ? { ...g, players: Math.max(1, Math.min(4, groupPlayers(g, playersPerGroup) + (undo ? -1 : 1))) }
-      : g);
-    setGroups(nextGroups);
-    persistGroups(nextGroups);
+  // The receiving half of a move. Only a log is written — the roster is derived
+  // from logs, so there's no separate count that could drift out of step. The
+  // arriving player is recorded under their home code (G13P1), which keeps them
+  // identifiable in both groups' records and in the export.
+  const handleMovePlayer = ({ fromGroup, toGroupId, target, code, holeIdx, time, by, undo }) => {
+    const gd = groupDataRef.current[toGroupId] || {};
+    const arriving = code || target;
     if (undo) {
-      // Drop the matching arrival entry from the receiving group
-      const gdU = groupDataRef.current[toGroupId] || {};
-      const kept = (gdU.actionLogs || []).filter(l => !(l.type === "IN" && l.target === target));
+      const kept = (gd.actionLogs || []).filter(l => !(l.type === "IN" && l.target === arriving));
       handleUpdateGroup(toGroupId, { actionLogs: kept });
       return;
     }
-    const gd = groupDataRef.current[toGroupId] || {};
     const logs = [...(gd.actionLogs || []), {
-      type: "IN", target, holeIdx, time, name: by,
+      type: "IN", target: arriving, holeIdx, time, name: by,
       reason: `from ${fromGroup?.name ?? "another group"}`,
     }];
     handleUpdateGroup(toGroupId, { actionLogs: logs });
