@@ -94,7 +94,7 @@ function groupRoster(group, gd, roundDefault) {
   );
   const home = Array.from({ length: size }, (_, i) => `P${i + 1}`)
     .filter(tag => !gone.has(tag))
-    .map(tag => ({ tag, label: tag, visitor: false }));
+    .map(tag => ({ tag, label: playerCode(group, tag), visitor: false }));
 
   const visitors = logs
     .filter(l => l.type === "IN" && !gone.has(l.target))
@@ -3695,7 +3695,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
           {rosterFor && (
             <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 12, marginBottom: compact ? 10 : 14 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#1f2328", marginBottom: 8 }}>
-                {rosterFor} — at hole {currentHole + 1}
+                {playerCode(group, rosterFor)} — at hole {currentHole + 1}
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                 {["Withdrawn", "Disqualified", "Injury"].map(r => (
@@ -4237,7 +4237,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                         border: `1px solid ${logColor(actionModal.type)}aa`, borderRadius: 6, padding: "6px 12px",
                         cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                       }}
-                    >{n}</button>
+                    >{playerCode(group, n)}</button>
                   ))}
                 </div>
                 <div style={{ fontSize: 11, color: "#59636e", marginTop: 6 }}>Multiple players can be selected</div>
