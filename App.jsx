@@ -4140,6 +4140,7 @@ async function geocodeVenue(name) {
    that decide whether play can start, continue, or has to be called. */
 function WeatherBar({ hostVenue }) {
   const [coords, setCoords] = useState(null);
+  const [source, setSource] = useState(null);   // "venue" | "gps"
   const [wx, setWx] = useState(null);
   const [failed, setFailed] = useState(false);
 
@@ -4150,13 +4151,14 @@ function WeatherBar({ hostVenue }) {
     let cancelled = false;
     setFailed(false);
     setCoords(null);   // a different venue means the old position is wrong
+    setSource(null);
     (async () => {
       const fromVenue = await geocodeVenue(hostVenue);
       if (cancelled) return;
-      if (fromVenue) { setCoords(fromVenue); return; }
+      if (fromVenue) { setCoords(fromVenue); setSource("venue"); return; }
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          p => { if (!cancelled) setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+          p => { if (!cancelled) { setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); setSource("gps"); } },
           () => { if (!cancelled) setFailed(true); },
           { timeout: 6000, maximumAge: 1800000 }
         );
@@ -4223,6 +4225,17 @@ function WeatherBar({ hostVenue }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, margin: "12px 16px 0" }}>
+      {/* Where the reading is from. A venue that can't be geocoded falls back to
+          the device, which may be nowhere near the course — worth saying so
+          rather than letting the numbers look authoritative. */}
+      {source && (
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 9, color: "#8c959f", letterSpacing: 0.3, minWidth: 0 }}>
+          <span style={{ flexShrink: 0 }}>{source === "venue" ? "📍" : "🛰"}</span>
+          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {source === "venue" ? hostVenue : "Your current location — venue not found"}
+          </span>
+        </div>
+      )}
       {sun
         ? row([
             cell("dawn", "Dawn", sun.dawn, "#9a6700"),
@@ -5158,6 +5171,31 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // value, so paging the H10 table moved the highlight on the H1 table too.
   const [nineHalfByTable, setNineHalfByTable] = useState({});
   const [fullscreenTable, setFullscreenTable] = useState(null);   // tableKey shown edge-to-edge
+  // Entering or leaving full screen re-mounts the table, so the scroller starts
+  // back at 0 while the nine-selector still reads whatever was chosen before.
+  // Put the scroll back where the chips say it should be.
+  useEffect(() => {
+    const key = fullscreenTable;
+    const restore = () => {
+      const el = document.getElementById(`scroll-${key ?? ""}`);
+      if (!el) return;
+      const half = nineHalfByTable[key] ?? 0;
+      el.scrollLeft = half ? el.scrollWidth : 0;
+    };
+    if (key) {
+      // after the overlay has painted
+      const id = requestAnimationFrame(restore);
+      return () => cancelAnimationFrame(id);
+    }
+    // Leaving full screen: the in-page table re-mounts too
+    const id = requestAnimationFrame(() => {
+      Object.keys(nineHalfByTable).forEach(k => {
+        const el = document.getElementById(`scroll-${k}`);
+        if (el) el.scrollLeft = nineHalfByTable[k] ? el.scrollWidth : 0;
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [fullscreenTable]);
   const [openCall, setOpenCall] = useState(null);                 // call opened from the Notifications list
   // Always on while a call is open — it can be dragged aside now, so there's no
   // need to hide it at the top of the page the way it used to be.
