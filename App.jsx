@@ -69,6 +69,16 @@ function playerCode(group, target) {
   return /^G\d/.test(target) ? target : `G${groupNum(group)}${target}`;
 }
 
+// The reverse of playerCode: inside a group's own screens the group prefix is
+// noise, so "G13P1" shows as "P1" — but only when it is this group's own code.
+// A player moved in from elsewhere keeps their full code, which is exactly the
+// information a referee needs there.
+function shortTarget(target, group) {
+  if (!target || target === "All") return target || "";
+  const mine = `G${groupNum(group)}`;
+  return target.startsWith(mine) ? target.slice(mine.length) : target;
+}
+
 // Who is actually in a group right now, as a list rather than a count. Slots are
 // never renumbered: if P1 withdraws from a three-ball the others stay P2 and P3,
 // because a log recorded against P2 an hour ago must still mean the same person.
@@ -3052,7 +3062,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     // as-is. Sorting by the trailing player number keeps P2 before P3 and puts
     // visitors in a sensible place rather than sorting on the "G".
     const num = (t) => Number(String(t).match(/P(\d+)$/)?.[1] ?? 99);
-    return targets.slice().sort((a, b) => num(a) - num(b)).join(", ");
+    // Written as round-wide codes for the same reason as Bad Time above.
+    return targets.slice().sort((a, b) => num(a) - num(b))
+      .map(t => playerCode(group, t)).join(", ");
   };
 
   const confirmAction = () => {
@@ -3119,9 +3131,10 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // which is derived from the current log list so it re-numbers correctly if an entry
   // is later deleted).
   const triggerBadTimeFor = (playerTag) => {
-    // The pickers now pass a tag ("P2", or a visitor's "G13P1") rather than a
-    // number — prefixing it again produced "PP2", which matched no player.
-    const playerLabel = playerTag;
+    // Stored as the round-wide code (G13P2) so the entry identifies one person
+    // no matter where it is read; the group's own screens strip the prefix back
+    // off for display.
+    const playerLabel = playerCode(group, playerTag);
     const deadline = (adjustedSchedule[currentHole] ?? 0) + (parTimes?.[currentHole] ?? 14);
     const diffAtLog = nowInMin() - deadline + 1;
 
@@ -3371,9 +3384,14 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // state for "Bad-timed" vs merely "under TM", since otherwise pressing Bad Time on a player
   // who's already in the TM target list looks like nothing happened (the button stayed the
   // same pink "already selected" color).
-  const badTimePlayers = new Set(actionLogs.filter(l => l.type === "TM" && l.badTime).map(l => l.target));
+  // Keyed on the round-wide code so entries written before codes existed
+  // ("P2") and after ("G13P2") both land in the same bucket.
+  const badTimePlayers = new Set(
+    actionLogs.filter(l => l.type === "TM" && l.badTime).map(l => playerCode(group, l.target))
+  );
   const badTimeCounts = actionLogs.filter(l => l.type === "TM" && l.badTime).reduce((m, l) => {
-    m[l.target] = (m[l.target] || 0) + 1;
+    const k = playerCode(group, l.target);
+    m[k] = (m[k] || 0) + 1;
     return m;
   }, {});
 
@@ -3899,8 +3917,10 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>Bad Time →</span>
                 {playerNums.map(n => {
-                  const label = n;
-                  const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label));
+                  // Logs hold the round-wide code; the roster holds the tag.
+                  // Compare on the tag so both old and new entries match.
+                  const label = playerCode(group, n);
+                  const isFlagged = tmActive && (tmTarget === "All" || (tmTarget || "").split(",").map(s => shortTarget(s.trim(), group)).includes(n));
                   const isBadTimed = badTimePlayers.has(label);
                   const count = badTimeCounts[label] || 0;
                   const usedUpInMN = isFlagged; // once P becomes a TM target, further Bad Time presses go through the TM row instead
@@ -3950,8 +3970,10 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: "#59636e", fontWeight: 700, letterSpacing: 0.5 }}>Bad Time →</span>
                 {playerNums.map(n => {
-                  const label = n;
-                  const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => s.trim()).includes(label);
+                  // Logs hold the round-wide code; the roster holds the tag.
+                  // Compare on the tag so both old and new entries match.
+                  const label = playerCode(group, n);
+                  const isFlagged = tmTarget === "All" || (tmTarget || "").split(",").map(s => shortTarget(s.trim(), group)).includes(n);
                   const isBadTimed = badTimePlayers.has(label);
                   const count = badTimeCounts[label] || 0;
                   const notYetTarget = !isFlagged; // not a TM target yet — must be added via the MN row's Bad Time button first
@@ -6337,12 +6359,16 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // than a hole column, so any cell carrying one pushed the whole table
             // out. They're drawn small and clipped instead, and the name is cut to
             // initials — the full detail is in the group's own log anyway.
-            const logChipText = (l) => {
+            const logChipText = (l, rowGroup) => {
               if (fitAllHoles) return shortLogLabel(l);
               const who = l.name ? `·${l.name}` : "";
-              if (l.badTime) return `BT${l.target ? ` ${l.target}` : ""}${who}`;
+              // The row already says which group this is, so the group prefix
+              // is dropped here — a visitor's code survives, which is the one
+              // case where it carries real information.
+              const t = (l.target || "").split(",").map(x => shortTarget(x.trim(), rowGroup)).join(",");
+              if (l.badTime) return `BT${t ? ` ${t}` : ""}${who}`;
               if (l.off) return `Off ${l.type}${who}`;
-              return `${l.type}${l.target ? ` ${l.target}` : ""}${who}`;
+              return `${l.type}${t ? ` ${t}` : ""}${who}`;
             };
             const logChipStyle = (l) => ({
               marginTop: fitAllHoles ? 1 : 2,
@@ -6612,7 +6638,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     )}
                                     {holeLogs.map((l, li) => (
                                       <div key={li} style={logChipStyle(l)}>
-                                        {logChipText(l)}
+                                        {logChipText(l, g)}
                                       </div>
                                     ))}
                                     {/* Same chip treatment as a logged one, just
@@ -6660,7 +6686,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                   })()}
                                   {holeLogs.map((l, li) => (
                                     <div key={li} style={{ ...logChipStyle(l), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55` }}>
-                                      {logChipText(l)}
+                                      {logChipText(l, g)}
                                     </div>
                                   ))}
                                   {/* Under MN/TM on this hole without its own entry
