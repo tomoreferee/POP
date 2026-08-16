@@ -3636,10 +3636,16 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <select value={moveTo} onChange={e => setMoveTo(e.target.value)}
                   style={{ flex: 1, minWidth: 120, background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, height: 34, padding: "0 8px", fontFamily: "inherit", fontSize: 12 }}>
-                  <option value="">Move to group…</option>
-                  {(allGroups || []).filter(x => String(x.id) !== String(group.id)).map(x => (
-                    <option key={x.id} value={x.id}>{x.name}</option>
-                  ))}
+                  <option value="">
+                    {(allGroups || []).length > 1 ? "Move to group…" : "No other groups"}
+                  </option>
+                  {(allGroups || [])
+                    .filter(x => String(x.id) !== String(group.id))
+                    .map(x => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}{x.startTime ? ` · ${x.startTime}` : ""}
+                      </option>
+                    ))}
                 </select>
                 <button onClick={() => moveTo && movePlayer(rosterFor, moveTo)} disabled={!moveTo}
                   style={{ background: moveTo ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${moveTo ? "#0969da" : "#d1d9e0"}`, color: moveTo ? "#0969da" : "#8c959f", borderRadius: 6, height: 34, padding: "0 14px", cursor: moveTo ? "pointer" : "default", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
@@ -6877,6 +6883,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             <div onClick={e => e.stopPropagation()} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, width: "100%", maxWidth: 440, boxShadow: "0 24px 70px #000a" }}>
               <GroupMonitor
                 onMovePlayer={onMovePlayer}
+                allGroups={groups}
                 key={quickRecord.groupId}
                 group={{
                   ...qGroup,
