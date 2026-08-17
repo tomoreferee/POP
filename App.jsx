@@ -540,6 +540,9 @@ const LOG_TYPE_META = {
   TM: { color: "#bf3989", darkBg: "#ffeff7" },
   EST: { color: "#bc4c00", darkBg: "#fff1e5" },
   RUL: { color: "#8250df", darkBg: "#faf2ff" },
+  WD:  { color: "#cf222e", darkBg: "#ffebe9" },
+  OUT: { color: "#cf222e", darkBg: "#ffebe9" },
+  IN:  { color: "#1a7f37", darkBg: "#dafbe1" },
 };
 // EST names players the way TM does, but it's a one-off record like WN —
 // nothing stays running afterwards.
@@ -567,6 +570,32 @@ function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1) {
 
   logs.filter(l => l.type === "WN").forEach(l => {
     items.push({ key: `wn-${l.idx}`, type: "WN", sortHole: slotOf[l.holeIdx] ?? l.holeIdx, label: `WN @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx });
+  });
+  // Roster changes and rulings never reached the alert list: the summariser
+  // only knew about whistles, so a withdrawal or a move was invisible to anyone
+  // reading the Notifications panel.
+  logs.filter(l => l.type === "WD").forEach(l => {
+    items.push({
+      key: `wd-${l.idx}`, type: "WD", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
+      label: `${l.reason || "RTD"} ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`,
+      idx: l.idx,
+    });
+  });
+  logs.filter(l => l.type === "OUT" || l.type === "IN").forEach(l => {
+    items.push({
+      key: `${l.type.toLowerCase()}-${l.idx}`, type: l.type, sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
+      label: `${l.type === "IN" ? "In" : "Out"} ${l.target || ""} @H${l.holeIdx + 1}${l.reason ? ` ${l.reason}` : ""}${l.name ? ` by ${l.name}` : ""}`,
+      idx: l.idx,
+    });
+  });
+  logs.filter(l => l.type === "RUL").forEach(l => {
+    const who = l.target || "Group";
+    const detail = l.ruleNo ? ` · Rule ${l.ruleNo}` : (l.comment ? "" : " · not filled in");
+    items.push({
+      key: `rul-${l.idx}`, type: "RUL", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
+      label: `Ruling ${who} @H${l.holeIdx + 1}${detail}${l.name ? ` by ${l.name}` : ""}`,
+      idx: l.idx,
+    });
   });
   logs.filter(l => l.type === "EST").forEach(l => {
     items.push({
@@ -6422,13 +6451,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
 
             if (alertGroups.length === 0 && !hasAfternoon) return (
               <div style={{ textAlign: "center", padding: "14px 4px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                ✓ No groups have been whistled (WN / MN / TM / Bad Time / EST).
+                ✓ No whistles, rulings or player changes recorded.
               </div>
             );
 
             if (alertGroups.length === 0) return (
               <div style={{ textAlign: "center", padding: "14px 4px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                ✓ No groups have been whistled (WN / MN / TM / Bad Time / EST).
+                ✓ No whistles, rulings or player changes recorded.
               </div>
             );
 
@@ -6464,7 +6493,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 )}
                 {morningAlerts.length === 0 && afternoonAlerts.length === 0 && (
                   <div style={{ textAlign: "center", padding: "14px 4px", color: "#3a3d5a", fontSize: 11, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    ✓ No groups have been whistled (WN / MN / TM / Bad Time / EST).
+                    ✓ No whistles, rulings or player changes recorded.
                   </div>
                 )}
               </div>
