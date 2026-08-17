@@ -69,6 +69,21 @@ function playerCode(group, target) {
   return /^G\d/.test(target) ? target : `G${groupNum(group)}${target}`;
 }
 
+// One place that decides how a log type is written on screen. The stored type
+// is an internal code ("WD", "RUL"); what a referee should read is the reason
+// they chose or the word used on the button. Repeating this ternary in six
+// places is how the edit dialog ended up still saying "OUT".
+function logTypeLabel(l) {
+  if (!l) return "";
+  if (l.badTime) return "Bad Time";
+  if (l.off) return `Off ${l.type}`;
+  if (l.type === "WD") return l.reason || "RTD";
+  if (l.type === "IN") return "In";
+  if (l.type === "OUT") return "Out";
+  if (l.type === "RUL") return "Ruling";
+  return l.type;
+}
+
 // The reverse of playerCode: inside a group's own screens the group prefix is
 // noise, so "G13P1" shows as "P1" — but only when it is this group's own code.
 // A player moved in from elsewhere keeps their full code, which is exactly the
@@ -3784,7 +3799,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             {actionLogs.filter(l => l.type === "WD" || l.type === "OUT" || l.type === "IN").map((l, i) => (
               <span key={i}
                 onClick={() => undoRosterEvent(l)}
-                title={`${l.type} at H${(l.holeIdx ?? 0) + 1} · ${l.time}${l.reason ? ` · ${l.reason}` : ""} — tap to undo`}
+                title={`${logTypeLabel(l)} at H${(l.holeIdx ?? 0) + 1} · ${l.time}${l.reason ? ` · ${l.reason}` : ""} — tap to undo`}
                 style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", color: l.type === "IN" ? "#1a7f37" : "#cf222e", background: l.type === "IN" ? "#dafbe1" : "#ffebe9", border: `1px solid ${l.type === "IN" ? "#1a7f37" : "#cf222e"}44`, borderRadius: 4, padding: "2px 6px" }}>
                 {l.type === "WD" ? (l.reason || "RTD") : l.type === "IN" ? "In" : "Out"}{" "}
                 {playerCode(group, l.target)} <span style={{ opacity: 0.55 }}>✕</span>
@@ -4280,7 +4295,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                     {l.badTime ? (
                                       <><span style={{ fontWeight: 700 }}>TM Bad Time</span> {playerCode(group, l.target)}{badTimeOccurrence.has(l) ? ` (#${badTimeOccurrence.get(l)})` : ""}{l.name ? ` - ${l.name}` : ""}</>
                                     ) : l.off ? (
-                                      <><span style={{ fontWeight: 700 }}>✕ Off {l.type}</span>{l.name ? ` - ${l.name}` : ""}</>
+                                      <><span style={{ fontWeight: 700 }}>✕ {logTypeLabel(l)}</span>{l.name ? ` - ${l.name}` : ""}</>
                                     ) : (
                                       <><span style={{ fontWeight: 700 }}>{l.type === "WD" ? (l.reason || "RTD") : l.type === "IN" ? "In" : l.type === "OUT" ? "Out" : l.type}</span> {l.target ? `${playerCode(group, l.target)} ` : ""}{l.name ? `- ${l.name}` : ""}</>
                                     )}
@@ -4484,7 +4499,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         return (
           <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
             <div style={{ background: "#ffffff", border: "1px solid #cf222eaa", borderRadius: 6, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #1f2328" }}>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 10 }}>Delete {logTypeLabel(l)}?</div>
               <div style={{ fontSize: 13, color: "#59636e", marginBottom: 20, lineHeight: 1.6 }}>
                 Are you sure?
               </div>
@@ -6687,12 +6702,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               const t = (l.target || "").split(",").map(x => playerCode(rowGroup, x.trim())).filter(Boolean).join(",");
               if (l.badTime) return `BT${t ? ` ${t}` : ""}${who}`;
               if (l.off) return `Off ${l.type}${who}`;
-              // A withdrawal shows the reason that was chosen, not the internal type
-              if (l.type === "WD") return `${l.reason || "RTD"}${t ? ` ${t}` : ""}${who}`;
-              if (l.type === "OUT") return `Out${t ? ` ${t}` : ""}${who}`;
-              if (l.type === "IN") return `In${t ? ` ${t}` : ""}${who}`;
-              if (l.type === "RUL") return `Ruling${t ? ` ${t}` : ""}${who}`;
-              return `${l.type}${t ? ` ${t}` : ""}${who}`;
+              return `${logTypeLabel(l)}${t ? ` ${t}` : ""}${who}`;
             };
             const logChipStyle = (l, text) => {
               // Roster words ("RTD", "Out", "In") are longer than the one-letter
@@ -7201,7 +7211,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         return (
           <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
             <div style={{ background: "#ffffff", border: "1px solid #cf222eaa", borderRadius: 6, padding: 28, minWidth: 280, maxWidth: 340, boxShadow: "0 20px 60px #1f2328" }}>
-              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 10 }}>Delete {l.off ? `Off ${l.type}` : l.type}?</div>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 10 }}>Delete {logTypeLabel(l)}?</div>
               <div style={{ fontSize: 13, color: "#59636e", marginBottom: 20, lineHeight: 1.6 }}>
                 {gName && <>{gName} — </>}Are you sure?
               </div>
@@ -7234,7 +7244,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div onClick={() => setEditLogPopup(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: `1px solid ${logColor(l.type)}88`, borderRadius: 6, padding: 24, width: "100%", maxWidth: 320, boxShadow: "0 20px 60px #1f2328" }}>
               <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 20, fontWeight: 600, letterSpacing: 0, color: logColor(l.type), marginBottom: 4 }}>
-                Edit {l.badTime ? "Bad Time" : l.off ? `Off ${l.type}` : l.type}
+                Edit {logTypeLabel(l)}
               </div>
               <div style={{ fontSize: 12, color: "#59636e", marginBottom: 18 }}>{gName}</div>
 
@@ -7248,8 +7258,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 {(l.target || l.badTime) && (
                   <div>
                     <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Player</label>
-                    <input defaultValue={l.target || ""} placeholder="e.g. G12P2"
-                      onChange={e => { l._newTarget = e.target.value; }}
+                    <input defaultValue={playerCode({ name: gName }, l.target)} placeholder="e.g. G12P2"
+                      onChange={e => { l._newTarget = playerCode({ name: gName }, e.target.value.trim()); }}
                       style={{ display: "block", width: "100%", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
                   </div>
                 )}
