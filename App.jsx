@@ -2942,7 +2942,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         holeIdx: existing.holeIdx,
         target: existing.target || "",
         playerName: existing.playerName || "",
-        start: existing.start || existing.time || minToTime(now),
+        start: existing.start || group.startTime || "",
         comment: existing.comment || "",
         ruleNo: existing.ruleNo || "",
       });
@@ -2952,7 +2952,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
         holeIdx: currentHole,
         target: "",
         playerName: "",
-        start: minToTime(now),
+        start: group.startTime || "",
         comment: "",
         ruleNo: "",
       });
@@ -4333,12 +4333,25 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               RULING — Hole {rulingDraft.holeIdx + 1}
             </div>
 
+            {/* Group and its tee time are fixed facts about the round, so they
+                are shown rather than asked for. */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "8px 10px" }}>
+                <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Group</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>{group.name}</div>
+              </div>
+              <div style={{ width: 104, flexShrink: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "8px 10px" }}>
+                <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Start</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>{rulingDraft.start || "—"}</div>
+              </div>
+            </div>
+
             <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Player code</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-              {[{ tag: "", label: "Group" }, ...roster].map(r => {
+              {roster.map(r => {
                 const on = rulingDraft.target === r.tag;
                 return (
-                  <button key={r.tag || "group"} onClick={() => setRulingDraft(d => ({ ...d, target: r.tag }))}
+                  <button key={r.tag} onClick={() => setRulingDraft(d => ({ ...d, target: d.target === r.tag ? "" : r.tag }))}
                     style={{
                       background: on ? "#faf2ff" : "#f6f8fa",
                       border: `1px solid ${on ? "#8250df" : "#d1d9e0"}`,
@@ -4350,21 +4363,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
               })}
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Name</div>
-                <input value={rulingDraft.playerName}
-                  onChange={e => setRulingDraft(d => ({ ...d, playerName: e.target.value }))}
-                  placeholder="Player name"
-                  style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 10px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
-              </div>
-              <div style={{ width: 96, flexShrink: 0 }}>
-                <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Start</div>
-                <input type="time" value={rulingDraft.start}
-                  onChange={e => setRulingDraft(d => ({ ...d, start: e.target.value }))}
-                  style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 8px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
-              </div>
-            </div>
+            <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Name</div>
+            <input value={rulingDraft.playerName}
+              onChange={e => setRulingDraft(d => ({ ...d, playerName: e.target.value }))}
+              placeholder="Player name"
+              style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginBottom: 14 }} />
 
             <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Ruling comment</div>
             <textarea value={rulingDraft.comment} rows={3}
