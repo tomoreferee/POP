@@ -5223,25 +5223,23 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   };
 
   const sideStats = sides.map(side => {
-    // The first three groups are the field's benchmark, so a short group can't
-    // be one of them — two players go round faster than three, and a withdrawal
-    // in an early group would otherwise drag the whole reference pace with it.
-    // Skip them and take the next full groups instead, recording which were
-    // skipped so the report can say why.
-    // Walk the draw in order, taking full groups until there are three; note any
-    // short ones passed on the way so the report can explain the gap.
+    // The first group out sets the field's benchmark, so it has to be a full
+    // one — two players go round faster than three, and a short early group
+    // would drag the reference pace with it. Walk the draw in order, take the
+    // first group at full strength, and note any short ones passed on the way
+    // so the report can explain why an earlier group was stepped over.
     const chosen = [], skipped = [];
     for (const g of side.groups) {
-      if (chosen.length === 3) break;
+      if (chosen.length === 1) break;
       if (groupRoster(g, groupData[g.id], playersPerGroup).length >= playersPerGroup) chosen.push(g);
       else skipped.push(g);
     }
-    // If the whole side is short groups there's nothing to compare — fall back
-    // to the draw order rather than showing an empty benchmark.
-    const first3 = chosen.length ? chosen : side.groups.slice(0, 3);
+    // If every group on this side is short there's nothing to compare — fall
+    // back to the draw order rather than showing an empty benchmark.
+    const firstGroup = chosen.length ? chosen : side.groups.slice(0, 1);
     const lastGroup = side.groups[side.groups.length - 1];
 
-    const first3Details = first3.map(g => {
+    const firstGroupDetails = firstGroup.map(g => {
       const p = computeGroupProgress(g, groupData[g.id], parTimes);
       return { name: g.name, diff: p.lastDiff, isComplete: p.isComplete, players: groupRoster(g, groupData[g.id], playersPerGroup).length };
     });
@@ -5251,7 +5249,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     return {
       ...side,
       groupCount: side.groups.length,
-      first3Details,
+      firstGroupDetails,
       skippedShort: skipped.map(g => ({ name: g.name, players: groupRoster(g, groupData[g.id], playersPerGroup).length })),
       lastDiff: lastProgress?.lastDiff ?? null,
       lastComplete: lastProgress?.isComplete ?? false,
@@ -5397,9 +5395,9 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   <td style={tdS}>{s.groupCount}</td>
                   <td style={tdS}>{minToHM(totalAllowed)}</td>
                   <td style={{ ...tdS, textAlign: "left" }}>
-                    {s.first3Details.length ? (
+                    {s.firstGroupDetails.length ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        {s.first3Details.map((d, i) => (
+                        {s.firstGroupDetails.map((d, i) => (
                           <span key={i} style={{ whiteSpace: "nowrap" }}>
                             <span style={{ color: "#59636e" }}>{d.name}</span>{" "}
                             <span style={{ color: diffColor(d.diff), fontWeight: 700 }}>
