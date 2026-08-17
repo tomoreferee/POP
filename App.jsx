@@ -553,7 +553,10 @@ function logBg(type) { return (LOG_TYPE_META[type] || LOG_TYPE_META.MN).darkBg; 
 // Builds a hole-sorted, condensed summary of a group's WN/MN/TM/Bad Time history:
 // WN and Bad Time are one-off flags (one chip each); MN/TM are on/off sessions that
 // get collapsed into a single "start hole → off hole" entry instead of one chip per hole.
-function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1) {
+function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1, group = null) {
+  // Notification chips are read across every group at once, so a bare "P2"
+  // would be ambiguous — the group is passed in purely to build the full code.
+  const code = (t) => (group ? playerCode(group, t) : t) || "";
   const items = [];
   // A group starting at H10 plays 10…18, 1…9, so hole NUMBER is not play order.
   // slotOf maps a hole index to its position in this group's round, and nextHole
@@ -577,19 +580,19 @@ function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1) {
   logs.filter(l => l.type === "WD").forEach(l => {
     items.push({
       key: `wd-${l.idx}`, type: "WD", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
-      label: `${l.reason || "RTD"} ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`,
+      label: `${l.reason || "RTD"} ${code(l.target)} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`,
       idx: l.idx,
     });
   });
   logs.filter(l => l.type === "OUT" || l.type === "IN").forEach(l => {
     items.push({
       key: `${l.type.toLowerCase()}-${l.idx}`, type: l.type, sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
-      label: `${l.type === "IN" ? "In" : "Out"} ${l.target || ""} @H${l.holeIdx + 1}${l.reason ? ` ${l.reason}` : ""}${l.name ? ` by ${l.name}` : ""}`,
+      label: `${l.type === "IN" ? "In" : "Out"} ${code(l.target)} @H${l.holeIdx + 1}${l.reason ? ` ${l.reason}` : ""}${l.name ? ` by ${l.name}` : ""}`,
       idx: l.idx,
     });
   });
   logs.filter(l => l.type === "RUL").forEach(l => {
-    const who = l.target || "Group";
+    const who = l.target ? code(l.target) : "Group";
     const detail = l.ruleNo ? ` · Rule ${l.ruleNo}` : (l.comment ? "" : " · not filled in");
     items.push({
       key: `rul-${l.idx}`, type: "RUL", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
@@ -600,13 +603,13 @@ function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1) {
   logs.filter(l => l.type === "EST").forEach(l => {
     items.push({
       key: `est-${l.idx}`, type: "EST", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
-      label: `EST ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
+      label: `EST ${code(l.target)} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
     });
   });
   logs.filter(l => l.type === "TM" && l.badTime).forEach(l => {
     items.push({
       key: `bt-${l.idx}`, type: "TM", sortHole: slotOf[l.holeIdx] ?? l.holeIdx,
-      label: `Bad Time ${l.target || ""} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
+      label: `Bad Time ${code(l.target)} @H${l.holeIdx + 1}${l.name ? ` by ${l.name}` : ""}`, idx: l.idx,
     });
   });
 
@@ -627,7 +630,7 @@ function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1) {
     if (cur) runs.push(cur);
     return runs.map((r, i) => {
       const isLast = i === runs.length - 1;
-      const targetSuffix = r.target ? ` (${r.target})` : "";
+      const targetSuffix = r.target ? ` (${r.target.split(",").map(t => code(t.trim())).join(", ")})` : "";
       const bySuffix = r.name ? ` by ${r.name}` : "";
       const label = r.offHole
         ? `${type} @H${r.startHole} → Off @H${r.offHole}${targetSuffix}${bySuffix}`
@@ -2995,9 +2998,10 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   };
 
   const undoRosterEvent = (entry) => {
-    const label = entry.type === "WD" ? `withdrawal of ${entry.target}`
-      : entry.type === "OUT" ? `move of ${entry.target} ${entry.reason || ""}`
-      : `arrival of ${entry.target} ${entry.reason || ""}`;
+    const who = playerCode(group, entry.target);
+    const label = entry.type === "WD" ? `${entry.reason || "withdrawal"} of ${who}`
+      : entry.type === "OUT" ? `move of ${who} ${entry.reason || ""}`
+      : `arrival of ${who} ${entry.reason || ""}`;
     if (!window.confirm(`Undo the ${label}?\n\nThe player count goes back up and the entry is removed.`)) return;
 
     // Match on content, not object identity: a realtime echo replaces the log
@@ -3777,7 +3781,8 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 onClick={() => undoRosterEvent(l)}
                 title={`${l.type} at H${(l.holeIdx ?? 0) + 1} · ${l.time}${l.reason ? ` · ${l.reason}` : ""} — tap to undo`}
                 style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", color: l.type === "IN" ? "#1a7f37" : "#cf222e", background: l.type === "IN" ? "#dafbe1" : "#ffebe9", border: `1px solid ${l.type === "IN" ? "#1a7f37" : "#cf222e"}44`, borderRadius: 4, padding: "2px 6px" }}>
-                {l.type} {l.target} <span style={{ opacity: 0.55 }}>✕</span>
+                {l.type === "WD" ? (l.reason || "RTD") : l.type === "IN" ? "In" : "Out"}{" "}
+                {playerCode(group, l.target)} <span style={{ opacity: 0.55 }}>✕</span>
               </span>
             ))}
           </div>
@@ -3862,7 +3867,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 <button key={i} onClick={() => openRuling(l)}
                   title="Open to edit or complete"
                   style={{ background: "#faf2ff", border: "1px solid #8250df66", color: "#8250df", borderRadius: 6, padding: "4px 9px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
-                  RUL H{(l.holeIdx ?? 0) + 1}{l.target ? ` · ${shortTarget(l.target, group)}` : ""}
+                  RUL H{(l.holeIdx ?? 0) + 1}{l.target ? ` · ${playerCode(group, l.target)}` : ""}
                   {!l.comment && !l.ruleNo ? " ·" : ""}
                   {!l.comment && !l.ruleNo ? <span style={{ opacity: 0.7 }}> incomplete</span> : ""}
                 </button>
@@ -4067,7 +4072,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#bf3989", boxShadow: "0 0 8px #bf3989", animation: "pulse 1.5s infinite" }} />
               <span style={{ fontSize: 13, color: "#bf3989", fontWeight: 700, letterSpacing: 1 }}>TIMING</span>
-              <span style={{ fontSize: 12, color: "#ffb3e6", fontWeight: 700 }}>{tmTarget || "All"}</span>
+              <span style={{ fontSize: 12, color: "#ffb3e6", fontWeight: 700 }}>
+                {(tmTarget || "All").split(",").map(t => playerCode(group, t.trim())).join(", ")}
+              </span>
               {tmName && <span style={{ fontSize: 12, color: "#59636e" }}>by {tmName}</span>}
               <button
                 onClick={offTM}
@@ -4266,11 +4273,11 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                 <div key={li} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: logColor(l.type), background: `${logBg(l.type)}44`, borderRadius: 4, padding: "2px 4px", textAlign: "left", lineHeight: 1.4 }}>
                                   <span style={{ flex: 1 }}>
                                     {l.badTime ? (
-                                      <><span style={{ fontWeight: 700 }}>TM Bad Time</span> {l.target}{badTimeOccurrence.has(l) ? ` (#${badTimeOccurrence.get(l)})` : ""}{l.name ? ` - ${l.name}` : ""}</>
+                                      <><span style={{ fontWeight: 700 }}>TM Bad Time</span> {playerCode(group, l.target)}{badTimeOccurrence.has(l) ? ` (#${badTimeOccurrence.get(l)})` : ""}{l.name ? ` - ${l.name}` : ""}</>
                                     ) : l.off ? (
                                       <><span style={{ fontWeight: 700 }}>✕ Off {l.type}</span>{l.name ? ` - ${l.name}` : ""}</>
                                     ) : (
-                                      <><span style={{ fontWeight: 700 }}>{l.type}</span> {l.target ? `${l.target} ` : ""}{l.name ? `- ${l.name}` : ""}</>
+                                      <><span style={{ fontWeight: 700 }}>{l.type === "WD" ? (l.reason || "RTD") : l.type === "IN" ? "In" : l.type === "OUT" ? "Out" : l.type}</span> {l.target ? `${playerCode(group, l.target)} ` : ""}{l.name ? `- ${l.name}` : ""}</>
                                     )}
                                   </span>
                                   <button
@@ -6414,7 +6421,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                   {(() => {
                     const logs = (gd?.actionLogs ?? []).map((l, idx) => ({ ...l, idx }));
                     if (logs.length === 0 && !mnActive && !tmActive) return null;
-                    const items = summarizeStatusLogs(logs, mnActive, tmActive, g.startHole || 1);
+                    const items = summarizeStatusLogs(logs, mnActive, tmActive, g.startHole || 1, g);
                     return (
                       <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 4 }}>
                         {items.map(it => (
@@ -7218,7 +7225,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 {(l.target || l.badTime) && (
                   <div>
                     <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Player</label>
-                    <input defaultValue={l.target || ""} placeholder="e.g. P2"
+                    <input defaultValue={l.target || ""} placeholder="e.g. G12P2"
                       onChange={e => { l._newTarget = e.target.value; }}
                       style={{ display: "block", width: "100%", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
                   </div>
