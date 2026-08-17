@@ -6879,6 +6879,20 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3744", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px", cursor: "pointer" }}
                                   >{fitAllHoles ? "FIN" : "FINISHED"}</span>
                                 )}
+                                {/* Field size, but only when it differs from the
+                                    round — a full group needs no annotation, and
+                                    marking every row would bury the exceptions
+                                    that actually explain a group's pace. */}
+                                {(() => {
+                                  const n = groupRoster(g, data, playersPerGroup).length;
+                                  if (n === playersPerGroup) return null;
+                                  return (
+                                    <span title={`${n} players — round is ${playersPerGroup}`}
+                                      style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a6700", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>
+                                      {n}P
+                                    </span>
+                                  );
+                                })()}
                                 {hasWN && <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "W" : "WN"}</span>}
                                 {mnActiveNow ? (
                                   <span style={{ fontSize: fitAllHoles ? 9 : 11, fontWeight: 700, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 4, padding: fitAllHoles ? "0 2px" : "1px 5px" }}>{fitAllHoles ? "M" : "MN"}</span>
