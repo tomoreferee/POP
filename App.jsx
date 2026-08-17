@@ -5831,8 +5831,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   const [deleteLogConfirm, setDeleteLogConfirm] = useState(null); // { groupId, idx } or null
   const deleteLogAt = (groupId, idx) => {
     const gd = groupData[groupId] || {};
+    const entry = (gd.actionLogs ?? [])[idx];
     const nextLogs = (gd.actionLogs ?? []).filter((_, i2) => i2 !== idx);
     onUpdateGroupData(groupId, { actionLogs: nextLogs });
+
+    // Deleting one half of a move has to remove the other, or the player is
+    // left existing in both groups at once (or in neither).
+    const pairId = entry?.type === "OUT" ? entry.movedTo : entry?.type === "IN" ? entry.movedFrom : null;
+    if (pairId) {
+      const other = entry.type === "OUT" ? "IN" : "OUT";
+      const otherLogs = groupData[pairId]?.actionLogs ?? [];
+      const kept = otherLogs.filter(x => !(x.type === other && x.target === entry.target));
+      if (kept.length !== otherLogs.length) onUpdateGroupData(pairId, { actionLogs: kept });
+    }
     setDeleteLogConfirm(null);
   };
   // Full reset of a status (MN or TM) for a group — removes every log entry of that
@@ -7238,6 +7249,29 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         const saveEdit = (updated) => {
           const nextLogs = gLogs.map((x, i2) => i2 === editLogPopup.idx ? { ...x, ...updated } : x);
           onUpdateGroupData(editLogPopup.groupId, { actionLogs: nextLogs });
+
+          // A move is one event written into two groups. Editing one half has to
+          // carry over, or the pair disagrees — an "Out G13P2" facing an
+          // "In G13P1" describes two different players.
+          const pairId = l.type === "OUT" ? l.movedTo : l.type === "IN" ? l.movedFrom : null;
+          if (pairId) {
+            const other = l.type === "OUT" ? "IN" : "OUT";
+            const otherLogs = groupData[pairId]?.actionLogs ?? [];
+            // Match on what the entry was before the edit, then apply the same
+            // change to the counterpart.
+            const patched = otherLogs.map(x => {
+              if (x.type !== other || x.target !== l.target) return x;
+              return {
+                ...x,
+                ...(updated.target !== undefined ? { target: updated.target } : {}),
+                ...(updated.holeIdx !== undefined ? { holeIdx: updated.holeIdx } : {}),
+                ...(updated.name !== undefined ? { name: updated.name } : {}),
+              };
+            });
+            if (patched.some((x, i2) => x !== otherLogs[i2])) {
+              onUpdateGroupData(pairId, { actionLogs: patched });
+            }
+          }
           setEditLogPopup(null);
         };
         return (
