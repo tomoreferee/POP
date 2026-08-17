@@ -3718,31 +3718,12 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
             })()}
           </div>
 
-          {/* Delay input */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 10, background: "#f6f8fa", borderRadius: 6, padding: compact ? "8px 12px" : "10px 14px", marginBottom: compact ? 10 : 14 }}>
-            <span style={{ fontSize: 12, color: "#cf222e", flex: 1, textAlign: "left" }}>Delay time</span>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, flexShrink: 0 }}>
-              <button onClick={() => updateDelay(Math.max(0, delayMin - 1))} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>−</button>
-              <input
-                type="number" min="0" value={delayMin}
-                onChange={e => updateDelay(e.target.value)}
-                style={{ width: 52, background: "#f6f8fa", border: `1px solid ${delayMin > 0 ? "#9a670066" : "#d1d9e0"}`, color: "#9a6700", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 22, fontWeight: 600, textAlign: "center", borderRadius: 6, padding: "2px 0", outline: "none" }}
-              />
-              <button onClick={() => updateDelay(delayMin + 1)} style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: compact ? 32 : 40, height: compact ? 32 : 40, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>+</button>
-            </div>
-            <span style={{ fontSize: 12, color: "#59636e", flex: 1, textAlign: "left" }}>min</span>
-            {delayMin > 0 && (
-              <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "2px 7px" }}>
-                schedule +{delayMin}m
-              </span>
-            )}
-          </div>
 
           {/* Roster: who is actually in this group. Withdrawals and moves are
               recorded here because they happen on the course, and both change
               the count the summary and the player picker rely on. */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: compact ? 10 : 14, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, color: "#59636e", fontWeight: 700 }}>Players:</span>
+            <span style={{ fontSize: 12, color: "#59636e", fontWeight: 700 }}>Manage player:</span>
             {roster.map(r => {
               const open = rosterFor === r.tag;
               return (
@@ -3828,12 +3809,18 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   <button onClick={() => openActionModal("EST", currentHole)}
                     title="Record EST against one or more players — a one-off record, nothing keeps running afterwards"
                     style={{ flex: 1, background: "#fff1e5", border: "1px solid #bc4c00aa", color: "#bc4c00", borderRadius: 6, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>EST</button>
-                  <button onClick={() => openRuling(null)}
-                    style={{ flex: 1, background: "#faf2ff", border: "1px solid #8250dfaa", color: "#8250df", borderRadius: 6, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>RUL</button>
+
                 </>
               );
             })()}
           </div>
+
+          {/* Ruling sits on its own row: it isn't a whistle, and it now has the
+              space the delay input used to take. */}
+          <button onClick={() => openRuling(null)}
+            style={{ width: "100%", background: "#faf2ff", border: "1px solid #8250dfaa", color: "#8250df", borderRadius: 6, padding: compact ? "9px 0" : "12px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: compact ? 10 : 14 }}>
+            Ruling
+          </button>
 
           {actionLogs.some(l => l.type === "RUL") && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: compact ? 10 : 14 }}>
@@ -5710,6 +5697,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // value, so paging the H10 table moved the highlight on the H1 table too.
   const [nineHalfByTable, setNineHalfByTable] = useState({});
   const [fullscreenTable, setFullscreenTable] = useState(null);   // tableKey shown edge-to-edge
+  // Fit views can't fit the −/+ stepper the normal view uses, so the Start cell
+  // opens this instead. { groupId, name, startTime, value }
+  const [delayEdit, setDelayEdit] = useState(null);
   // Entering or leaving full screen re-mounts the table, so the scroller starts
   // back at 0 while the nine-selector still reads whatever was chosen before.
   // Put the scroll back where the chips say it should be.
@@ -6195,7 +6185,45 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           offsetTop={fullscreenTable ? 0 : headerH}
           onClear={onClearRefereeCall}
         />
-        {/* Attending a call opened from the Notifications list below */}
+        {/* Start delay, opened from the Start cell in the fit views */}
+      {delayEdit && (
+        <div onClick={() => setDelayEdit(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #9a670088", borderRadius: 10, padding: 20, width: "100%", maxWidth: 300 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#1f2328", marginBottom: 2 }}>Start delay time</div>
+            <div style={{ fontSize: 12, color: "#59636e", marginBottom: 16 }}>
+              {delayEdit.name} · tee {delayEdit.startTime}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 16 }}>
+              <button onClick={() => setDelayEdit(d => ({ ...d, value: String(Math.max(0, (parseInt(d.value, 10) || 0) - 1)) }))}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: 44, height: 48, cursor: "pointer", fontSize: 20, fontFamily: "inherit" }}>−</button>
+              <input type="text" inputMode="numeric" value={delayEdit.value}
+                onChange={e => setDelayEdit(d => ({ ...d, value: e.target.value.replace(/[^0-9]/g, "") }))}
+                style={{ width: 80, height: 48, boxSizing: "border-box", background: "#f6f8fa", border: `1px solid ${(parseInt(delayEdit.value, 10) || 0) > 0 ? "#9a670066" : "#d1d9e0"}`, color: "#9a6700", borderRadius: 6, textAlign: "center", fontFamily: "inherit", fontSize: 26, fontWeight: 700, outline: "none" }} />
+              <button onClick={() => setDelayEdit(d => ({ ...d, value: String((parseInt(d.value, 10) || 0) + 1) }))}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: 44, height: 48, cursor: "pointer", fontSize: 20, fontFamily: "inherit" }}>+</button>
+              <span style={{ fontSize: 13, color: "#59636e" }}>min</span>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => {
+                  onUpdateGroupData(delayEdit.groupId, { delayMin: Math.max(0, parseInt(delayEdit.value, 10) || 0) });
+                  setDelayEdit(null);
+                }}
+                style={{ flex: 1, background: "#dafbe1", border: "1px solid #1a7f37", color: "#1a7f37", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
+                Save
+              </button>
+              <button onClick={() => setDelayEdit(null)}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attending a call opened from the Notifications list below */}
         {openCall && (
           <div onClick={() => setOpenCall(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #cf222e", borderRadius: 10, padding: 20, width: "100%", maxWidth: 340 }}>
@@ -6810,15 +6838,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                               </div>
                             </td>
                             <td
-                              onClick={e => e.stopPropagation()}
-                              style={{ ...td, color: colColor, fontWeight: 700, position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 1, background: "#ffffff", width: startColW, minWidth: startColW, maxWidth: startColW, borderRight: "1px solid #d1d9e0" }}
+                              onClick={e => {
+                                e.stopPropagation();
+                                if (fitAllHoles) setDelayEdit({ groupId: g.id, name: g.name, startTime: g.startTime, value: String(data?.delayMin ?? 0) });
+                              }}
+                              title={fitAllHoles ? "Tap to set start delay" : undefined}
+                              style={{ ...td, color: colColor, fontWeight: 700, cursor: fitAllHoles ? "pointer" : "default", position: viewMode === "fit18" ? "static" : "sticky", left: nameColW, zIndex: 1, background: "#ffffff", width: startColW, minWidth: startColW, maxWidth: startColW, borderRight: "1px solid #d1d9e0" }}
                             >
                               {fitAllHoles ? (
                                 <div style={{ fontSize: 11, lineHeight: 1.05 }}>
                                   <div>{g.startTime.slice(0, 2)}</div>
                                   <div>{g.startTime.slice(3)}</div>
                                   {(data?.delayMin ?? 0) > 0 && (
-                                    <div style={{ fontSize: 9, color: "#1f2328", marginTop: 1 }}>+{data.delayMin}</div>
+                                    <div style={{ fontSize: 9, color: "#9a6700", fontWeight: 700, marginTop: 1 }}>+{data.delayMin}</div>
                                   )}
                                 </div>
                               ) : <div>{g.startTime}</div>}
