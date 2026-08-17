@@ -468,6 +468,11 @@ function computeGroupStatusFor(g, groups, groupData, parTimes) {
 // One-letter badge text for the width-locked "fit 18" view: W / M / T / B.
 function shortLogLabel(l) {
   if (l.badTime) return "B";
+  // Roster events read as words: "W" for a withdrawal was indistinguishable
+  // from "W" for a warning, and In/Out say more than a single letter.
+  if (l.type === "WD") return l.reason || "RTD";
+  if (l.type === "IN") return "In";
+  if (l.type === "OUT") return "Out";
   const letter = l.type === "WN" ? "W" : l.type === "MN" ? "M" : l.type === "TM" ? "T" : l.type === "RUL" ? "R" : l.type?.[0] || "?";
   return l.off ? `×${letter}` : letter;
 }
@@ -6629,35 +6634,50 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
             // initials — the full detail is in the group's own log anyway.
             const logChipText = (l, rowGroup) => {
               if (fitAllHoles) return shortLogLabel(l);
-              const who = l.name ? `·${l.name}` : "";
-              // The row already says which group this is, so the group prefix
-              // is dropped here — a visitor's code survives, which is the one
-              // case where it carries real information.
-              const t = (l.target || "").split(",").map(x => shortTarget(x.trim(), rowGroup)).join(",");
+              // A space, not "·": the chip wraps only at spaces, so joining the
+              // name with a dot made one long unbreakable chunk that pushed the
+              // column out.
+              const who = l.name ? ` ${l.name}` : "";
+              // Full round-wide codes here: the table is read across many groups
+              // at once, so "P2" alone would be ambiguous.
+              const t = (l.target || "").split(",").map(x => playerCode(rowGroup, x.trim())).filter(Boolean).join(",");
               if (l.badTime) return `BT${t ? ` ${t}` : ""}${who}`;
               if (l.off) return `Off ${l.type}${who}`;
+              // A withdrawal shows the reason that was chosen, not the internal type
+              if (l.type === "WD") return `${l.reason || "RTD"}${t ? ` ${t}` : ""}${who}`;
+              if (l.type === "OUT") return `Out${t ? ` ${t}` : ""}${who}`;
+              if (l.type === "IN") return `In${t ? ` ${t}` : ""}${who}`;
               return `${l.type}${t ? ` ${t}` : ""}${who}`;
             };
-            const logChipStyle = (l) => ({
-              marginTop: fitAllHoles ? 1 : 2,
-              fontSize: 9,
-              fontWeight: 700,
-              lineHeight: 1.25,
-              color: logColor(l.type),
-              background: `${logBg(l.type)}55`,
-              borderRadius: 3,
-              padding: fitAllHoles ? "0 1px" : "1px 3px",
-              // Normal view has the vertical room, so a long label wraps onto a
-              // second line rather than being cut off — but only at a space.
-              // Breaking anywhere split "MN·NP" into "MN·N / P". The pixel cap is
-              // what stops it widening the column; a percentage would be circular
-              // in an auto-layout table.
-              ...(fitAllHoles
-                ? { whiteSpace: "nowrap" }
-                : { whiteSpace: "normal", wordBreak: "normal", overflowWrap: "normal", hyphens: "none", maxWidth: 44 }),
-              marginLeft: "auto",
-              marginRight: "auto",
-            });
+            const logChipStyle = (l, text) => {
+              // Roster words ("RTD", "Out", "In") are longer than the one-letter
+              // codes the fit views were sized for, so those cells step the type
+              // down rather than clip. Normal view keeps its size and wraps.
+              const len = String(text ?? "").length;
+              const fitSize = isFit9
+                ? (len > 3 ? 7 : 8)
+                : (len > 3 ? 6 : 7);
+              return {
+                marginTop: fitAllHoles ? 1 : 2,
+                fontSize: fitAllHoles ? fitSize : 9,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: logColor(l.type),
+                background: `${logBg(l.type)}55`,
+                borderRadius: 3,
+                padding: fitAllHoles ? "0 1px" : "1px 3px",
+                // Normal view has the vertical room, so a long label wraps onto a
+                // second line rather than being cut off — but only at a space, or
+                // "G12P2" would be split mid-code. The pixel cap is what stops it
+                // widening the column; a percentage would be circular in an
+                // auto-layout table.
+                ...(fitAllHoles
+                  ? { whiteSpace: "nowrap", letterSpacing: -0.2 }
+                  : { whiteSpace: "normal", wordBreak: "normal", overflowWrap: "normal", hyphens: "none", maxWidth: 52 }),
+                marginLeft: "auto",
+                marginRight: "auto",
+              };
+            };
             const card = (
               <div key={tableKey} style={{
                 background: "#ffffff", border: `1px solid ${colColor}22`,
@@ -6909,19 +6929,19 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       <div style={{ fontSize: 13, fontWeight: 700, color: "#59636e", whiteSpace: "nowrap" }}>{minToTime(deadline)}</div>
                                     )}
                                     {holeLogs.map((l, li) => (
-                                      <div key={li} style={logChipStyle(l)}>
+                                      <div key={li} style={logChipStyle(l, logChipText(l, g))}>
                                         {logChipText(l, g)}
                                       </div>
                                     ))}
                                     {/* Same chip treatment as a logged one, just
                                         dashed to show it's the run continuing. */}
                                     {showMnPreview && (
-                                      <div style={{ ...logChipStyle({ type: "MN" }), border: "1px dashed #0969da55" }}>
+                                      <div style={{ ...logChipStyle({ type: "MN" }, "MN"), border: "1px dashed #0969da55" }}>
                                         {fitAllHoles ? "M" : `MN${data?.mnName ? `·${data.mnName}` : ""}`}
                                       </div>
                                     )}
                                     {showTmPreview && (
-                                      <div style={{ ...logChipStyle({ type: "TM" }), border: "1px dashed #bf398955" }}>
+                                      <div style={{ ...logChipStyle({ type: "TM" }, "TM"), border: "1px dashed #bf398955" }}>
                                         {fitAllHoles ? "T" : `TM${data?.tmName ? `·${data.tmName}` : ""}`}
                                       </div>
                                     )}
@@ -6957,7 +6977,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                     );
                                   })()}
                                   {holeLogs.map((l, li) => (
-                                    <div key={li} style={{ ...logChipStyle(l), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55` }}>
+                                    <div key={li} style={{ ...logChipStyle(l, logChipText(l, g)), background: "#ffffffdd", border: `1px solid ${logColor(l.type)}55` }}>
                                       {logChipText(l, g)}
                                     </div>
                                   ))}
@@ -6965,12 +6985,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                                       — same chip as a logged one, since to a referee
                                       reading the row it means the same thing. */}
                                   {inMnRun(slot) && !holeLogs.some(l => l.type === "MN") && (
-                                    <div style={{ ...logChipStyle({ type: "MN" }), background: "#ffffffdd", border: "1px solid #0969da55" }}>
+                                    <div style={{ ...logChipStyle({ type: "MN" }, "MN"), background: "#ffffffdd", border: "1px solid #0969da55" }}>
                                       {fitAllHoles ? "M" : "MN"}
                                     </div>
                                   )}
                                   {inTmRun(slot) && !holeLogs.some(l => l.type === "TM") && (
-                                    <div style={{ ...logChipStyle({ type: "TM" }), background: "#ffffffdd", border: "1px solid #bf398955" }}>
+                                    <div style={{ ...logChipStyle({ type: "TM" }, "TM"), background: "#ffffffdd", border: "1px solid #bf398955" }}>
                                       {fitAllHoles ? "T" : "TM"}
                                     </div>
                                   )}
