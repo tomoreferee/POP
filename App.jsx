@@ -90,14 +90,14 @@ function groupRoster(group, gd, roundDefault) {
   const logs = gd?.actionLogs || [];
 
   const gone = new Set(
-    logs.filter(l => l.type === "WD" || l.type === "OUT").map(l => l.target)
+    logs.filter(l => l.type === "WD" || l.type === "OUT").map(l => playerCode(group, l.target))
   );
   const home = Array.from({ length: size }, (_, i) => `P${i + 1}`)
-    .filter(tag => !gone.has(tag))
+    .filter(tag => !gone.has(playerCode(group, tag)))
     .map(tag => ({ tag, label: playerCode(group, tag), visitor: false }));
 
   const visitors = logs
-    .filter(l => l.type === "IN" && !gone.has(l.target))
+    .filter(l => l.type === "IN" && !gone.has(playerCode(group, l.target)))
     .map(l => ({ tag: l.target, label: l.target, visitor: true }));
 
   return [...home, ...visitors];
@@ -2909,7 +2909,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     // offering this player and the summary sees a short group without a second
     // count having to be kept in step. Earlier logs stay — they record what
     // genuinely happened before the withdrawal.
-    const nextLogs = logRosterEvent({ type: "WD", target, reason });
+    const nextLogs = logRosterEvent({ type: "WD", target: playerCode(group, target), reason });
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
       mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
@@ -3022,7 +3022,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     // to remove the other — otherwise the player vanishes from both, or exists
     // in both at once.
     if (entry.type === "OUT" && entry.movedTo) {
-      onMovePlayer?.({ undo: true, undoType: "IN", toGroupId: entry.movedTo, code: playerCode(group, entry.target) });
+      onMovePlayer?.({ undo: true, undoType: "IN", toGroupId: entry.movedTo, code: entry.target });
     }
     if (entry.type === "IN" && entry.movedFrom) {
       onMovePlayer?.({ undo: true, undoType: "OUT", toGroupId: entry.movedFrom, code: entry.target });
@@ -3033,7 +3033,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   const movePlayer = (target, toGroupId) => {
     const to = allGroups?.find(g => String(g.id) === String(toGroupId));
     if (!to) return;
-    const nextLogs = logRosterEvent({ type: "OUT", target, reason: `to ${to.name}`, movedTo: to.id });
+    const nextLogs = logRosterEvent({ type: "OUT", target: playerCode(group, target), reason: `to ${to.name}`, movedTo: to.id });
     onUpdate({
       holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
       mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
@@ -9141,13 +9141,10 @@ export default function App() {
     const gd = groupDataRef.current[toGroupId] || {};
     const arriving = code || target;
     if (undo) {
-      // Remove whichever half lives in the other group. The IN there holds the
-      // full code ("G13P1"); the OUT holds the home tag ("P1"), so both are
-      // compared on the trailing player slot.
+      // Both halves store the same round-wide code, so they compare directly.
       const wanted = undoType || "IN";
-      const slot = (t) => String(t || "").match(/P\d+$/)?.[0] ?? "";
       const kept = (gd.actionLogs || []).filter(
-        l => !(l.type === wanted && slot(l.target) === slot(arriving))
+        l => !(l.type === wanted && l.target === arriving)
       );
       handleUpdateGroup(toGroupId, { actionLogs: kept });
       return;
