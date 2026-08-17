@@ -3018,9 +3018,14 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
       mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
     });
-    // A move touched two groups, so undoing it has to put the other one back too
+    // A move is one event written into two groups, so undoing either half has
+    // to remove the other — otherwise the player vanishes from both, or exists
+    // in both at once.
     if (entry.type === "OUT" && entry.movedTo) {
-      onMovePlayer?.({ undo: true, toGroupId: entry.movedTo, code: playerCode(group, entry.target) });
+      onMovePlayer?.({ undo: true, undoType: "IN", toGroupId: entry.movedTo, code: playerCode(group, entry.target) });
+    }
+    if (entry.type === "IN" && entry.movedFrom) {
+      onMovePlayer?.({ undo: true, undoType: "OUT", toGroupId: entry.movedFrom, code: entry.target });
     }
     setRosterFor(null);
   };
@@ -6686,6 +6691,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               if (l.type === "WD") return `${l.reason || "RTD"}${t ? ` ${t}` : ""}${who}`;
               if (l.type === "OUT") return `Out${t ? ` ${t}` : ""}${who}`;
               if (l.type === "IN") return `In${t ? ` ${t}` : ""}${who}`;
+              if (l.type === "RUL") return `Ruling${t ? ` ${t}` : ""}${who}`;
               return `${l.type}${t ? ` ${t}` : ""}${who}`;
             };
             const logChipStyle = (l, text) => {
@@ -9131,17 +9137,25 @@ export default function App() {
   // from logs, so there's no separate count that could drift out of step. The
   // arriving player is recorded under their home code (G13P1), which keeps them
   // identifiable in both groups' records and in the export.
-  const handleMovePlayer = ({ fromGroup, toGroupId, target, code, holeIdx, time, by, undo }) => {
+  const handleMovePlayer = ({ fromGroup, toGroupId, target, code, holeIdx, time, by, undo, undoType }) => {
     const gd = groupDataRef.current[toGroupId] || {};
     const arriving = code || target;
     if (undo) {
-      const kept = (gd.actionLogs || []).filter(l => !(l.type === "IN" && l.target === arriving));
+      // Remove whichever half lives in the other group. The IN there holds the
+      // full code ("G13P1"); the OUT holds the home tag ("P1"), so both are
+      // compared on the trailing player slot.
+      const wanted = undoType || "IN";
+      const slot = (t) => String(t || "").match(/P\d+$/)?.[0] ?? "";
+      const kept = (gd.actionLogs || []).filter(
+        l => !(l.type === wanted && slot(l.target) === slot(arriving))
+      );
       handleUpdateGroup(toGroupId, { actionLogs: kept });
       return;
     }
     const logs = [...(gd.actionLogs || []), {
       type: "IN", target: arriving, holeIdx, time, name: by,
       reason: `from ${fromGroup?.name ?? "another group"}`,
+      movedFrom: fromGroup?.id,   // lets the arrival find its departure on undo
     }];
     handleUpdateGroup(toGroupId, { actionLogs: logs });
   };
