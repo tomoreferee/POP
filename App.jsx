@@ -319,6 +319,9 @@ function buildDashboardExportData({ groups, groupData, pars, parTimes, schedules
         // Unique across the whole round, so rows can be sorted or filtered by
         // player once they're out of the app and in a spreadsheet.
         "Player code": log.target ? playerCode(g, log.target) : "",
+        "Player name": log.playerName || "",
+        "Ruling comment": log.comment || "",
+        "Rule no.": log.ruleNo || "",
         "Diff at log (min)": log.diff ?? "",
       });
     });
@@ -465,7 +468,7 @@ function computeGroupStatusFor(g, groups, groupData, parTimes) {
 // One-letter badge text for the width-locked "fit 18" view: W / M / T / B.
 function shortLogLabel(l) {
   if (l.badTime) return "B";
-  const letter = l.type === "WN" ? "W" : l.type === "MN" ? "M" : l.type === "TM" ? "T" : l.type?.[0] || "?";
+  const letter = l.type === "WN" ? "W" : l.type === "MN" ? "M" : l.type === "TM" ? "T" : l.type === "RUL" ? "R" : l.type?.[0] || "?";
   return l.off ? `×${letter}` : letter;
 }
 
@@ -531,6 +534,7 @@ const LOG_TYPE_META = {
   MN: { color: "#0969da", darkBg: "#ddf4ff" },
   TM: { color: "#bf3989", darkBg: "#ffeff7" },
   EST: { color: "#bc4c00", darkBg: "#fff1e5" },
+  RUL: { color: "#8250df", darkBg: "#faf2ff" },
 };
 // EST names players the way TM does, but it's a one-off record like WN —
 // nothing stays running afterwards.
@@ -2847,6 +2851,9 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
   // has open. Both adjust the group's player count, which feeds the summary
   // benchmark and the player picker.
   const [rosterFor, setRosterFor] = useState(null);   // "P2" while choosing what to do
+  // A ruling can be written up on the spot or filled in later, so the form is
+  // opened both for new entries and for editing one that already exists.
+  const [rulingDraft, setRulingDraft] = useState(null);
   const [moveTo, setMoveTo] = useState("");
 
   const logRosterEvent = (entry) => {
@@ -2887,6 +2894,71 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
     if (i === -1) return [];
     return [sameDraw[i - 1], sameDraw[i + 1]].filter(Boolean);
   })();
+
+  // Start is captured when the form opens rather than when it is saved: the
+  // point of the record is when the referee arrived, not when the paperwork
+  // was finished.
+  const openRuling = (existing) => {
+    if (existing) {
+      setRulingDraft({
+        idx: actionLogs.indexOf(existing),
+        holeIdx: existing.holeIdx,
+        target: existing.target || "",
+        playerName: existing.playerName || "",
+        start: existing.start || existing.time || minToTime(now),
+        comment: existing.comment || "",
+        ruleNo: existing.ruleNo || "",
+      });
+    } else {
+      setRulingDraft({
+        idx: -1,
+        holeIdx: currentHole,
+        target: "",
+        playerName: "",
+        start: minToTime(now),
+        comment: "",
+        ruleNo: "",
+      });
+    }
+  };
+
+  const saveRuling = () => {
+    const d = rulingDraft;
+    if (!d) return;
+    const entry = {
+      type: "RUL",
+      holeIdx: d.holeIdx,
+      target: d.target || "",
+      playerName: d.playerName || "",
+      start: d.start || "",
+      comment: d.comment || "",
+      ruleNo: d.ruleNo || "",
+      time: d.start || minToTime(now),
+      name: currentUser || "",
+    };
+    const nextLogs = d.idx >= 0
+      ? actionLogs.map((l, i) => (i === d.idx ? { ...l, ...entry } : l))
+      : [...actionLogs, entry];
+    setActionLogs(nextLogs);
+    onUpdate({
+      holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
+      mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
+    });
+    setRulingDraft(null);
+  };
+
+  const deleteRuling = () => {
+    const d = rulingDraft;
+    if (!d || d.idx < 0) { setRulingDraft(null); return; }
+    if (!window.confirm("Delete this ruling?")) return;
+    const nextLogs = actionLogs.filter((_, i) => i !== d.idx);
+    setActionLogs(nextLogs);
+    onUpdate({
+      holeData, records, currentHole: currentSlot, actionLogs: nextLogs,
+      mnActive, mnName, tmActive, tmName, tmTarget, delayMin,
+    });
+    setRulingDraft(null);
+  };
 
   const undoRosterEvent = (entry) => {
     const label = entry.type === "WD" ? `withdrawal of ${entry.target}`
@@ -3701,7 +3773,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 {playerCode(group, rosterFor)} — at hole {currentHole + 1}
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                {["Withdrawn", "Disqualified", "Injury"].map(r => (
+                {["RTD", "DQ", "Ruling"].map(r => (
                   <button key={r} onClick={() => withdrawPlayer(rosterFor, r)}
                     style={{ background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "7px 11px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
                     {r}
@@ -3756,10 +3828,26 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                   <button onClick={() => openActionModal("EST", currentHole)}
                     title="Record EST against one or more players — a one-off record, nothing keeps running afterwards"
                     style={{ flex: 1, background: "#fff1e5", border: "1px solid #bc4c00aa", color: "#bc4c00", borderRadius: 6, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>EST</button>
+                  <button onClick={() => openRuling(null)}
+                    style={{ flex: 1, background: "#faf2ff", border: "1px solid #8250dfaa", color: "#8250df", borderRadius: 6, padding: compact ? "7px 0" : "10px 0", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>RUL</button>
                 </>
               );
             })()}
           </div>
+
+          {actionLogs.some(l => l.type === "RUL") && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: compact ? 10 : 14 }}>
+              {actionLogs.filter(l => l.type === "RUL").map((l, i) => (
+                <button key={i} onClick={() => openRuling(l)}
+                  title="Open to edit or complete"
+                  style={{ background: "#faf2ff", border: "1px solid #8250df66", color: "#8250df", borderRadius: 6, padding: "4px 9px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
+                  RUL H{(l.holeIdx ?? 0) + 1}{l.target ? ` · ${shortTarget(l.target, group)}` : ""}
+                  {!l.comment && !l.ruleNo ? " ·" : ""}
+                  {!l.comment && !l.ruleNo ? <span style={{ opacity: 0.7 }}> incomplete</span> : ""}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 8, marginBottom: compact ? 10 : 14 }}>
             {[["stamp", "Timestamp now"], ["manual", "Enter difference manually"]].map(([mode, label]) => (
@@ -4207,6 +4295,81 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
       </div>
 
       {/* WN/MN/TM Modal */}
+      {/* Ruling — the player keeps playing, so this records what happened
+          without touching the roster. Everything except the hole can be left
+          blank now and completed later. */}
+      {rulingDraft && (
+        <div onClick={() => setRulingDraft(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #8250df", borderRadius: 10, padding: 20, width: "100%", maxWidth: 380, marginTop: 24 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#8250df", marginBottom: 14 }}>
+              RULING — Hole {rulingDraft.holeIdx + 1}
+            </div>
+
+            <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Player code</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+              {[{ tag: "", label: "Group" }, ...roster].map(r => {
+                const on = rulingDraft.target === r.tag;
+                return (
+                  <button key={r.tag || "group"} onClick={() => setRulingDraft(d => ({ ...d, target: r.tag }))}
+                    style={{
+                      background: on ? "#faf2ff" : "#f6f8fa",
+                      border: `1px solid ${on ? "#8250df" : "#d1d9e0"}`,
+                      color: on ? "#8250df" : "#59636e",
+                      borderRadius: 6, padding: "6px 11px", cursor: "pointer",
+                      fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                    }}>{r.label}</button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Name</div>
+                <input value={rulingDraft.playerName}
+                  onChange={e => setRulingDraft(d => ({ ...d, playerName: e.target.value }))}
+                  placeholder="Player name"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 10px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
+              </div>
+              <div style={{ width: 96, flexShrink: 0 }}>
+                <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Start</div>
+                <input type="time" value={rulingDraft.start}
+                  onChange={e => setRulingDraft(d => ({ ...d, start: e.target.value }))}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 8px", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
+              </div>
+            </div>
+
+            <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Ruling comment</div>
+            <textarea value={rulingDraft.comment} rows={3}
+              onChange={e => setRulingDraft(d => ({ ...d, comment: e.target.value }))}
+              placeholder="What was decided, and why"
+              style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", resize: "vertical", marginBottom: 14 }} />
+
+            <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Rule no.</div>
+            <input value={rulingDraft.ruleNo}
+              onChange={e => setRulingDraft(d => ({ ...d, ruleNo: e.target.value }))}
+              placeholder="e.g. 16.1b"
+              style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginBottom: 18 }} />
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveRuling}
+                style={{ flex: 1, background: "#faf2ff", border: "1px solid #8250df", color: "#8250df", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
+                Save
+              </button>
+              {rulingDraft.idx >= 0 && (
+                <button onClick={deleteRuling}
+                  style={{ background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 }}>
+                  Delete
+                </button>
+              )}
+              <button onClick={() => setRulingDraft(null)}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {actionModal && (
         <div style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "#ffffff", border: `1px solid ${logColor(actionModal.type)}88`, borderRadius: 6, padding: 28, minWidth: 300, boxShadow: "0 20px 60px #1f2328" }}>
@@ -5237,6 +5400,53 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
+        {/* Rulings — the record behind any delay a group was given */}
+        {(() => {
+          const rows = [];
+          groups.forEach(g => {
+            (groupData[g.id]?.actionLogs || [])
+              .filter(l => l.type === "RUL")
+              .forEach(l => rows.push({ g, l }));
+          });
+          if (rows.length === 0) return null;
+          return (
+            <>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>RULINGS</div>
+              <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={thS}>Group</th>
+                      <th style={thS}>Hole</th>
+                      <th style={thS}>Player</th>
+                      <th style={thS}>Start</th>
+                      <th style={{ ...thS, textAlign: "left" }}>Ruling</th>
+                      <th style={thS}>Rule no.</th>
+                      <th style={thS}>By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(({ g, l }, i) => (
+                      <tr key={i}>
+                        <td style={tdS}>{g.name}</td>
+                        <td style={tdS}>H{(l.holeIdx ?? 0) + 1}</td>
+                        <td style={{ ...tdS, color: "#8250df", fontWeight: 700 }}>
+                          {l.target ? playerCode(g, l.target) : "Group"}
+                          {l.playerName ? <div style={{ fontSize: 11, color: "#59636e", fontWeight: 400 }}>{l.playerName}</div> : null}
+                        </td>
+                        <td style={tdS}>{l.start || l.time || "—"}</td>
+                        <td style={{ ...tdS, textAlign: "left", fontSize: 13 }}>{l.comment || <span style={{ color: "#9a6700" }}>not filled in</span>}</td>
+                        <td style={tdS}>{l.ruleNo || "—"}</td>
+                        <td style={tdS}>{l.name || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          );
+        })()}
+
         <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>TM, BAD TIME &amp; EST SUMMARY</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px", overflowX: "auto" }}>
           {tmGroupSummaries.length === 0 && (
