@@ -5852,6 +5852,8 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
   // entry delete isn't enough.
   const [clearStatusConfirm, setClearStatusConfirm] = useState(null); // { groupId, type } or null
   const [editLogPopup, setEditLogPopup] = useState(null); // { groupId, idx } or null — editing a single WN/MN/TM log entry
+  // Rulings open their own form, which carries the comment and rule number
+  const [rulingEdit, setRulingEdit] = useState(null);      // { groupId, idx } or null
   const clearStatusFor = (groupId, type) => {
     const gd = groupData[groupId] || {};
     const nextLogs = (gd.actionLogs ?? []).filter(l => l.type !== type);
@@ -6260,7 +6262,92 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           offsetTop={fullscreenTable ? 0 : headerH}
           onClear={onClearRefereeCall}
         />
-        {/* Start delay, opened from the Start cell in the fit views */}
+        {/* Editing a ruling from the notifications list. The same fields as the
+          form on the group screen — anything less and the comment or rule
+          number could never be corrected from here. */}
+      {rulingEdit && (() => {
+        const g = groups.find(x => x.id === rulingEdit.groupId);
+        const logs = groupData[rulingEdit.groupId]?.actionLogs ?? [];
+        const l = logs[rulingEdit.idx];
+        if (!g || !l) return null;
+        const d = rulingEdit.draft ?? {
+          holeIdx: l.holeIdx, target: l.target || "", playerName: l.playerName || "",
+          comment: l.comment || "", ruleNo: l.ruleNo || "",
+        };
+        const set = (patch) => setRulingEdit(v => ({ ...v, draft: { ...d, ...patch } }));
+        const roster = groupRoster(g, groupData[g.id], playersPerGroup);
+        const inp = { width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "9px 10px", fontFamily: "inherit", fontSize: 14, outline: "none" };
+        const save = () => {
+          const next = logs.map((x, i) => i === rulingEdit.idx ? { ...x, ...d } : x);
+          onUpdateGroupData(rulingEdit.groupId, { actionLogs: next });
+          setRulingEdit(null);
+        };
+        return (
+          <div onClick={() => setRulingEdit(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "2px solid #8250df", borderRadius: 10, padding: 20, width: "100%", maxWidth: 380, marginTop: 24 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#8250df", marginBottom: 14 }}>
+                RULING — Hole {d.holeIdx + 1}
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                <div style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "8px 10px" }}>
+                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Group</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>{g.name}</div>
+                </div>
+                <div style={{ width: 104, flexShrink: 0, background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 6, padding: "8px 10px" }}>
+                  <div style={{ fontSize: 10, color: "#59636e", marginBottom: 2 }}>Start</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>{l.start || g.startTime || "—"}</div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Hole</div>
+              <select value={d.holeIdx} onChange={e => set({ holeIdx: Number(e.target.value) })}
+                style={{ ...inp, marginBottom: 14 }}>
+                {Array.from({ length: 18 }, (_, i) => <option key={i} value={i}>Hole {i + 1}</option>)}
+              </select>
+
+              <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Player code</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+                {roster.map(r => {
+                  const on = d.target === r.tag;
+                  return (
+                    <button key={r.tag} onClick={() => set({ target: on ? "" : r.tag })}
+                      style={{ background: on ? "#faf2ff" : "#f6f8fa", border: `1px solid ${on ? "#8250df" : "#d1d9e0"}`, color: on ? "#8250df" : "#59636e", borderRadius: 6, padding: "6px 11px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                      {r.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Name</div>
+              <input value={d.playerName} onChange={e => set({ playerName: e.target.value })}
+                placeholder="Player name" style={{ ...inp, marginBottom: 14 }} />
+
+              <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Ruling comment</div>
+              <textarea value={d.comment} rows={3} onChange={e => set({ comment: e.target.value })}
+                placeholder="What was decided, and why"
+                style={{ ...inp, resize: "vertical", marginBottom: 14 }} />
+
+              <div style={{ fontSize: 12, color: "#59636e", marginBottom: 6 }}>Rule no.</div>
+              <input value={d.ruleNo} onChange={e => set({ ruleNo: e.target.value })}
+                placeholder="e.g. 16.1b" style={{ ...inp, marginBottom: 18 }} />
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={save}
+                  style={{ flex: 1, background: "#faf2ff", border: "1px solid #8250df", color: "#8250df", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
+                  Save
+                </button>
+                <button onClick={() => setRulingEdit(null)}
+                  style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Start delay, opened from the Start cell in the fit views */}
       {delayEdit && (
         <div onClick={() => setDelayEdit(null)} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #9a670088", borderRadius: 10, padding: 20, width: "100%", maxWidth: 300 }}>
@@ -6459,7 +6546,12 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     return (
                       <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 4 }}>
                         {items.map(it => (
-                          <span key={it.key} onClick={(e) => { if (it.idx !== undefined) { e.stopPropagation(); setEditLogPopup({ groupId: g.id, idx: it.idx }); } }} style={{
+                          <span key={it.key} onClick={(e) => {
+                            if (it.idx === undefined) return;
+                            e.stopPropagation();
+                            if (it.type === "RUL") { setRulingEdit({ groupId: g.id, idx: it.idx }); return; }
+                            setEditLogPopup({ groupId: g.id, idx: it.idx });
+                          }} style={{
                             display: "inline-flex", alignItems: "center", gap: 3,
                             background: `${logBg(it.type)}66`,
                             border: `1px solid ${logColor(it.type)}44`,
@@ -7285,31 +7377,56 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
                 <div>
                   <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Hole</label>
-                  <input type="number" min="1" max="18" defaultValue={l.holeIdx + 1}
-                    onChange={e => { l._newHole = Math.min(18, Math.max(1, Number(e.target.value) || 1)); }}
-                    style={{ display: "block", width: "100%", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
+                  <select defaultValue={l.holeIdx}
+                    onChange={e => { l._newHole = Number(e.target.value) + 1; }}
+                    style={{ display: "block", width: "100%", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }}>
+                    {Array.from({ length: 18 }, (_, i) => (
+                      <option key={i} value={i}>Hole {i + 1}</option>
+                    ))}
+                  </select>
                 </div>
-                {(l.target || l.badTime) && (
-                  <div>
-                    <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Player</label>
-                    <input defaultValue={playerCode({ name: gName }, l.target)} placeholder="e.g. G12P2"
-                      onChange={e => { l._newTarget = playerCode({ name: gName }, e.target.value.trim()); }}
-                      style={{ display: "block", width: "100%", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
-                  </div>
-                )}
-                <div>
-                  <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Recorded by</label>
-                  <input defaultValue={l.name || ""}
-                    onChange={e => { l._newName = e.target.value; }}
-                    style={{ display: "block", width: "100%", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none", marginTop: 4 }} />
-                </div>
+                {(l.target || l.badTime) && (() => {
+                  // Buttons rather than free text: typing a code invites typos
+                  // that silently create a player who was never in the group.
+                  const eg = groups.find(g => g.id === editLogPopup.groupId);
+                  const opts = eg ? groupRoster(eg, groupData[eg.id], playersPerGroup) : [];
+                  const current = editLogPopup.target ?? playerCode({ name: gName }, l.target);
+                  return (
+                    <div>
+                      <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Player</label>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {opts.map(r => {
+                          const on = current === r.label;
+                          return (
+                            <button key={r.tag}
+                              onClick={() => setEditLogPopup(v => ({ ...v, target: r.label }))}
+                              style={{
+                                background: on ? "#ddf4ff" : "#f6f8fa",
+                                border: `1px solid ${on ? "#0969da" : "#d1d9e0"}`,
+                                color: on ? "#0969da" : "#59636e",
+                                borderRadius: 6, padding: "6px 11px", cursor: "pointer",
+                                fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                              }}>{r.label}</button>
+                          );
+                        })}
+                        {/* A player who has since left the group still needs to be
+                            selectable, or their entry can't be corrected. */}
+                        {current && !opts.some(r => r.label === current) && (
+                          <button onClick={() => setEditLogPopup(v => ({ ...v, target: current }))}
+                            style={{ background: "#ddf4ff", border: "1px solid #0969da", color: "#0969da", borderRadius: 6, padding: "6px 11px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                            {current}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => saveEdit({
                   holeIdx: (l._newHole ?? (l.holeIdx + 1)) - 1,
-                  ...(l._newTarget !== undefined ? { target: l._newTarget } : {}),
-                  ...(l._newName !== undefined ? { name: l._newName } : {}),
+                  ...(editLogPopup.target !== undefined ? { target: editLogPopup.target } : {}),
                 })}
                   style={{ flex: 1, background: "#1f883d", border: "1px solid #1a7f37", color: "#ffffff", borderRadius: 6, padding: "10px", cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 15, fontWeight: 600, letterSpacing: 2 }}>
                   ✓ Save
