@@ -1983,6 +1983,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               )}
             </div>
             <SummaryScreen
+              tournamentId={tournamentId}
+              roundLabel={viewingRound?.label || ""}
               groups={snapshot.groups || []}
               groupData={viewingRound.archived_group_data || {}}
               pars={snapshot.pars || []}
@@ -5175,7 +5177,32 @@ function btnStyle(bg, color) {
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
-function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout }) {
+function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel }) {
+  // Rulings are the one part of this report that reads better across the whole
+  // tournament — a player's rulings in round 1 matter when reviewing round 3.
+  // The pace figures above stay per-round, because a benchmark only means
+  // something within the round it was set.
+  const [allRounds, setAllRounds] = useState(false);
+  const [xRounds, setXRounds] = useState(null);   // [{ label, groups, groupData }]
+  const [xLoading, setXLoading] = useState(false);
+
+  useEffect(() => {
+    if (!allRounds || xRounds || !tournamentId) return;
+    let cancelled = false;
+    (async () => {
+      setXLoading(true);
+      const rounds = await fetchRounds(tournamentId);
+      const out = [];
+      for (const r of rounds) {
+        const st = await fetchAppState(r.id);
+        if (!st || (st.groups?.length ?? 0) === 0) continue;
+        const gd = await fetchAllGroupData(r.id);
+        out.push({ label: r.label, groups: st.groups, groupData: gd || {} });
+      }
+      if (!cancelled) { setXRounds(out); setXLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [allRounds, xRounds, tournamentId]);
   const sides = getGroupSides(groups);
   const totalAllowed = (parTimes || []).reduce((a, b) => a + b, 0);
   const [expandedTMGroups, setExpandedTMGroups] = useState(() => new Set());
@@ -5453,20 +5480,40 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
         {/* Rulings — the record behind any delay a group was given */}
         {(() => {
+          const source = allRounds && xRounds
+            ? xRounds
+            : [{ label: roundLabel, groups, groupData }];
           const rows = [];
-          groups.forEach(g => {
-            (groupData[g.id]?.actionLogs || [])
-              .filter(l => l.type === "RUL")
-              .forEach(l => rows.push({ g, l }));
+          source.forEach(rd => {
+            rd.groups.forEach(g => {
+              (rd.groupData[g.id]?.actionLogs || [])
+                .filter(l => l.type === "RUL")
+                .forEach(l => rows.push({ round: rd.label, g, l }));
+            });
           });
-          if (rows.length === 0) return null;
           return (
             <>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>RULINGS</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, margin: "24px 0 10px" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>RULINGS</div>
+                {tournamentId && (
+                  <button onClick={() => setAllRounds(v => !v)}
+                    style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
+                    {allRounds ? "All rounds" : "This round"}
+                  </button>
+                )}
+              </div>
+              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
+              {rows.length === 0 && !xLoading && (
+                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
+                  No rulings recorded
+                </div>
+              )}
+              {rows.length > 0 && (<>
               <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
+                      <th style={thS}>Round</th>
                       <th style={thS}>Group</th>
                       <th style={thS}>Start</th>
                       <th style={thS}>Player</th>
@@ -5477,8 +5524,9 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map(({ g, l }, i) => (
+                    {rows.map(({ round, g, l }, i) => (
                       <tr key={i}>
+                        <td style={tdS}>{round === "Q" ? "Q" : `R${round}`}</td>
                         <td style={tdS}>{g.name}</td>
                         <td style={tdS}>{l.start || g.startTime || "—"}</td>
                         <td style={{ ...tdS, color: "#8250df", fontWeight: 700 }}>
@@ -5494,6 +5542,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   </tbody>
                 </table>
               </div>
+              </>)}
             </>
           );
         })()}
@@ -9475,6 +9524,8 @@ export default function App() {
 
   if (screen === "summary") return (
     <SummaryScreen
+      tournamentId={currentTournament?.id || null}
+      roundLabel={currentRound?.label || ""}
       groups={groups}
       groupData={groupData}
       pars={pars}
