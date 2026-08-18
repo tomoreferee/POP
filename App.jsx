@@ -1476,6 +1476,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [newYear, setNewYear] = useState(String(new Date().getFullYear()));
   const [newStartDate, setNewStartDate] = useState("");
   const [newEndDate, setNewEndDate] = useState("");
+  // { TD: "somchai", CR: "phanut", R1: … } — who holds each position for this
+  // competition. Drives the report's Chief referee line and who may edit Setup.
+  const [newRoles, setNewRoles] = useState({});
   const [busy, setBusy] = useState(false);
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
@@ -1625,7 +1628,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const resetForm = () => {
     setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
     setNewYear(String(new Date().getFullYear()));
-    setNewStartDate(""); setNewEndDate("");
+    setNewStartDate(""); setNewEndDate(""); setNewRoles({});
     setEditingTournamentId(null);
   };
 
@@ -1638,6 +1641,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     setNewYear(String(t.year || (t.name || "").match(/(20\d{2})/)?.[1] || new Date().getFullYear()));
     setNewStartDate(t.start_date || "");
     setNewEndDate(t.end_date || "");
+    setNewRoles(rolesMap?.[t.id] || {});
     setEditingTournamentId(t.id);
     setShowCreate(true);
   };
@@ -1647,6 +1651,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     setBusy(true);
     if (editingTournamentId) {
       await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      await setTournamentRoles(editingTournamentId, newRoles);
+      setRolesMap(r => ({ ...r, [editingTournamentId]: newRoles }));
       setTournaments(prev => prev.map(t => t.id === editingTournamentId
         ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
         : t));
@@ -1655,6 +1661,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
       resetForm();
     } else {
       const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      if (t?.id) {
+        await setTournamentRoles(t.id, newRoles);
+        setRolesMap(r => ({ ...r, [t.id]: newRoles }));
+      }
       setBusy(false);
       if (t) {
         setTournaments(prev => [t, ...prev]);
@@ -1890,10 +1900,11 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
 
               {/* Optional: a competition is often created before the dates are
                   confirmed, and the report simply omits them when unset. */}
+              <style>{`.popDate { min-width: 0; max-width: 100%; }`}</style>
               <div style={{ display: "flex", gap: 10 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Start date</label>
-                  <input type="date" value={newStartDate}
+                  <input type="date" value={newStartDate} className="popDate"
                     onChange={e => {
                       const v = e.target.value;
                       setNewStartDate(v);
@@ -1905,9 +1916,37 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>End date</label>
-                  <input type="date" value={newEndDate} min={newStartDate || undefined}
+                  <input type="date" value={newEndDate} min={newStartDate || undefined} className="popDate"
                     onChange={e => setNewEndDate(e.target.value)}
                     style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, outline: "none" }} />
+                </div>
+              </div>
+
+              {/* Officials. Only the Chief referee reaches the report today, but
+                  the rest are recorded so the roster travels with the event. */}
+              <div>
+                <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Referees</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+                  {TOURNAMENT_POSITIONS.map(pos => (
+                    <div key={pos} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ width: 34, flexShrink: 0, fontSize: 12, fontWeight: 700, color: pos === "CR" ? "#0969da" : "#59636e" }}>{pos}</span>
+                      <select value={newRoles[pos] || ""}
+                        onChange={e => setNewRoles(r => {
+                          const next = { ...r };
+                          if (e.target.value) next[pos] = e.target.value; else delete next[pos];
+                          return next;
+                        })}
+                        style={{ flex: 1, minWidth: 0, background: "#f6f8fa", border: `1px solid ${newRoles[pos] ? "#d1d9e0" : "#d1d9e0"}`, color: newRoles[pos] ? "#1f2328" : "#8c959f", borderRadius: 6, padding: "8px 10px", fontFamily: "inherit", fontSize: 14, outline: "none" }}>
+                        <option value="">— not assigned —</option>
+                        {(allUsers || []).map(u => (
+                          <option key={u.username} value={u.username}>{u.username}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10, color: "#8c959f", marginTop: 6, lineHeight: 1.5 }}>
+                  TD and CR can edit the round setup.
                 </div>
               </div>
 
@@ -2031,7 +2070,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               roundLabel={viewingRound?.label || ""}
               tournamentName={viewingTournament?.name || ""}
               hostVenue={viewingTournament?.host_venue || ""}
-              chiefReferee={roles?.[tournamentId]?.CR || ""}
+              chiefReferee={rolesMap?.[tournamentId]?.CR || ""}
               startDate={viewingTournament?.start_date || ""}
               endDate={viewingTournament?.end_date || ""}
               groups={snapshot.groups || []}
@@ -5138,7 +5177,7 @@ function HelpGuideModal({ onClose }) {
   );
 }
 
-function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToDashboard, onGoToSetup, badges = null, align = "right" }) {
+function UserMenu({ currentUser, onAccount, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToDashboard, onGoToSetup, badges = null, align = "right" }) {
   const [showHelp, setShowHelp] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -5197,6 +5236,7 @@ function UserMenu({ currentUser, onChangePassword, onLogout, onManageUsers, onMa
             </div>
 
             <div style={{ padding: "4px 0" }}>
+              {onAccount && item("Account", onAccount)}
               {item("Change password", onChangePassword)}
               {onManageUsers && item("Manage users", onManageUsers)}
               {onManageTournaments && item("Manage tournaments", onManageTournaments)}
@@ -7835,6 +7875,60 @@ const DEFAULT_RESET_PASSWORD = "1234";
 
 // Lets anyone change their own password. Asks for the current one first so a
 // borrowed, unlocked phone can't be used to take over someone's account.
+/* A referee's own details. Username is shown but not editable — it identifies
+   every log entry they have ever recorded, so changing it would orphan them. */
+function AccountModal({ user, onSave, onClose }) {
+  const [firstName, setFirstName] = useState(user.firstName || "");
+  const [middleName, setMiddleName] = useState(user.middleName || "");
+  const [surname, setSurname] = useState(user.surname || "");
+  const [nickname, setNickname] = useState(user.nickname || "");
+  const [tel, setTel] = useState(user.tel || "");
+
+  const label = { fontSize: 11, color: "#59636e", letterSpacing: 1, display: "block", marginBottom: 6 };
+  const input = { width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none", marginBottom: 12 };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 10, padding: 20, width: "100%", maxWidth: 380, marginTop: 24 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#1f2328", marginBottom: 16 }}>Account</div>
+
+        <label style={label}>Username</label>
+        <div style={{ ...input, background: "#eef1f4", color: "#59636e", marginBottom: 16 }}>{user.username}</div>
+
+        <label style={label}>Name</label>
+        <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" style={input} />
+
+        <label style={label}>Middle name</label>
+        <input value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="Optional" style={input} />
+
+        <label style={label}>Surname</label>
+        <input value={surname} onChange={e => setSurname(e.target.value)} placeholder="Surname" style={input} />
+
+        <label style={label}>Nickname</label>
+        <input value={nickname} onChange={e => setNickname(e.target.value)} placeholder="Shown on the radio" style={input} />
+
+        <label style={label}>Tel.</label>
+        <input value={tel} onChange={e => setTel(e.target.value)} inputMode="tel" placeholder="08x-xxx-xxxx" style={{ ...input, marginBottom: 18 }} />
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => onSave({
+              firstName: firstName.trim(), middleName: middleName.trim(),
+              surname: surname.trim(), nickname: nickname.trim(), tel: tel.trim(),
+            })}
+            style={{ flex: 1, background: "#dafbe1", border: "1px solid #1a7f37", color: "#1a7f37", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
+            Save
+          </button>
+          <button onClick={onClose}
+            style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ChangePasswordModal({ currentUser, users, onSave, onClose }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -8870,12 +8964,26 @@ async function deleteRound(roundId) {
 async function fetchUsers() {
   const { data, error } = await supabase.from("app_users").select("*").order("username");
   if (error || !data || !data.length) return null;
-  return data.map(u => ({ username: u.username, password: u.password, isAdmin: u.is_admin === true }));
+  return data.map(u => ({
+    username: u.username, password: u.password, isAdmin: u.is_admin === true,
+    firstName: u.first_name || "", middleName: u.middle_name || "",
+    surname: u.surname || "", nickname: u.nickname || "", tel: u.tel || "",
+  }));
 }
 async function pushUsers(list) {
   try {
     await supabase.from("app_users").upsert(
-      list.map(u => ({ username: u.username, password: u.password, is_admin: u.isAdmin === true }))
+      // Only write the profile fields that were actually provided: pushUsers is
+      // also called from places that only know the login details, and blanking
+      // someone's name as a side effect of a password change would be wrong.
+      list.map(u => ({
+        username: u.username, password: u.password, is_admin: u.isAdmin === true,
+        ...(u.firstName !== undefined ? { first_name: u.firstName || null } : {}),
+        ...(u.middleName !== undefined ? { middle_name: u.middleName || null } : {}),
+        ...(u.surname !== undefined ? { surname: u.surname || null } : {}),
+        ...(u.nickname !== undefined ? { nickname: u.nickname || null } : {}),
+        ...(u.tel !== undefined ? { tel: u.tel || null } : {}),
+      }))
     );
   } catch {}
 }
@@ -8940,6 +9048,7 @@ export default function App() {
   // ─── Update users list locally + push to Supabase (handles add/edit/delete) ───
   // Self-service password change, reachable from every signed-in screen.
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
   const handleChangeOwnPassword = (newPassword) => {
     const next = users.map(u => u.username === currentUser ? { ...u, password: newPassword } : u);
     setUsers(next);
@@ -9659,6 +9768,23 @@ export default function App() {
   if (screen === "login") return <LoginScreen onLogin={handleLogin} users={users} />;
 
   // Available on every signed-in screen, so it renders above whatever follows
+  // Saving a profile keeps the login details untouched — pushUsers only writes
+  // the fields it is handed, so a name change can't clear a password.
+  const handleSaveAccount = async (profile) => {
+    const next = users.map(u => (u.username === currentUser ? { ...u, ...profile } : u));
+    setUsers(next);
+    await pushUsers([next.find(u => u.username === currentUser)]);
+    setShowAccount(false);
+  };
+
+  const accountModal = showAccount ? (
+    <AccountModal
+      user={users.find(u => u.username === currentUser) || { username: currentUser }}
+      onSave={handleSaveAccount}
+      onClose={() => setShowAccount(false)}
+    />
+  ) : null;
+
   const passwordModal = showChangePassword ? (
     <ChangePasswordModal
       currentUser={currentUser}
@@ -9670,6 +9796,7 @@ export default function App() {
 
   if (screen === "tournament") return (
     <>
+    {accountModal}
     {passwordModal}
     <TournamentRoundScreen
       refereeCalls={refereeCalls}
@@ -9677,6 +9804,7 @@ export default function App() {
       currentUser={currentUser}
       isAdmin={isAdmin}
       onLogout={handleLogout}
+      onAccount={() => setShowAccount(true)}
       onChangePassword={() => setShowChangePassword(true)}
       liveTournamentId={currentTournament?.id || null}
       openRoundId={currentRound?.id || null}
@@ -9700,6 +9828,7 @@ export default function App() {
 
   if (screen === "setup") return (
     <>
+    {accountModal}
     {passwordModal}
     <SetupScreen
       refereeCalls={refereeCalls}
@@ -9713,6 +9842,7 @@ export default function App() {
       isTrueAdmin={isAdmin}
       onManageUsers={() => { setUsersReturnTo("setup"); setScreen("users"); }}
       onLogout={handleLogout}
+      onAccount={() => setShowAccount(true)}
       onChangePassword={() => setShowChangePassword(true)}
       onClearSession={handleClearSession}
       hasLiveSession={groups.length > 0}
@@ -9743,6 +9873,7 @@ export default function App() {
 
   if (screen === "dashboard") return (
     <>
+    {accountModal}
     {passwordModal}
     <Dashboard
       groups={groups}
@@ -9755,6 +9886,7 @@ export default function App() {
       hostVenue={currentTournament?.host_venue || ""}
       roundLabel={currentRound?.label || ""}
       onlineUsers={onlineUsers}
+      onAccount={() => setShowAccount(true)}
       onChangePassword={() => setShowChangePassword(true)}
       tournamentId={currentTournament?.id || null}
       isTrueAdmin={isAdmin}
