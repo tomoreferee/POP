@@ -37,10 +37,55 @@ function shortAreas(areas) {
   return (areas || []).map(a => AREA_SHORT[a] || a).join(" · ");
 }
 
+// A native date input renders in the device's locale, which on a Thai-configured
+// phone means the Buddhist era ("16 Aug BE 2569") — wider than the dialog and
+// not the calendar the report uses. Three selects give the same value in a
+// fixed, predictable form on every device.
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function DateSelect({ value, onChange, min }) {
+  const [y, m, d] = (value || "").split("-").map(Number);
+  const thisYear = new Date().getFullYear();
+  const years = Array.from({ length: 7 }, (_, i) => thisYear - 2 + i);
+  // Guards against 31 Feb: the day list follows the chosen month.
+  const daysIn = (yy, mm) => (yy && mm ? new Date(yy, mm, 0).getDate() : 31);
+
+  const set = (part, raw) => {
+    const n = Number(raw);
+    const next = { y: y || thisYear, m: m || 1, d: d || 1, [part]: n };
+    if (!raw) { onChange(""); return; }
+    next.d = Math.min(next.d, daysIn(next.y, next.m));
+    onChange(`${next.y}-${String(next.m).padStart(2, "0")}-${String(next.d).padStart(2, "0")}`);
+  };
+
+  const sel = {
+    background: "#f6f8fa", border: "1px solid #d1d9e0", color: value ? "#1f2328" : "#8c959f",
+    borderRadius: 6, padding: "10px 6px", fontFamily: "inherit", fontSize: 15, outline: "none",
+    minWidth: 0, textAlign: "center", textAlignLast: "center",
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      <select value={d || ""} onChange={e => set("d", e.target.value)} style={{ ...sel, flex: "0 0 68px" }}>
+        <option value="">Day</option>
+        {Array.from({ length: daysIn(y, m) }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
+      </select>
+      <select value={m || ""} onChange={e => set("m", e.target.value)} style={{ ...sel, flex: 1 }}>
+        <option value="">Month</option>
+        {MONTHS_SHORT.map((mo, i) => <option key={mo} value={i + 1}>{mo}</option>)}
+      </select>
+      <select value={y || ""} onChange={e => set("y", e.target.value)} style={{ ...sel, flex: "0 0 86px" }}>
+        <option value="">Year</option>
+        {years.map(n => <option key={n} value={n}>{n}</option>)}
+      </select>
+    </div>
+  );
+}
+
 function formatDateRange(a, b) {
   if (!a && !b) return "—";
   const d = (x) => (x ? new Date(`${x}T00:00:00`) : null);
-  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const MON = MONTHS_SHORT;
   const s1 = d(a), s2 = d(b);
   if (s1 && !s2) return `${s1.getDate()} ${MON[s1.getMonth()]} ${s1.getFullYear()}`;
   if (!s1 && s2) return `${s2.getDate()} ${MON[s2.getMonth()]} ${s2.getFullYear()}`;
@@ -1904,21 +1949,23 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ minWidth: 0 }}>
                   <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Start date</label>
-                  <input type="date" value={newStartDate}
-                    onChange={e => {
-                      const v = e.target.value;
+                  <div style={{ marginTop: 6 }}>
+                    <DateSelect value={newStartDate} onChange={v => {
                       setNewStartDate(v);
                       // An end before the start is always a mistake; nudge it along
                       // rather than saving a range that reads backwards.
                       if (v && newEndDate && newEndDate < v) setNewEndDate(v);
-                    }}
-                    style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, outline: "none" }} />
+                    }} />
+                  </div>
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>End date</label>
-                  <input type="date" value={newEndDate} min={newStartDate || undefined}
-                    onChange={e => setNewEndDate(e.target.value)}
-                    style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, outline: "none" }} />
+                  <div style={{ marginTop: 6 }}>
+                    <DateSelect value={newEndDate} min={newStartDate} onChange={setNewEndDate} />
+                  </div>
+                  {newStartDate && newEndDate && newEndDate < newStartDate && (
+                    <div style={{ fontSize: 11, color: "#cf222e", marginTop: 6 }}>End date is before the start date</div>
+                  )}
                 </div>
               </div>
 
