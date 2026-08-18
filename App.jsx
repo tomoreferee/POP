@@ -37,6 +37,22 @@ function shortAreas(areas) {
   return (areas || []).map(a => AREA_SHORT[a] || a).join(" · ");
 }
 
+function formatDateRange(a, b) {
+  if (!a && !b) return "—";
+  const d = (x) => (x ? new Date(`${x}T00:00:00`) : null);
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const s1 = d(a), s2 = d(b);
+  if (s1 && !s2) return `${s1.getDate()} ${MON[s1.getMonth()]} ${s1.getFullYear()}`;
+  if (!s1 && s2) return `${s2.getDate()} ${MON[s2.getMonth()]} ${s2.getFullYear()}`;
+  if (s1.getFullYear() === s2.getFullYear() && s1.getMonth() === s2.getMonth()) {
+    return `${s1.getDate()}–${s2.getDate()} ${MON[s1.getMonth()]} ${s1.getFullYear()}`;
+  }
+  if (s1.getFullYear() === s2.getFullYear()) {
+    return `${s1.getDate()} ${MON[s1.getMonth()]} – ${s2.getDate()} ${MON[s2.getMonth()]} ${s1.getFullYear()}`;
+  }
+  return `${s1.getDate()} ${MON[s1.getMonth()]} ${s1.getFullYear()} – ${s2.getDate()} ${MON[s2.getMonth()]} ${s2.getFullYear()}`;
+}
+
 function formatGreenSpeed(gs) {
   if (!gs) return "";
   const one = (f, i) => (f === undefined || f === null ? null : `${f}′ ${i ?? 0}″`);
@@ -1458,6 +1474,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const [newHasQualifying, setNewHasQualifying] = useState(true);
   const [newNumRounds, setNewNumRounds] = useState(4);
   const [newYear, setNewYear] = useState(String(new Date().getFullYear()));
+  const [newStartDate, setNewStartDate] = useState("");
+  const [newEndDate, setNewEndDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [viewingRound, setViewingRound] = useState(null); // full archived round record being inspected
   const [rolesMap, setRolesMap] = useState({});           // { tournamentId: { TD: "NP", R1: "CS", ... } }
@@ -1607,6 +1625,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   const resetForm = () => {
     setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
     setNewYear(String(new Date().getFullYear()));
+    setNewStartDate(""); setNewEndDate("");
     setEditingTournamentId(null);
   };
 
@@ -1617,6 +1636,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     setNewHasQualifying(t.has_qualifying !== false);
     setNewNumRounds(t.num_rounds ?? 4);
     setNewYear(String(t.year || (t.name || "").match(/(20\d{2})/)?.[1] || new Date().getFullYear()));
+    setNewStartDate(t.start_date || "");
+    setNewEndDate(t.end_date || "");
     setEditingTournamentId(t.id);
     setShowCreate(true);
   };
@@ -1625,15 +1646,15 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
     if (!newName.trim() || busy) return;
     setBusy(true);
     if (editingTournamentId) {
-      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null });
+      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       setTournaments(prev => prev.map(t => t.id === editingTournamentId
-        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds, year: Number(newYear) || null }
+        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
         : t));
       setBusy(false);
       setShowCreate(false);
       resetForm();
     } else {
-      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null });
+      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       setBusy(false);
       if (t) {
         setTournaments(prev => [t, ...prev]);
@@ -1867,6 +1888,29 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
                   style={{ width: "100%", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
               </div>
 
+              {/* Optional: a competition is often created before the dates are
+                  confirmed, and the report simply omits them when unset. */}
+              <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Start date</label>
+                  <input type="date" value={newStartDate}
+                    onChange={e => {
+                      const v = e.target.value;
+                      setNewStartDate(v);
+                      // An end before the start is always a mistake; nudge it along
+                      // rather than saving a range that reads backwards.
+                      if (v && newEndDate && newEndDate < v) setNewEndDate(v);
+                    }}
+                    style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, outline: "none" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>End date</label>
+                  <input type="date" value={newEndDate} min={newStartDate || undefined}
+                    onChange={e => setNewEndDate(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, outline: "none" }} />
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setNewFormat("stroke")}
                   style={{ flex: 1, padding: "9px 0", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
@@ -1988,6 +2032,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
               tournamentName={viewingTournament?.name || ""}
               hostVenue={viewingTournament?.host_venue || ""}
               chiefReferee={roles?.[tournamentId]?.CR || ""}
+              startDate={viewingTournament?.start_date || ""}
+              endDate={viewingTournament?.end_date || ""}
               groups={snapshot.groups || []}
               groupData={viewingRound.archived_group_data || {}}
               pars={snapshot.pars || []}
@@ -5180,7 +5226,7 @@ function btnStyle(bg, color) {
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
-function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee }) {
+function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee, startDate, endDate }) {
   // Rulings are the one part of this report that reads better across the whole
   // tournament — a player's rulings in round 1 matter when reviewing round 3.
   // The pace figures above stay per-round, because a benchmark only means
@@ -5466,6 +5512,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 <tbody>
                   {[["Name", tournamentName || "—"],
                     ["Venue", hostVenue || "—"],
+                    ["Date", formatDateRange(startDate, endDate)],
                     ["Rounds", report.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ") || "—"],
                     ["Chief referee", chiefReferee || "—"]].map(([k, v]) => (
                     <tr key={k}>
@@ -8675,18 +8722,20 @@ async function fetchRoundById(id) {
   if (error) return null;
   return data;
 }
-async function createTournament({ name, hostVenue, format, hasQualifying, numRounds, year }) {
+async function createTournament({ name, hostVenue, format, hasQualifying, numRounds, year, startDate, endDate }) {
   try {
     const { data, error } = await supabase.from("tournaments")
-      .insert({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear() })
+      // Dates are optional: a competition is often created before the schedule
+      // is confirmed, and an empty date must stay null rather than become "".
+      .insert({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null })
       .select().maybeSingle();
     if (error) return null;
     return data;
   } catch { return null; }
 }
-async function updateTournament(id, { name, hostVenue, format, hasQualifying, numRounds, year }) {
+async function updateTournament(id, { name, hostVenue, format, hasQualifying, numRounds, year, startDate, endDate }) {
   try {
-    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear() }).eq("id", id);
+    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null }).eq("id", id);
   } catch {}
 }
 async function deleteTournament(id) {
@@ -9747,6 +9796,8 @@ export default function App() {
       tournamentName={currentTournament?.name || ""}
       hostVenue={currentTournament?.host_venue || ""}
       chiefReferee={rolesMap?.[currentTournament?.id]?.CR || ""}
+      startDate={currentTournament?.start_date || ""}
+      endDate={currentTournament?.end_date || ""}
       groups={groups}
       groupData={groupData}
       pars={pars}
