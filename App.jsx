@@ -1459,7 +1459,7 @@ function saveSetup(data) {
 // chooses its own round independently.
 const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
 
-function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePassword, onManageUsers, onRoundSelected, liveTournamentId, openRoundId, hasLiveGroups, allUsers, refereeCalls, onClearRefereeCall }) {
+function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onChangePassword, onManageUsers, onRoundSelected, liveTournamentId, openRoundId, hasLiveGroups, allUsers, refereeCalls, onClearRefereeCall }) {
   const [headerRef, headerH] = useHeaderHeight();
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournamentId, setSelectedTournamentId] = useState(liveTournamentId || null);
@@ -1771,7 +1771,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
             {currentUser && (
               <UserMenu
                 currentUser={currentUser}
-                onChangePassword={onChangePassword}
+                onAccount={onAccount}
+              onChangePassword={onChangePassword}
                 onLogout={onLogout}
                 onManageUsers={isAdmin ? onManageUsers : null}
               />
@@ -2093,7 +2094,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
   const [headerRef, headerH] = useHeaderHeight();
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
@@ -2351,7 +2352,8 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onChangePassw
             {currentUser && (
               <UserMenu
                 currentUser={currentUser}
-                onChangePassword={onChangePassword}
+                onAccount={onAccount}
+              onChangePassword={onChangePassword}
                 onLogout={onLogout}
                 onManageUsers={isTrueAdmin ? onManageUsers : null}
                 onManageTournaments={isTrueAdmin ? onSwitchTournament : null}
@@ -6095,7 +6097,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -6325,6 +6327,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           {currentUser && (
             <UserMenu
               currentUser={currentUser}
+              onAccount={onAccount}
               onChangePassword={onChangePassword}
               onLogout={onLogout}
               onManageUsers={isTrueAdmin ? onManageUsers : null}
