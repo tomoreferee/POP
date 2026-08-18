@@ -5476,16 +5476,43 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       const totalAllowedR = (rd.parTimes || []).reduce((a, b) => a + (b || 0), 0)
         + (rd.turnTime ?? 0) + (rd.turnTimeBack ?? rd.turnTime ?? 0);
 
-      // The benchmark group is the first one out at full strength — the same
-      // rule the per-round table uses, so the two never disagree.
-      const inDraw = rd.groups.slice().sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)));
-      const firstFull = inDraw.find(g => groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).length >= rd.playersPerGroup) || inDraw[0];
-      const lastG = inDraw[inDraw.length - 1];
-      const diffOf = (g) => {
-        if (!g) return null;
-        const pr = computeGroupProgress(g, rd.groupData[g.id], rd.parTimes);
-        return pr.isComplete ? pr.lastDiff : null;
+      // A round is played from two tees at once, so "first" and "last" have to
+      // be settled across both sides rather than within one draw.
+      const finishOf = (g) => {
+        const gd2 = rd.groupData[g.id];
+        const pr = computeGroupProgress(g, gd2, rd.parTimes);
+        if (!pr.isComplete) return null;
+        const end = gd2?.holeData?.[pr.lastHoleIdx]?.endTime;
+        if (!end) return null;
+        const [h, mi] = String(end).split(":").map(Number);
+        return { diff: pr.lastDiff, mins: h * 60 + mi };
       };
+
+      const bySide = {};
+      rd.groups.forEach(g => {
+        const k = g.startHole || 1;
+        (bySide[k] = bySide[k] || []).push(g);
+      });
+      Object.values(bySide).forEach(list =>
+        list.sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)))
+      );
+
+      // First group out on each side, at full strength — a short group sets no
+      // fair benchmark. Of those, report the one that deviated least.
+      const firstCandidates = Object.values(bySide).map(list =>
+        list.find(g => groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).length >= rd.playersPerGroup) || list[0]
+      ).map(finishOf).filter(Boolean);
+      const firstPick = firstCandidates.length
+        ? firstCandidates.reduce((best, c) => (Math.abs(c.diff) < Math.abs(best.diff) ? c : best))
+        : null;
+
+      // The last group on the course, found by scanning every group rather than
+      // only the last of each draw: a slow group ahead can finish after the one
+      // that teed off last, and it is the one still out there that ends the round.
+      const lastCandidates = rd.groups.map(finishOf).filter(Boolean);
+      const lastPick = lastCandidates.length
+        ? lastCandidates.reduce((latest, c) => (c.mins > latest.mins ? c : latest))
+        : null;
 
       return {
         label: rd.label,
@@ -5500,8 +5527,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         rulings: logs.filter(({ l }) => l.type === "RUL").length,
         est: logs.filter(({ l }) => l.type === "EST").length,
         totalAllowed: totalAllowedR,
-        firstDiff: diffOf(firstFull),
-        lastDiff: diffOf(lastG),
+        firstDiff: firstPick ? firstPick.diff : null,
+        lastDiff: lastPick ? lastPick.diff : null,
         suspensions: rd.suspensions || [],
       };
     });
