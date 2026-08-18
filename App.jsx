@@ -1985,6 +1985,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onChangePasswor
             <SummaryScreen
               tournamentId={tournamentId}
               roundLabel={viewingRound?.label || ""}
+              tournamentName={viewingTournament?.name || ""}
+              hostVenue={viewingTournament?.host_venue || ""}
+              chiefReferee={roles?.[tournamentId]?.CR || ""}
               groups={snapshot.groups || []}
               groupData={viewingRound.archived_group_data || {}}
               pars={snapshot.pars || []}
@@ -5177,7 +5180,7 @@ function btnStyle(bg, color) {
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
-function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel }) {
+function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee }) {
   // Rulings are the one part of this report that reads better across the whole
   // tournament — a player's rulings in round 1 matter when reviewing round 3.
   // The pace figures above stay per-round, because a benchmark only means
@@ -5197,7 +5200,11 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         const st = await fetchAppState(r.id);
         if (!st || (st.groups?.length ?? 0) === 0) continue;
         const gd = await fetchAllGroupData(r.id);
-        out.push({ label: r.label, groups: st.groups, groupData: gd || {} });
+        out.push({
+          label: r.label, groups: st.groups, groupData: gd || {},
+          parTimes: st.parTimes, turnTime: st.turnTime, turnTimeBack: st.turnTimeBack,
+          playersPerGroup: st.playersPerGroup, suspensions: st.suspensions || [],
+        });
       }
       if (!cancelled) { setXRounds(out); setXLoading(false); }
     })();
@@ -5256,6 +5263,58 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     };
   });
 
+  // ── Chief referee's report ────────────────────────────────────────────────
+  // Every table here spans the tournament, so it reads from the cross-round
+  // fetch. Counting is done once and shared, because the same numbers appear in
+  // more than one table and computing them twice invites them to disagree.
+  const report = (() => {
+    const rds = allRounds && xRounds ? xRounds : null;
+    if (!rds) return null;
+    return rds.map(rd => {
+      const logs = [];
+      rd.groups.forEach(g => (rd.groupData[g.id]?.actionLogs || []).forEach(l => logs.push({ g, l })));
+
+      const starts = rd.groups.map(g => g.startTime).filter(Boolean).sort();
+      const teeStarts = Array.from(new Set(rd.groups.map(g => g.startHole || 1))).sort((a, b) => a - b);
+
+      // A player is counted once, wherever they finished: joining another group
+      // is a move, not an extra entry.
+      const players = rd.groups.reduce(
+        (sum, g) => sum + groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).length, 0
+      );
+      const withdrawn = logs.filter(({ l }) => l.type === "WD").length;
+
+      // Timings counts the players put under TM, not the number of log rows —
+      // one "All" entry covers the whole group.
+      const timed = new Set();
+      logs.filter(({ l }) => l.type === "TM" && !l.badTime).forEach(({ g, l }) => {
+        if (l.target === "All") groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).forEach(r => timed.add(`${g.id}:${playerCode(g, r.tag)}`));
+        else (l.target || "").split(",").forEach(t => t.trim() && timed.add(`${g.id}:${playerCode(g, t.trim())}`));
+      });
+
+      const totalAllowedR = (rd.parTimes || []).reduce((a, b) => a + (b || 0), 0)
+        + (rd.turnTime ?? 0) + (rd.turnTimeBack ?? rd.turnTime ?? 0);
+
+      return {
+        label: rd.label,
+        teeStarts,
+        firstTee: starts[0] || "—",
+        lastTee: starts[starts.length - 1] || "—",
+        groupCount: rd.groups.length,
+        players,
+        withdrawn,
+        timings: timed.size,
+        badTimes: logs.filter(({ l }) => l.badTime).length,
+        rulings: logs.filter(({ l }) => l.type === "RUL").length,
+        est: logs.filter(({ l }) => l.type === "EST").length,
+        totalAllowed: totalAllowedR,
+        suspensions: rd.suspensions || [],
+      };
+    });
+  })();
+
+  const secHead = { fontSize: 12, fontWeight: 700, color: "#1f2328", letterSpacing: 1, background: "#ddf4ff", border: "1px solid #d1d9e0", borderBottom: "none", borderRadius: "6px 6px 0 0", padding: "8px 12px" };
+  const card = { background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: "0 0 6px 6px", padding: "4px 0" };
   const thS = { padding: "10px 8px", color: "#59636e", fontWeight: 700, textAlign: "center", borderBottom: "1px solid #d1d9e0", fontSize: 12, letterSpacing: 0.5 };
   const tdS = { padding: "10px 8px", textAlign: "center", borderBottom: "1px solid #f6f8fa", fontSize: 14 };
 
@@ -5376,6 +5435,123 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       <div style={{ padding: "20px 24px", maxWidth: 900, margin: "0 auto" }}>
 
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
+        {/* ── Chief referee's report ───────────────────────────────────────
+            Tournament-level tables. They only mean anything across the whole
+            event, so they appear once the other rounds have been loaded. */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>CHIEF REFEREE'S REPORT</div>
+          {tournamentId && (
+            <button onClick={() => setAllRounds(v => !v)}
+              style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
+              {allRounds ? "All rounds" : "Load all rounds"}
+            </button>
+          )}
+        </div>
+
+        {!allRounds && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
+            These tables cover the whole tournament. Tap <b>Load all rounds</b> to build them.
+          </div>
+        )}
+        {allRounds && xLoading && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e" }}>Loading rounds…</div>
+        )}
+
+        {allRounds && report && (
+          <>
+            {/* TOURNAMENT */}
+            <div style={{ ...secHead }}>TOURNAMENT</div>
+            <div style={{ ...card, marginBottom: 20 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <tbody>
+                  {[["Name", tournamentName || "—"],
+                    ["Venue", hostVenue || "—"],
+                    ["Rounds", report.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ") || "—"],
+                    ["Chief referee", chiefReferee || "—"]].map(([k, v]) => (
+                    <tr key={k}>
+                      <td style={{ ...tdS, textAlign: "left", width: 130, color: "#59636e" }}>{k}</td>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* THE FIELD */}
+            <div style={{ ...secHead }}>THE FIELD</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Groups</th>
+                    <th style={thS}>Players</th>
+                    <th style={thS}>Withdrawn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    <tr key={r.label}>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                      <td style={tdS}>{r.groupCount}</td>
+                      <td style={tdS}>{r.players}</td>
+                      <td style={{ ...tdS, color: r.withdrawn ? "#cf222e" : "#59636e", fontWeight: r.withdrawn ? 700 : 400 }}>{r.withdrawn || "–"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* STARTING TIME */}
+            <div style={{ ...secHead }}>STARTING TIME</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Tee start</th>
+                    <th style={thS}>First tee time</th>
+                    <th style={thS}>Last tee time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    <tr key={r.label}>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                      <td style={tdS}>{r.teeStarts.join(" & ") || "—"}</td>
+                      <td style={tdS}>{r.firstTee}</td>
+                      <td style={tdS}>{r.lastTee}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* RULINGS SUMMARY */}
+            <div style={{ ...secHead }}>RULINGS SUMMARY</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }} />
+                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
+                    <th style={{ ...thS, color: "#1f2328" }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[["No. of timings", "timings"], ["No. of bad times", "badTimes"], ["No. of EST", "est"], ["No. of rulings", "rulings"]].map(([label, key]) => (
+                    <tr key={key}>
+                      <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>{label}</td>
+                      {report.map(r => <td key={r.label} style={tdS}>{r[key] || "–"}</td>)}
+                      <td style={{ ...tdS, fontWeight: 700 }}>{report.reduce((a, r) => a + r[key], 0) || "–"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
         <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, marginBottom: 10 }}>PACE OF PLAY</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -5476,6 +5652,50 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
+        {allRounds && report && (
+          <>
+            <div style={{ ...secHead }}>SUSPENSION &amp; RESUMPTION</div>
+            <div style={{ ...card, marginBottom: 24, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Suspend</th>
+                    <th style={thS}>Resume</th>
+                    <th style={thS}>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    r.suspensions.length === 0 ? (
+                      <tr key={r.label}>
+                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                        <td style={tdS}>–</td><td style={tdS}>–</td><td style={tdS}>–</td>
+                      </tr>
+                    ) : r.suspensions.map((sp, i) => (
+                      <tr key={`${r.label}-${i}`}>
+                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
+                          {i === 0 ? (r.label === "Q" ? "Qualifying" : `Round ${r.label}`) : ""}
+                        </td>
+                        <td style={tdS}>{sp.stopTime || "—"}</td>
+                        <td style={tdS}>{sp.resumeTime || <span style={{ color: "#cf222e" }}>ongoing</span>}</td>
+                        <td style={tdS}>{(() => {
+                          // offsetMin is what the app already computed and applied
+                          // to the schedule, so it is the authoritative duration.
+                          if (sp.offsetMin != null) return `${sp.offsetMin} min`;
+                          if (!sp.resumeTime || !sp.stopTime) return "—";
+                          const mins = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+                          return `${Math.max(0, mins(sp.resumeTime) - mins(sp.stopTime))} min`;
+                        })()}</td>
+                      </tr>
+                    ))
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
         {/* Rulings — the record behind any delay a group was given */}
         {(() => {
           const source = allRounds && xRounds
@@ -9524,6 +9744,9 @@ export default function App() {
     <SummaryScreen
       tournamentId={currentTournament?.id || null}
       roundLabel={currentRound?.label || ""}
+      tournamentName={currentTournament?.name || ""}
+      hostVenue={currentTournament?.host_venue || ""}
+      chiefReferee={rolesMap?.[currentTournament?.id]?.CR || ""}
       groups={groups}
       groupData={groupData}
       pars={pars}
