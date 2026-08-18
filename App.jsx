@@ -43,41 +43,99 @@ function shortAreas(areas) {
 // fixed, predictable form on every device.
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-function DateSelect({ value, onChange, min }) {
-  const [y, m, d] = (value || "").split("-").map(Number);
-  const thisYear = new Date().getFullYear();
-  const years = Array.from({ length: 7 }, (_, i) => thisYear - 2 + i);
-  // Guards against 31 Feb: the day list follows the chosen month.
-  const daysIn = (yy, mm) => (yy && mm ? new Date(yy, mm, 0).getDate() : 31);
+// Tournaments run over consecutive days, so the two dates are really one range.
+// A calendar makes that shape visible — you see the length of the event as you
+// pick it, which two separate fields never showed.
+function DateRangePicker({ startDate, endDate, onChange }) {
+  const iso = (y, m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const parse = (v) => { const [y, m, d] = (v || "").split("-").map(Number); return y ? { y, m, d } : null; };
+  const S = parse(startDate), E = parse(endDate);
 
-  const set = (part, raw) => {
-    const n = Number(raw);
-    const next = { y: y || thisYear, m: m || 1, d: d || 1, [part]: n };
-    if (!raw) { onChange(""); return; }
-    next.d = Math.min(next.d, daysIn(next.y, next.m));
-    onChange(`${next.y}-${String(next.m).padStart(2, "0")}-${String(next.d).padStart(2, "0")}`);
+  const initial = S ? new Date(S.y, S.m - 1, 1) : new Date();
+  const [view, setView] = useState(initial);
+  const [open, setOpen] = useState(false);
+
+  const vY = view.getFullYear(), vM = view.getMonth();
+  const first = new Date(vY, vM, 1);
+  const daysInMonth = new Date(vY, vM + 1, 0).getDate();
+  // Monday-first: golf weeks are read Mon–Sun on every draw sheet.
+  const lead = (first.getDay() + 6) % 7;
+
+  const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  const pick = (d) => {
+    const v = iso(vY, vM + 1, d);
+    // First tap sets the start; the second closes the range. Tapping a date
+    // before the start restarts rather than storing a backwards range.
+    if (!startDate || (startDate && endDate)) onChange(v, "");
+    else if (cmp(v, startDate) < 0) onChange(v, "");
+    else onChange(startDate, v);
   };
 
-  const sel = {
-    background: "#f6f8fa", border: "1px solid #d1d9e0", color: value ? "#1f2328" : "#8c959f",
-    borderRadius: 6, padding: "10px 6px", fontFamily: "inherit", fontSize: 15, outline: "none",
-    minWidth: 0, textAlign: "center", textAlignLast: "center",
+  const label = (() => {
+    if (!startDate) return "Select dates";
+    return formatDateRange(startDate, endDate);
+  })();
+
+  const cellBase = {
+    height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 14, cursor: "pointer", fontFamily: "inherit", border: "none", padding: 0,
   };
 
   return (
-    <div style={{ display: "flex", gap: 6 }}>
-      <select value={d || ""} onChange={e => set("d", e.target.value)} style={{ ...sel, flex: "0 0 68px" }}>
-        <option value="">Day</option>
-        {Array.from({ length: daysIn(y, m) }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
-      </select>
-      <select value={m || ""} onChange={e => set("m", e.target.value)} style={{ ...sel, flex: 1 }}>
-        <option value="">Month</option>
-        {MONTHS_SHORT.map((mo, i) => <option key={mo} value={i + 1}>{mo}</option>)}
-      </select>
-      <select value={y || ""} onChange={e => set("y", e.target.value)} style={{ ...sel, flex: "0 0 86px" }}>
-        <option value="">Year</option>
-        {years.map(n => <option key={n} value={n}>{n}</option>)}
-      </select>
+    <div>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: `1px solid ${open ? "#0969da" : "#d1d9e0"}`, color: startDate ? "#1f2328" : "#8c959f", borderRadius: 6, padding: "11px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 15, textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+        <span style={{ color: "#59636e", fontSize: 12, flexShrink: 0 }}>{open ? "▴" : "▾"}</span>
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 8, background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <button onClick={() => setView(new Date(vY, vM - 1, 1))}
+              style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: 34, height: 30, cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>‹</button>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328" }}>{MONTHS_SHORT[vM]} {vY}</div>
+            <button onClick={() => setView(new Date(vY, vM + 1, 1))}
+              style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, width: 34, height: 30, cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>›</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+            {["M", "T", "W", "T", "F", "S", "S"].map((w, i) => (
+              <div key={i} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: i > 4 ? "#cf222e99" : "#8c959f", paddingBottom: 4 }}>{w}</div>
+            ))}
+            {Array.from({ length: lead }).map((_, i) => <div key={`b${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
+              const v = iso(vY, vM + 1, d);
+              const isStart = v === startDate;
+              const isEnd = v === endDate;
+              const between = startDate && endDate && cmp(v, startDate) > 0 && cmp(v, endDate) < 0;
+              const edge = isStart || isEnd;
+              return (
+                <button key={d} onClick={() => pick(d)}
+                  style={{
+                    ...cellBase,
+                    background: edge ? "#1f883d" : between ? "#dafbe1" : "transparent",
+                    color: edge ? "#ffffff" : "#1f2328",
+                    fontWeight: edge ? 700 : 400,
+                    borderRadius: isStart && isEnd ? 8 : isStart ? "8px 0 0 8px" : isEnd ? "0 8px 8px 0" : between ? 0 : 8,
+                  }}>{d}</button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid #f0f3f6" }}>
+            <span style={{ fontSize: 11, color: "#8c959f" }}>
+              {startDate && !endDate ? "Now pick the last day" : startDate ? "" : "Pick the first day"}
+            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={() => onChange("", "")}
+                style={{ background: "none", border: "none", color: "#59636e", cursor: "pointer", fontFamily: "inherit", fontSize: 12, padding: "4px 8px" }}>Clear</button>
+              <button onClick={() => setOpen(false)}
+                style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1946,31 +2004,20 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
 
               {/* Optional: a competition is often created before the dates are
                   confirmed, and the report simply omits them when unset. */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ minWidth: 0 }}>
-                  <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Start date</label>
-                  <div style={{ marginTop: 6 }}>
-                    <DateSelect value={newStartDate} onChange={v => {
-                      setNewStartDate(v);
-                      // An end before the start is always a mistake; nudge it along
-                      // rather than saving a range that reads backwards.
-                      if (v && newEndDate && newEndDate < v) setNewEndDate(v);
-                    }} />
-                  </div>
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>End date</label>
-                  <div style={{ marginTop: 6 }}>
-                    <DateSelect value={newEndDate} min={newStartDate} onChange={setNewEndDate} />
-                  </div>
-                  {newStartDate && newEndDate && newEndDate < newStartDate && (
-                    <div style={{ fontSize: 11, color: "#cf222e", marginTop: 6 }}>End date is before the start date</div>
-                  )}
+              {/* One range rather than two fields: the dates are consecutive by
+                  nature, and seeing them on a calendar shows the length of the
+                  competition as it is chosen. */}
+              <div>
+                <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Dates</label>
+                <div style={{ marginTop: 6 }}>
+                  <DateRangePicker
+                    startDate={newStartDate}
+                    endDate={newEndDate}
+                    onChange={(a, b) => { setNewStartDate(a); setNewEndDate(b); }}
+                  />
                 </div>
               </div>
 
-              {/* Officials. Only the Chief referee reaches the report today, but
-                  the rest are recorded so the roster travels with the event. */}
               <div>
                 <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Referees</label>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
