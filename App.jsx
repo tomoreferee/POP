@@ -1901,11 +1901,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
 
               {/* Optional: a competition is often created before the dates are
                   confirmed, and the report simply omits them when unset. */}
-              <style>{`.popDate { min-width: 0; max-width: 100%; }`}</style>
-              <div style={{ display: "flex", gap: 10 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Start date</label>
-                  <input type="date" value={newStartDate} className="popDate"
+                  <input type="date" value={newStartDate}
                     onChange={e => {
                       const v = e.target.value;
                       setNewStartDate(v);
@@ -1915,9 +1914,9 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
                     }}
                     style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, outline: "none" }} />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>End date</label>
-                  <input type="date" value={newEndDate} min={newStartDate || undefined} className="popDate"
+                  <input type="date" value={newEndDate} min={newStartDate || undefined}
                     onChange={e => setNewEndDate(e.target.value)}
                     style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 15, outline: "none" }} />
                 </div>
