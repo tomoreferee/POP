@@ -5476,6 +5476,17 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       const totalAllowedR = (rd.parTimes || []).reduce((a, b) => a + (b || 0), 0)
         + (rd.turnTime ?? 0) + (rd.turnTimeBack ?? rd.turnTime ?? 0);
 
+      // The benchmark group is the first one out at full strength — the same
+      // rule the per-round table uses, so the two never disagree.
+      const inDraw = rd.groups.slice().sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)));
+      const firstFull = inDraw.find(g => groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).length >= rd.playersPerGroup) || inDraw[0];
+      const lastG = inDraw[inDraw.length - 1];
+      const diffOf = (g) => {
+        if (!g) return null;
+        const pr = computeGroupProgress(g, rd.groupData[g.id], rd.parTimes);
+        return pr.isComplete ? pr.lastDiff : null;
+      };
+
       return {
         label: rd.label,
         teeStarts,
@@ -5489,6 +5500,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         rulings: logs.filter(({ l }) => l.type === "RUL").length,
         est: logs.filter(({ l }) => l.type === "EST").length,
         totalAllowed: totalAllowedR,
+        firstDiff: diffOf(firstFull),
+        lastDiff: diffOf(lastG),
         suspensions: rd.suspensions || [],
       };
     });
@@ -5731,10 +5744,88 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 </tbody>
               </table>
             </div>
+
+            {/* Pace across the tournament, rounds as columns. The section below
+                breaks the current round down by start point; this one is for
+                comparing rounds against each other. */}
+            <div style={{ ...secHead }}>PACE OF PLAY</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }} />
+                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>Time allowed</td>
+                    {report.map(r => <td key={r.label} style={tdS}>{minToHM(r.totalAllowed)}</td>)}
+                  </tr>
+                  <tr>
+                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>1st group finish</td>
+                    {report.map(r => (
+                      <td key={r.label} style={{ ...tdS, fontWeight: 700, color: r.firstDiff == null ? "#8c959f" : r.firstDiff > 0 ? "#cf222e" : "#1a7f37" }}>
+                        {r.firstDiff == null ? "–" : r.firstDiff > 0 ? `+${r.firstDiff}` : r.firstDiff}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>Last group finish</td>
+                    {report.map(r => (
+                      <td key={r.label} style={{ ...tdS, fontWeight: 700, color: r.lastDiff == null ? "#8c959f" : r.lastDiff > 0 ? "#cf222e" : "#1a7f37" }}>
+                        {r.lastDiff == null ? "–" : r.lastDiff > 0 ? `+${r.lastDiff}` : r.lastDiff}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ ...secHead }}>SUSPENSION &amp; RESUMPTION</div>
+            <div style={{ ...card, marginBottom: 24, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Suspend</th>
+                    <th style={thS}>Resume</th>
+                    <th style={thS}>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    r.suspensions.length === 0 ? (
+                      <tr key={r.label}>
+                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                        <td style={tdS}>–</td><td style={tdS}>–</td><td style={tdS}>–</td>
+                      </tr>
+                    ) : r.suspensions.map((sp, i) => (
+                      <tr key={`${r.label}-${i}`}>
+                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
+                          {i === 0 ? (r.label === "Q" ? "Qualifying" : `Round ${r.label}`) : ""}
+                        </td>
+                        <td style={tdS}>{sp.stopTime || "—"}</td>
+                        <td style={tdS}>{sp.resumeTime || <span style={{ color: "#cf222e" }}>ongoing</span>}</td>
+                        <td style={tdS}>{(() => {
+                          // offsetMin is what the app already computed and applied
+                          // to the schedule, so it is the authoritative duration.
+                          if (sp.offsetMin != null) return `${sp.offsetMin} min`;
+                          if (!sp.resumeTime || !sp.stopTime) return "—";
+                          const mins = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+                          return `${Math.max(0, mins(sp.resumeTime) - mins(sp.stopTime))} min`;
+                        })()}</td>
+                      </tr>
+                    ))
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
 
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, marginBottom: 10 }}>PACE OF PLAY</div>
+        {/* Per-round detail from here down — the current round only. */}
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, marginBottom: 10 }}>PACE OF PLAY — THIS ROUND</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -5834,50 +5925,6 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
-        {allRounds && report && (
-          <>
-            <div style={{ ...secHead }}>SUSPENSION &amp; RESUMPTION</div>
-            <div style={{ ...card, marginBottom: 24, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
-                    <th style={thS}>Suspend</th>
-                    <th style={thS}>Resume</th>
-                    <th style={thS}>Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.map(r => (
-                    r.suspensions.length === 0 ? (
-                      <tr key={r.label}>
-                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
-                        <td style={tdS}>–</td><td style={tdS}>–</td><td style={tdS}>–</td>
-                      </tr>
-                    ) : r.suspensions.map((sp, i) => (
-                      <tr key={`${r.label}-${i}`}>
-                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
-                          {i === 0 ? (r.label === "Q" ? "Qualifying" : `Round ${r.label}`) : ""}
-                        </td>
-                        <td style={tdS}>{sp.stopTime || "—"}</td>
-                        <td style={tdS}>{sp.resumeTime || <span style={{ color: "#cf222e" }}>ongoing</span>}</td>
-                        <td style={tdS}>{(() => {
-                          // offsetMin is what the app already computed and applied
-                          // to the schedule, so it is the authoritative duration.
-                          if (sp.offsetMin != null) return `${sp.offsetMin} min`;
-                          if (!sp.resumeTime || !sp.stopTime) return "—";
-                          const mins = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
-                          return `${Math.max(0, mins(sp.resumeTime) - mins(sp.stopTime))} min`;
-                        })()}</td>
-                      </tr>
-                    ))
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
         {/* Rulings — the record behind any delay a group was given */}
         {(() => {
           const source = allRounds && xRounds
