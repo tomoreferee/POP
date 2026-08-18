@@ -7879,7 +7879,9 @@ const DEFAULT_RESET_PASSWORD = "1234";
 // Lets anyone change their own password. Asks for the current one first so a
 // borrowed, unlocked phone can't be used to take over someone's account.
 /* A referee's own details. Username is shown but not editable — it identifies
-   every log entry they have ever recorded, so changing it would orphan them. */
+   every log entry they have ever recorded, so changing it would orphan them.
+   Styled to match ChangePasswordModal, which sits directly below it in the
+   same menu. */
 function AccountModal({ user, onSave, onClose }) {
   const [firstName, setFirstName] = useState(user.firstName || "");
   const [middleName, setMiddleName] = useState(user.middleName || "");
@@ -7887,31 +7889,41 @@ function AccountModal({ user, onSave, onClose }) {
   const [nickname, setNickname] = useState(user.nickname || "");
   const [tel, setTel] = useState(user.tel || "");
 
-  const label = { fontSize: 11, color: "#59636e", letterSpacing: 1, display: "block", marginBottom: 6 };
-  const input = { width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none", marginBottom: 12 };
+  const SYS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'";
+  const field = {
+    width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328",
+    borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none",
+  };
+  const label = { fontSize: 11, color: "#59636e", letterSpacing: 1, display: "block", marginBottom: 5 };
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#1f232899", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1200, padding: 16, overflowY: "auto" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 10, padding: 20, width: "100%", maxWidth: 380, marginTop: 24 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "#1f2328", marginBottom: 16 }}>Account</div>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", border: "1px solid #0969da66", borderRadius: 6, padding: 22, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px #1f2328", fontFamily: SYS, marginTop: 24 }}>
+        <div style={{ fontFamily: SYS, fontSize: 20, fontWeight: 600, letterSpacing: 0, color: "#1f2328", marginBottom: 2 }}>Account</div>
+        <div style={{ fontSize: 12, color: "#59636e", marginBottom: 16 }}>{user.username}</div>
 
-        <label style={label}>Username</label>
-        <div style={{ ...input, background: "#eef1f4", color: "#59636e", marginBottom: 16 }}>{user.username}</div>
-
-        <label style={label}>Name</label>
-        <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" style={input} />
-
-        <label style={label}>Middle name</label>
-        <input value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="Optional" style={input} />
-
-        <label style={label}>Surname</label>
-        <input value={surname} onChange={e => setSurname(e.target.value)} placeholder="Surname" style={input} />
-
-        <label style={label}>Nickname</label>
-        <input value={nickname} onChange={e => setNickname(e.target.value)} placeholder="Shown on the radio" style={input} />
-
-        <label style={label}>Tel.</label>
-        <input value={tel} onChange={e => setTel(e.target.value)} inputMode="tel" placeholder="08x-xxx-xxxx" style={{ ...input, marginBottom: 18 }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+          <div>
+            <label style={label}>NAME</label>
+            <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" style={field} />
+          </div>
+          <div>
+            <label style={label}>MIDDLE NAME</label>
+            <input value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="Optional" style={field} />
+          </div>
+          <div>
+            <label style={label}>SURNAME</label>
+            <input value={surname} onChange={e => setSurname(e.target.value)} placeholder="Surname" style={field} />
+          </div>
+          <div>
+            <label style={label}>NICKNAME</label>
+            <input value={nickname} onChange={e => setNickname(e.target.value)} placeholder="Shown on the radio" style={field} />
+          </div>
+          <div>
+            <label style={label}>TEL.</label>
+            <input value={tel} onChange={e => setTel(e.target.value)} inputMode="tel" placeholder="08x-xxx-xxxx" style={field} />
+          </div>
+        </div>
 
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -7919,11 +7931,11 @@ function AccountModal({ user, onSave, onClose }) {
               firstName: firstName.trim(), middleName: middleName.trim(),
               surname: surname.trim(), nickname: nickname.trim(), tel: tel.trim(),
             })}
-            style={{ flex: 1, background: "#dafbe1", border: "1px solid #1a7f37", color: "#1a7f37", borderRadius: 6, padding: "12px 0", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>
-            Save
+            style={{ flex: 1, background: "#1f883d", border: "1px solid #1a7f37", color: "#ffffff", borderRadius: 6, padding: "11px", cursor: "pointer", fontFamily: SYS, fontSize: 15, fontWeight: 600, letterSpacing: 2 }}>
+            ✓ Save
           </button>
           <button onClick={onClose}
-            style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "12px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+            style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "11px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
             Cancel
           </button>
         </div>
