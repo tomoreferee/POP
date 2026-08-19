@@ -5385,6 +5385,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           label: r.label, groups: st.groups, groupData: gd || {},
           parTimes: st.parTimes, turnTime: st.turnTime, turnTimeBack: st.turnTimeBack,
           playersPerGroup: st.playersPerGroup, suspensions: st.suspensions || [],
+          greenSpeed: st.greenSpeed || {}, preferredLies: st.preferredLies === true,
         });
       }
       if (!cancelled) { setXRounds(out); setXLoading(false); }
@@ -5527,6 +5528,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         rulings: logs.filter(({ l }) => l.type === "RUL").length,
         est: logs.filter(({ l }) => l.type === "EST").length,
         totalAllowed: totalAllowedR,
+        greenSpeed: rd.greenSpeed || {},
+        preferredLies: rd.preferredLies === true,
         firstDiff: firstPick ? firstPick.diff : null,
         lastDiff: lastPick ? lastPick.diff : null,
         suspensions: rd.suspensions || [],
@@ -5591,15 +5594,22 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   // Per-group, per-player breakdown: which holes a player was under TM (first → last hole
   // logged) and how many times they were specifically Bad-timed. "All" is expanded to all
   // 4 player slots. Used to render the collapsible group-by-group summary below.
-  const tmGroupSummaries = groups.map(g => {
+  // Follows the same scope control as the rest of the page. Group names carry
+  // their round when several are shown, or "Group 12" would appear once per
+  // round meaning a different set of players each time.
+  const tmSource = allRounds && xRounds
+    ? xRounds.flatMap(rd => rd.groups.map(g => ({ g, gd: rd.groupData[g.id], round: rd.label })))
+    : groups.map(g => ({ g, gd: groupData[g.id], round: null }));
+
+  const tmGroupSummaries = tmSource.map(({ g, gd: gdIn, round }) => {
     // EST belongs here too: it's a one-off note against a player, so a report
     // that only listed TM left those entries with nowhere to appear.
-    const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM" || l.type === "EST");
+    const logs = (gdIn?.actionLogs || []).filter(l => l.type === "TM" || l.type === "EST");
     if (logs.length === 0) return null;
     const playerMap = {};
     logs.forEach(l => {
       const labels = l.target === "All"
-        ? groupRoster(g, groupData[g.id], playersPerGroup).map(r => playerCode(g, r.tag))
+        ? groupRoster(g, gdIn, playersPerGroup).map(r => playerCode(g, r.tag))
         : (l.target || "").split(",").map(s => playerCode(g, s.trim())).filter(Boolean);
       labels.forEach(label => {
         if (!playerMap[label]) playerMap[label] = { holes: [], badTimeCount: 0, names: new Set(), badTimeHoles: [], estHoles: [] };
@@ -5634,8 +5644,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       };
     });
     return {
-      groupId: g.id,
-      groupName: g.name,
+      groupId: `${round ?? ""}-${g.id}`,
+      groupName: round ? `${round === "Q" ? "Q" : `R${round}`} · ${g.name}` : g.name,
       players,
       totalBadTime: players.reduce((s, p) => s + p.badTimeCount, 0),
       totalEst: players.reduce((s, p) => s + p.estHoles.length, 0),
@@ -5656,203 +5666,23 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       <div style={{ padding: "20px 24px", maxWidth: 900, margin: "0 auto" }}>
 
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
-        {/* ── Chief referee's report ───────────────────────────────────────
-            Tournament-level tables. They only mean anything across the whole
-            event, so they appear once the other rounds have been loaded. */}
+                {/* Scope control for everything below: the per-round sections show the
+            open round by default, or every round once loaded. */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>CHIEF REFEREE'S REPORT</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>
+            PACE OF PLAY{allRounds ? "" : " — THIS ROUND"}
+          </div>
           {tournamentId && (
-            <button onClick={() => setAllRounds(v => !v)}
-              style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
-              {allRounds ? "All rounds" : "Load all rounds"}
-            </button>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[[false, "This round"], [true, "All rounds"]].map(([v, label]) => (
+                <button key={label} onClick={() => setAllRounds(v)}
+                  style={{ background: allRounds === v ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds === v ? "#0969da" : "#d1d9e0"}`, color: allRounds === v ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
         </div>
-
-        {!allRounds && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
-            These tables cover the whole tournament. Tap <b>Load all rounds</b> to build them.
-          </div>
-        )}
-        {allRounds && xLoading && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e" }}>Loading rounds…</div>
-        )}
-
-        {allRounds && report && (
-          <>
-            {/* TOURNAMENT */}
-            <div style={{ ...secHead }}>TOURNAMENT</div>
-            <div style={{ ...card, marginBottom: 20 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <tbody>
-                  {[["Name", tournamentName || "—"],
-                    ["Venue", hostVenue || "—"],
-                    ["Date", formatDateRange(startDate, endDate)],
-                    ["Rounds", report.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ") || "—"],
-                    ["Chief referee", chiefReferee || "—"]].map(([k, v]) => (
-                    <tr key={k}>
-                      <td style={{ ...tdS, textAlign: "left", width: 130, color: "#59636e" }}>{k}</td>
-                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{v}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* THE FIELD */}
-            <div style={{ ...secHead }}>THE FIELD</div>
-            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
-                    <th style={thS}>Groups</th>
-                    <th style={thS}>Players</th>
-                    <th style={thS}>Withdrawn</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.map(r => (
-                    <tr key={r.label}>
-                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
-                      <td style={tdS}>{r.groupCount}</td>
-                      <td style={tdS}>{r.players}</td>
-                      <td style={{ ...tdS, color: r.withdrawn ? "#cf222e" : "#59636e", fontWeight: r.withdrawn ? 700 : 400 }}>{r.withdrawn || "–"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* STARTING TIME */}
-            <div style={{ ...secHead }}>STARTING TIME</div>
-            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
-                    <th style={thS}>Tee start</th>
-                    <th style={thS}>First tee time</th>
-                    <th style={thS}>Last tee time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.map(r => (
-                    <tr key={r.label}>
-                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
-                      <td style={tdS}>{r.teeStarts.join(" & ") || "—"}</td>
-                      <td style={tdS}>{r.firstTee}</td>
-                      <td style={tdS}>{r.lastTee}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* RULINGS SUMMARY */}
-            <div style={{ ...secHead }}>RULINGS SUMMARY</div>
-            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thS, textAlign: "left" }} />
-                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
-                    <th style={{ ...thS, color: "#1f2328" }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[["No. of timings", "timings"], ["No. of bad times", "badTimes"], ["No. of EST", "est"], ["No. of rulings", "rulings"]].map(([label, key]) => (
-                    <tr key={key}>
-                      <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>{label}</td>
-                      {report.map(r => <td key={r.label} style={tdS}>{r[key] || "–"}</td>)}
-                      <td style={{ ...tdS, fontWeight: 700 }}>{report.reduce((a, r) => a + r[key], 0) || "–"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pace across the tournament, rounds as columns. The section below
-                breaks the current round down by start point; this one is for
-                comparing rounds against each other. */}
-            <div style={{ ...secHead }}>PACE OF PLAY</div>
-            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thS, textAlign: "left" }} />
-                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>Time allowed</td>
-                    {report.map(r => <td key={r.label} style={tdS}>{minToHM(r.totalAllowed)}</td>)}
-                  </tr>
-                  <tr>
-                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>1st group finish</td>
-                    {report.map(r => (
-                      <td key={r.label} style={{ ...tdS, fontWeight: 700, color: r.firstDiff == null ? "#8c959f" : r.firstDiff > 0 ? "#cf222e" : "#1a7f37" }}>
-                        {r.firstDiff == null ? "–" : r.firstDiff > 0 ? `+${r.firstDiff}` : r.firstDiff}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>Last group finish</td>
-                    {report.map(r => (
-                      <td key={r.label} style={{ ...tdS, fontWeight: 700, color: r.lastDiff == null ? "#8c959f" : r.lastDiff > 0 ? "#cf222e" : "#1a7f37" }}>
-                        {r.lastDiff == null ? "–" : r.lastDiff > 0 ? `+${r.lastDiff}` : r.lastDiff}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ ...secHead }}>SUSPENSION &amp; RESUMPTION</div>
-            <div style={{ ...card, marginBottom: 24, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
-                    <th style={thS}>Suspend</th>
-                    <th style={thS}>Resume</th>
-                    <th style={thS}>Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.map(r => (
-                    r.suspensions.length === 0 ? (
-                      <tr key={r.label}>
-                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
-                        <td style={tdS}>–</td><td style={tdS}>–</td><td style={tdS}>–</td>
-                      </tr>
-                    ) : r.suspensions.map((sp, i) => (
-                      <tr key={`${r.label}-${i}`}>
-                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
-                          {i === 0 ? (r.label === "Q" ? "Qualifying" : `Round ${r.label}`) : ""}
-                        </td>
-                        <td style={tdS}>{sp.stopTime || "—"}</td>
-                        <td style={tdS}>{sp.resumeTime || <span style={{ color: "#cf222e" }}>ongoing</span>}</td>
-                        <td style={tdS}>{(() => {
-                          // offsetMin is what the app already computed and applied
-                          // to the schedule, so it is the authoritative duration.
-                          if (sp.offsetMin != null) return `${sp.offsetMin} min`;
-                          if (!sp.resumeTime || !sp.stopTime) return "—";
-                          const mins = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
-                          return `${Math.max(0, mins(sp.resumeTime) - mins(sp.stopTime))} min`;
-                        })()}</td>
-                      </tr>
-                    ))
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
-        {/* Per-round detail from here down — the current round only. */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, marginBottom: 10 }}>PACE OF PLAY — THIS ROUND</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -6144,6 +5974,231 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             </div>
           )}
         </div>
+
+
+{/* ── Chief referee's report ───────────────────────────────────────
+            Tournament-level tables. They only mean anything across the whole
+            event, so they appear once the other rounds have been loaded. */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>CHIEF REFEREE'S REPORT</div>
+          {tournamentId && (
+            <button onClick={() => setAllRounds(v => !v)}
+              style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
+              {allRounds ? "All rounds" : "Load all rounds"}
+            </button>
+          )}
+        </div>
+
+        {!allRounds && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
+            These tables cover the whole tournament. Tap <b>Load all rounds</b> to build them.
+          </div>
+        )}
+        {allRounds && xLoading && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e" }}>Loading rounds…</div>
+        )}
+
+        {allRounds && report && (
+          <>
+            {/* TOURNAMENT */}
+            <div style={{ ...secHead }}>TOURNAMENT</div>
+            <div style={{ ...card, marginBottom: 20 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <tbody>
+                  {[["Name", tournamentName || "—"],
+                    ["Venue", hostVenue || "—"],
+                    ["Date", formatDateRange(startDate, endDate)],
+                    ["Rounds", report.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ") || "—"],
+                    ["Chief referee", chiefReferee || "—"]].map(([k, v]) => (
+                    <tr key={k}>
+                      <td style={{ ...tdS, textAlign: "left", width: 130, color: "#59636e" }}>{k}</td>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* THE FIELD */}
+            <div style={{ ...secHead }}>THE FIELD</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Groups</th>
+                    <th style={thS}>Players</th>
+                    <th style={thS}>Withdrawn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    <tr key={r.label}>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                      <td style={tdS}>{r.groupCount}</td>
+                      <td style={tdS}>{r.players}</td>
+                      <td style={{ ...tdS, color: r.withdrawn ? "#cf222e" : "#59636e", fontWeight: r.withdrawn ? 700 : 400 }}>{r.withdrawn || "–"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* STARTING TIME */}
+            <div style={{ ...secHead }}>STARTING TIME</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Tee start</th>
+                    <th style={thS}>First tee time</th>
+                    <th style={thS}>Last tee time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    <tr key={r.label}>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                      <td style={tdS}>{r.teeStarts.join(" & ") || "—"}</td>
+                      <td style={tdS}>{r.firstTee}</td>
+                      <td style={tdS}>{r.lastTee}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* COURSE CONDITIONS — green speed and preferred lies both change
+                how fast a round plays, so they belong beside the pace figures
+                rather than only on the round that is open. */}
+            <div style={{ ...secHead }}>COURSE CONDITIONS</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Speed green on board</th>
+                    <th style={thS}>Preferred lies</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    <tr key={r.label}>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                      <td style={{ ...tdS, color: "#1a7f37", fontWeight: 700 }}>{formatGreenSpeed(r.greenSpeed) || "–"}</td>
+                      <td style={tdS}>
+                        {r.preferredLies
+                          ? <span style={{ color: "#0969da", fontWeight: 700 }}>Yes</span>
+                          : <span style={{ color: "#59636e" }}>No</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* RULINGS SUMMARY */}
+            <div style={{ ...secHead }}>RULINGS SUMMARY</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }} />
+                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
+                    <th style={{ ...thS, color: "#1f2328" }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[["No. of timings", "timings"], ["No. of bad times", "badTimes"], ["No. of EST", "est"], ["No. of rulings", "rulings"]].map(([label, key]) => (
+                    <tr key={key}>
+                      <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>{label}</td>
+                      {report.map(r => <td key={r.label} style={tdS}>{r[key] || "–"}</td>)}
+                      <td style={{ ...tdS, fontWeight: 700 }}>{report.reduce((a, r) => a + r[key], 0) || "–"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pace across the tournament, rounds as columns. The section below
+                breaks the current round down by start point; this one is for
+                comparing rounds against each other. */}
+            <div style={{ ...secHead }}>PACE OF PLAY</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }} />
+                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>Time allowed</td>
+                    {report.map(r => <td key={r.label} style={tdS}>{minToHM(r.totalAllowed)}</td>)}
+                  </tr>
+                  <tr>
+                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>1st group finish</td>
+                    {report.map(r => (
+                      <td key={r.label} style={{ ...tdS, fontWeight: 700, color: r.firstDiff == null ? "#8c959f" : r.firstDiff > 0 ? "#cf222e" : "#1a7f37" }}>
+                        {r.firstDiff == null ? "–" : r.firstDiff > 0 ? `+${r.firstDiff}` : r.firstDiff}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td style={{ ...tdS, textAlign: "left", color: "#59636e" }}>Last group finish</td>
+                    {report.map(r => (
+                      <td key={r.label} style={{ ...tdS, fontWeight: 700, color: r.lastDiff == null ? "#8c959f" : r.lastDiff > 0 ? "#cf222e" : "#1a7f37" }}>
+                        {r.lastDiff == null ? "–" : r.lastDiff > 0 ? `+${r.lastDiff}` : r.lastDiff}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ ...secHead }}>SUSPENSION &amp; RESUMPTION</div>
+            <div style={{ ...card, marginBottom: 24, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
+                    <th style={thS}>Suspend</th>
+                    <th style={thS}>Resume</th>
+                    <th style={thS}>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.map(r => (
+                    r.suspensions.length === 0 ? (
+                      <tr key={r.label}>
+                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                        <td style={tdS}>–</td><td style={tdS}>–</td><td style={tdS}>–</td>
+                      </tr>
+                    ) : r.suspensions.map((sp, i) => (
+                      <tr key={`${r.label}-${i}`}>
+                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
+                          {i === 0 ? (r.label === "Q" ? "Qualifying" : `Round ${r.label}`) : ""}
+                        </td>
+                        <td style={tdS}>{sp.stopTime || "—"}</td>
+                        <td style={tdS}>{sp.resumeTime || <span style={{ color: "#cf222e" }}>ongoing</span>}</td>
+                        <td style={tdS}>{(() => {
+                          // offsetMin is what the app already computed and applied
+                          // to the schedule, so it is the authoritative duration.
+                          if (sp.offsetMin != null) return `${sp.offsetMin} min`;
+                          if (!sp.resumeTime || !sp.stopTime) return "—";
+                          const mins = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+                          return `${Math.max(0, mins(sp.resumeTime) - mins(sp.stopTime))} min`;
+                        })()}</td>
+                      </tr>
+                    ))
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
 
       </div>
     </div>
