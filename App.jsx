@@ -5014,35 +5014,32 @@ function WeatherBar({ hostVenue, venueLocation }) {
    official timekeeper. Deliberately unbranded — a sponsor's mark would need
    their licensed asset dropping in here. */
 function AnalogClock({ minutes, size = 30 }) {
-  // The sweep is an SVG animation rather than a JS tick: a state update every
-  // frame would re-render the header 60 times a second, and a one-second
-  // interval would step rather than glide. It starts partway through so the
-  // hand begins at the true current second.
+  // The hand is positioned from the clock each frame rather than played as an
+  // animation. Declarative animations drift: they are paused on a hidden tab and
+  // resume where they stopped, and any throttling accumulates, so the hand ended
+  // up ahead of the digital time it sits beside. Reading the actual time every
+  // frame cannot drift — after a pause it simply resumes at the right angle.
   //
-  // Browsers pause SMIL animations on a hidden tab and resume them where they
-  // stopped, so the hand came back however many seconds behind the tab had been
-  // away. Re-anchoring it whenever the page becomes visible again puts it back
-  // on the real second; pageshow covers a restore from the back/forward cache,
-  // which does not always fire visibilitychange.
-  const [syncAt, setSyncAt] = useState(() => Date.now());
+  // The transform is written straight to the DOM node, so this costs no React
+  // renders despite updating 60 times a second.
+  const c = size / 2;
+  const secHandRef = useRef(null);
   useEffect(() => {
-    const resync = () => { if (!document.hidden) setSyncAt(Date.now()); };
-    document.addEventListener("visibilitychange", resync);
-    window.addEventListener("pageshow", resync);
-    window.addEventListener("focus", resync);
-    return () => {
-      document.removeEventListener("visibilitychange", resync);
-      window.removeEventListener("pageshow", resync);
-      window.removeEventListener("focus", resync);
+    let raf;
+    const tick = () => {
+      const d = new Date();
+      const sec = d.getSeconds() + d.getMilliseconds() / 1000;
+      const el = secHandRef.current;
+      if (el) el.setAttribute("transform", `rotate(${sec * 6} ${c} ${c})`);
+      raf = requestAnimationFrame(tick);
     };
-  }, []);
-  const syncDate = new Date(syncAt);
-  const startSec = syncDate.getSeconds() + syncDate.getMilliseconds() / 1000;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [c]);
 
   const [h24, m] = [Math.floor((minutes % 1440) / 60), minutes % 60];
   const minuteAngle = m * 6;                              // 360 / 60
   const hourAngle = (h24 % 12) * 30 + m * 0.5;            // 360 / 12, plus drift
-  const c = size / 2;
   const hand = (angle, length, width, color, tail = 0) => {
     const rad = (angle - 90) * Math.PI / 180;
     return (
@@ -5070,22 +5067,11 @@ function AnalogClock({ minutes, size = 30 }) {
       })}
       {hand(hourAngle, c * 0.46, 2, "#1f2328")}
       {hand(minuteAngle, c * 0.70, 1.5, "#1f2328")}
-      {/* SVG's own animateTransform rather than a CSS animation: CSS
-          transform-origin on an SVG group is unreliable in Safari, which left
-          the hand either static or pivoting off-centre. This rotates about the
-          dial centre explicitly, and starts at the true current second. */}
-      <g>
+      {/* Rotated via the transform attribute, not CSS: transform-origin on an
+          SVG group is unreliable in Safari, which left the hand either static
+          or pivoting off-centre. This rotates about the dial centre explicitly. */}
+      <g ref={secHandRef} transform={`rotate(0 ${c} ${c})`}>
         {hand(0, c * 0.76, 0.8, "#cf222e", c * 0.18)}
-        <animateTransform
-          key={syncAt}
-          attributeName="transform"
-          attributeType="XML"
-          type="rotate"
-          from={`${startSec * 6} ${c} ${c}`}
-          to={`${startSec * 6 + 360} ${c} ${c}`}
-          dur="60s"
-          repeatCount="indefinite"
-        />
       </g>
       <circle cx={c} cy={c} r="1.3" fill="#cf222e" />
     </svg>
