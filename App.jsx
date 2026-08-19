@@ -5512,7 +5512,6 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   // Long rulings collapse; short ones are shown whole. A control on a one-line
   // comment is just noise, so the threshold is roughly what fits on two lines.
   const [expandedRulings, setExpandedRulings] = useState(() => new Set());
-  const RULING_CLAMP = 110;
   const toggleRuling = (k) => setExpandedRulings(prev => {
     const next = new Set(prev);
     next.has(k) ? next.delete(k) : next.add(k);
@@ -5959,14 +5958,14 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                       <th style={thS}>Start</th>
                       <th style={thS}>Player</th>
                       <th style={thS}>Hole</th>
+                      <th style={{ ...thS, textAlign: "left", minWidth: 160 }}>Ruling</th>
                       <th style={thS}>Rule no.</th>
                       <th style={thS}>By</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map(({ round, g, l }, i) => (
-                      <Fragment key={i}>
-                      <tr>
+                      <tr key={i}>
                         <td style={tdS}>{round === "Q" ? "Q" : `R${round}`}</td>
                         <td style={tdS}>{g.name}</td>
                         <td style={tdS}>{l.start || g.startTime || "—"}</td>
@@ -5975,30 +5974,32 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                           {l.playerName ? <div style={{ fontSize: 11, color: "#59636e", fontWeight: 400 }}>{l.playerName}</div> : null}
                         </td>
                         <td style={tdS}>H{(l.holeIdx ?? 0) + 1}</td>
-                        <td style={tdS}>{l.ruleNo || "—"}</td>
-                        <td style={tdS}>{l.name || "—"}</td>
-                      </tr>
-                      <tr>
-                        <td colSpan={isAll("rul") ? 7 : 6}
-                          style={{ padding: "0 12px 12px", borderBottom: "1px solid #f0f3f6", textAlign: "left", fontSize: 13, color: "#1f2328", lineHeight: 1.5 }}>
+                        <td style={{ ...tdS, textAlign: "left", fontSize: 13, minWidth: 160, maxWidth: 260, lineHeight: 1.45 }}>
                           {!l.comment ? <span style={{ color: "#9a6700" }}>not filled in</span> : (() => {
-                            const long = l.comment.length > RULING_CLAMP;
                             const open = expandedRulings.has(i);
-                            if (!long) return l.comment;
                             return (
                               <span onClick={() => toggleRuling(i)}
                                 title={open ? "Tap to collapse" : "Tap to read in full"}
                                 style={{ cursor: "pointer", display: "block" }}>
-                                {open ? l.comment : `${l.comment.slice(0, RULING_CLAMP).trimEnd()}…`}{" "}
-                                <span style={{ color: "#8250df", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+                                {/* Clamped by lines, not characters: the column
+                                    is narrow and its width varies, so a fixed
+                                    character count would cut some entries mid-
+                                    line and let others run on. Two lines keeps
+                                    every row the same height. */}
+                                <span style={open ? undefined : {
+                                  display: "-webkit-box", WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical", overflow: "hidden",
+                                }}>{l.comment}</span>
+                                <span style={{ color: "#8250df", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
                                   {open ? "▴ less" : "▾ more"}
                                 </span>
                               </span>
                             );
                           })()}
                         </td>
+                        <td style={tdS}>{l.ruleNo || "—"}</td>
+                        <td style={tdS}>{l.name || "—"}</td>
                       </tr>
-                      </Fragment>
                     ))}
                   </tbody>
                 </table>
