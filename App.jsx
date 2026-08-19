@@ -5014,11 +5014,30 @@ function WeatherBar({ hostVenue, venueLocation }) {
    official timekeeper. Deliberately unbranded — a sponsor's mark would need
    their licensed asset dropping in here. */
 function AnalogClock({ minutes, size = 30 }) {
-  // The sweep is a CSS animation rather than a JS tick: a state update every
+  // The sweep is an SVG animation rather than a JS tick: a state update every
   // frame would re-render the header 60 times a second, and a one-second
-  // interval would step rather than glide. The negative delay starts the
-  // animation partway through so the hand begins at the true current second.
-  const startSec = useRef(new Date().getSeconds() + new Date().getMilliseconds() / 1000).current;
+  // interval would step rather than glide. It starts partway through so the
+  // hand begins at the true current second.
+  //
+  // Browsers pause SMIL animations on a hidden tab and resume them where they
+  // stopped, so the hand came back however many seconds behind the tab had been
+  // away. Re-anchoring it whenever the page becomes visible again puts it back
+  // on the real second; pageshow covers a restore from the back/forward cache,
+  // which does not always fire visibilitychange.
+  const [syncAt, setSyncAt] = useState(() => Date.now());
+  useEffect(() => {
+    const resync = () => { if (!document.hidden) setSyncAt(Date.now()); };
+    document.addEventListener("visibilitychange", resync);
+    window.addEventListener("pageshow", resync);
+    window.addEventListener("focus", resync);
+    return () => {
+      document.removeEventListener("visibilitychange", resync);
+      window.removeEventListener("pageshow", resync);
+      window.removeEventListener("focus", resync);
+    };
+  }, []);
+  const syncDate = new Date(syncAt);
+  const startSec = syncDate.getSeconds() + syncDate.getMilliseconds() / 1000;
 
   const [h24, m] = [Math.floor((minutes % 1440) / 60), minutes % 60];
   const minuteAngle = m * 6;                              // 360 / 60
@@ -5058,6 +5077,7 @@ function AnalogClock({ minutes, size = 30 }) {
       <g>
         {hand(0, c * 0.76, 0.8, "#cf222e", c * 0.18)}
         <animateTransform
+          key={syncAt}
           attributeName="transform"
           attributeType="XML"
           type="rotate"
