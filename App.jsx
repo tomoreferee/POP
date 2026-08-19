@@ -5932,7 +5932,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           });
           return (
             <>
-              <div style={{ marginTop: 24 }}>{sectionHead("RULINGS", "rul")}</div>
+              <div style={{ marginTop: 24 }}>{sectionHead("RULING REPORT", "rul")}</div>
               {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
               {rows.length === 0 && !xLoading && (
                 <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
@@ -5949,14 +5949,14 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                       <th style={thS}>Start</th>
                       <th style={thS}>Player</th>
                       <th style={thS}>Hole</th>
-                      <th style={{ ...thS, textAlign: "left" }}>Ruling</th>
                       <th style={thS}>Rule no.</th>
                       <th style={thS}>By</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map(({ round, g, l }, i) => (
-                      <tr key={i}>
+                      <Fragment key={i}>
+                      <tr>
                         <td style={tdS}>{round === "Q" ? "Q" : `R${round}`}</td>
                         <td style={tdS}>{g.name}</td>
                         <td style={tdS}>{l.start || g.startTime || "—"}</td>
@@ -5965,10 +5965,16 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                           {l.playerName ? <div style={{ fontSize: 11, color: "#59636e", fontWeight: 400 }}>{l.playerName}</div> : null}
                         </td>
                         <td style={tdS}>H{(l.holeIdx ?? 0) + 1}</td>
-                        <td style={{ ...tdS, textAlign: "left", fontSize: 13 }}>{l.comment || <span style={{ color: "#9a6700" }}>not filled in</span>}</td>
                         <td style={tdS}>{l.ruleNo || "—"}</td>
                         <td style={tdS}>{l.name || "—"}</td>
                       </tr>
+                      <tr>
+                        <td colSpan={isAll("rul") ? 7 : 6}
+                          style={{ padding: "0 12px 12px", borderBottom: "1px solid #f0f3f6", textAlign: "left", fontSize: 13, color: "#1f2328", lineHeight: 1.5 }}>
+                          {l.comment || <span style={{ color: "#9a6700" }}>not filled in</span>}
+                        </td>
+                      </tr>
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
