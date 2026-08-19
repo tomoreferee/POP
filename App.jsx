@@ -5977,10 +5977,18 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                         <td style={{ ...tdS, textAlign: "left", fontSize: 13, minWidth: 160, maxWidth: 260, lineHeight: 1.45 }}>
                           {!l.comment ? <span style={{ color: "#9a6700" }}>not filled in</span> : (() => {
                             const open = expandedRulings.has(i);
+                            // Roughly what fits on two lines in this column. A
+                            // short decision is shown plainly: no fade, and no
+                            // tap target that would appear to do nothing.
+                            if (l.comment.length <= 64) return l.comment;
                             return (
+                              // Nothing is added to the text itself. A "more"
+                              // label would be selected along with the ruling
+                              // when it is copied out, so the cue is a fade over
+                              // the last line instead — drawn, not written.
                               <span onClick={() => toggleRuling(i)}
                                 title={open ? "Tap to collapse" : "Tap to read in full"}
-                                style={{ cursor: "pointer", display: "block" }}>
+                                style={{ cursor: "pointer", display: "block", position: "relative" }}>
                                 {/* Clamped by lines, not characters: the column
                                     is narrow and its width varies, so a fixed
                                     character count would cut some entries mid-
@@ -5990,9 +5998,13 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                                   display: "-webkit-box", WebkitLineClamp: 2,
                                   WebkitBoxOrient: "vertical", overflow: "hidden",
                                 }}>{l.comment}</span>
-                                <span style={{ color: "#8250df", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
-                                  {open ? "▴ less" : "▾ more"}
-                                </span>
+                                {!open && (
+                                  <span aria-hidden style={{
+                                    position: "absolute", right: 0, bottom: 0, width: 46, height: "1.45em",
+                                    background: "linear-gradient(to right, #ffffff00, #ffffff 70%)",
+                                    pointerEvents: "none",
+                                  }} />
+                                )}
                               </span>
                             );
                           })()}
