@@ -1573,6 +1573,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   const [editingTournamentId, setEditingTournamentId] = useState(null); // non-null when the create form is editing an existing tournament
   const [newName, setNewName] = useState("");
   const [newVenue, setNewVenue] = useState("");
+  const [newLocation, setNewLocation] = useState("");
   const [newFormat, setNewFormat] = useState("stroke");
   const [newHasQualifying, setNewHasQualifying] = useState(true);
   const [newNumRounds, setNewNumRounds] = useState(4);
@@ -1729,7 +1730,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   })();
 
   const resetForm = () => {
-    setNewName(""); setNewVenue(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
+    setNewName(""); setNewVenue(""); setNewLocation(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
     setNewYear(String(new Date().getFullYear()));
     setNewStartDate(""); setNewEndDate(""); setNewRoles({});
     setEditingTournamentId(null);
@@ -1738,6 +1739,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   const handleStartEdit = (t) => {
     setNewName(t.name || "");
     setNewVenue(t.host_venue || "");
+    setNewLocation(t.location || "");
     setNewFormat(t.format || "stroke");
     setNewHasQualifying(t.has_qualifying !== false);
     setNewNumRounds(t.num_rounds ?? 4);
@@ -1753,17 +1755,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
     if (!newName.trim() || busy) return;
     setBusy(true);
     if (editingTournamentId) {
-      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       await setTournamentRoles(editingTournamentId, newRoles);
       setRolesMap(r => ({ ...r, [editingTournamentId]: newRoles }));
       setTournaments(prev => prev.map(t => t.id === editingTournamentId
-        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
+        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), location: newLocation.trim() || null, format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
         : t));
       setBusy(false);
       setShowCreate(false);
       resetForm();
     } else {
-      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       if (t?.id) {
         await setTournamentRoles(t.id, newRoles);
         setRolesMap(r => ({ ...r, [t.id]: newRoles }));
@@ -1994,6 +1996,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
               <input value={newVenue} onChange={e => setNewVenue(e.target.value)} placeholder="Host venue"
                 style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
 
+              {/* Kept apart from the venue name so the weather lookup has a place
+                  a map actually knows. A club name may not be on the map; the
+                  town it sits in always is. */}
+              <div>
+                <input value={newLocation} onChange={e => setNewLocation(e.target.value)} placeholder="Location (town or district)"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#1f2328", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
+                <div style={{ fontSize: 10, color: "#8c959f", marginTop: 5, lineHeight: 1.5 }}>
+                  Used to place the weather reading — e.g. Si Racha, or Chon Buri.
+                </div>
+              </div>
+
               {/* Year drives the Year dropdown people search by */}
               <div>
                 <label style={{ fontSize: 11, color: "#59636e", letterSpacing: 1 }}>Year</label>
@@ -2164,6 +2177,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
               roundLabel={viewingRound?.label || ""}
               tournamentName={viewingTournament?.name || ""}
               hostVenue={viewingTournament?.host_venue || ""}
+              venueLocation={viewingTournament?.location || ""}
               chiefReferee={rolesMap?.[tournamentId]?.CR || ""}
               startDate={viewingTournament?.start_date || ""}
               endDate={viewingTournament?.end_date || ""}
@@ -4776,26 +4790,30 @@ function rainColor(pct) {
    Club" finds nothing there — OpenStreetMap is asked first because it indexes
    the courses themselves, then we fall back to the town the name contains.
    Results are cached so a venue is only ever looked up once per device. */
-async function geocodeVenue(name) {
-  if (!name) return null;
+async function geocodeVenue(name, location) {
+  if (!name && !location) return null;
   const readCache = () => { try { return JSON.parse(localStorage.getItem("pop_venue_geo") || "{}"); } catch { return {}; } };
-  const cached = readCache()[name];
+  const cacheKey = `${name || ""}|${location || ""}`;
+  const cached = readCache()[cacheKey];
   if (cached) return cached;
   const remember = (coords) => {
     try {
       const c = readCache();
-      c[name] = coords;
+      c[cacheKey] = coords;
       localStorage.setItem("pop_venue_geo", JSON.stringify(c));
     } catch {}
     return coords;
   };
 
-  // 1. OpenStreetMap knows golf clubs and resorts by name.
-  try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name)}`);
-    const j = await r.json();
-    if (j?.[0]?.lat) return remember({ lat: Number(j[0].lat), lng: Number(j[0].lon), label: name });
-  } catch {}
+  // 1. OpenStreetMap knows golf clubs and resorts by name. The town is added
+  //    when it is known, which disambiguates clubs that share a name.
+  for (const q of [[name, location].filter(Boolean).join(", "), name].filter(Boolean)) {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
+      const j = await r.json();
+      if (j?.[0]?.lat) return remember({ lat: Number(j[0].lat), lng: Number(j[0].lon), label: name || location });
+    } catch {}
+  }
 
   // 2. Strip the venue words and try the remaining place name as a town.
   const simplified = name
@@ -4803,7 +4821,10 @@ async function geocodeVenue(name) {
     .replace(/[,()]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  for (const q of [name, simplified].filter(Boolean)) {
+  // 3. Fall back to the town. Open-Meteo indexes settlements, so a bare place
+  //    name resolves where "Club, Province" never could — this is why the
+  //    location is worth storing separately rather than parsed out of the name.
+  for (const q of [location, name, simplified].filter(Boolean)) {
     try {
       const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1`);
       const j = await r.json();
@@ -4816,11 +4837,21 @@ async function geocodeVenue(name) {
 
 /* Course conditions strip: light window, temperature and wind — the things
    that decide whether play can start, continue, or has to be called. */
-function WeatherBar({ hostVenue }) {
+function WeatherBar({ hostVenue, venueLocation }) {
   const [coords, setCoords] = useState(null);
   const [source, setSource] = useState(null);   // "venue" | "gps"
   const [wx, setWx] = useState(null);
   const [failed, setFailed] = useState(false);
+  // A referee standing on a different course, or a venue the map places wrongly,
+  // both need the device's own position. Remembered per device, not per round,
+  // because it reflects where this person is rather than what the round is.
+  const [preferDevice, setPreferDevice] = useState(() => {
+    try { return localStorage.getItem("pop_wx_use_device") === "1"; } catch { return false; }
+  });
+  const useDevice = (on) => {
+    setPreferDevice(on);
+    try { localStorage.setItem("pop_wx_use_device", on ? "1" : "0"); } catch {}
+  };
 
   // The competition's venue decides the weather — a referee checking the app
   // from home should still see conditions at the course, not at their desk.
@@ -4830,8 +4861,18 @@ function WeatherBar({ hostVenue }) {
     setFailed(false);
     setCoords(null);   // a different venue means the old position is wrong
     setSource(null);
+    const askDevice = () => {
+      if (!navigator.geolocation) { setFailed(true); return; }
+      navigator.geolocation.getCurrentPosition(
+        p => { if (!cancelled) { setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); setSource("gps"); } },
+        () => { if (!cancelled) setFailed(true); },
+        { timeout: 6000, maximumAge: 1800000 }
+      );
+    };
+
     (async () => {
-      const fromVenue = await geocodeVenue(hostVenue);
+      if (preferDevice) { askDevice(); return; }
+      const fromVenue = await geocodeVenue(hostVenue, venueLocation);
       if (cancelled) return;
       if (fromVenue) { setCoords(fromVenue); setSource("venue"); return; }
       if (navigator.geolocation) {
@@ -4843,7 +4884,7 @@ function WeatherBar({ hostVenue }) {
       } else setFailed(true);
     })();
     return () => { cancelled = true; };
-  }, [hostVenue]);
+  }, [hostVenue, venueLocation, preferDevice]);
 
   // Conditions, refreshed every 10 minutes.
   useEffect(() => {
@@ -4870,7 +4911,23 @@ function WeatherBar({ hostVenue }) {
     return () => { cancelled = true; clearInterval(id); };
   }, [coords]);
 
-  if (failed && !coords) return null;
+  // With no position at all the strip has nothing to show, but the control has
+  // to survive — otherwise a failed venue lookup leaves no way to switch to the
+  // device, and a denied location permission no way to switch back.
+  if (failed && !coords) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "12px 16px 0", fontSize: 9, color: "#8c959f" }}>
+        <span>⚠</span>
+        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {preferDevice ? "Location unavailable on this device" : "Weather location not found"}
+        </span>
+        <button onClick={() => useDevice(!preferDevice)}
+          style={{ flexShrink: 0, marginLeft: "auto", cursor: "pointer", fontFamily: "inherit", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e" }}>
+          {preferDevice ? "Use the venue" : "Use this device"}
+        </button>
+      </div>
+    );
+  }
 
   const now = new Date();
   let sun = null;
@@ -4910,8 +4967,21 @@ function WeatherBar({ hostVenue }) {
         <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 9, color: "#8c959f", letterSpacing: 0.3, minWidth: 0 }}>
           <span style={{ flexShrink: 0 }}>{source === "venue" ? "📍" : "🛰"}</span>
           <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {source === "venue" ? hostVenue : "Your current location — venue not found"}
+            {source === "venue"
+              ? [hostVenue, venueLocation].filter(Boolean).join(", ")
+              : preferDevice ? "Your current location" : "Your current location — venue not found"}
           </span>
+          <button onClick={() => useDevice(!preferDevice)}
+            title={preferDevice ? "Show weather at the venue instead" : "Show weather where this device is"}
+            style={{
+              flexShrink: 0, marginLeft: "auto", cursor: "pointer", fontFamily: "inherit",
+              fontSize: 9, fontWeight: 700, letterSpacing: 0.3, padding: "2px 7px", borderRadius: 4,
+              background: preferDevice ? "#ddf4ff" : "#f6f8fa",
+              border: `1px solid ${preferDevice ? "#0969da" : "#d1d9e0"}`,
+              color: preferDevice ? "#0969da" : "#59636e",
+            }}>
+            {preferDevice ? "Using this device" : "Use this device"}
+          </button>
         </div>
       )}
       {sun
@@ -5363,7 +5433,7 @@ function btnStyle(bg, color) {
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
-function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee, startDate, endDate, greenSpeed, preferredLies }) {
+function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee, startDate, endDate, greenSpeed, preferredLies, venueLocation }) {
   // Rulings are the one part of this report that reads better across the whole
   // tournament — a player's rulings in round 1 matter when reviewing round 3.
   // The pace figures above stay per-round, because a benchmark only means
@@ -6064,7 +6134,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>
                   {[["Name", tournamentName || "—"],
-                    ["Venue", hostVenue || "—"],
+                    ["Venue", [hostVenue, venueLocation].filter(Boolean).join(", ") || "—"],
                     ["Date", formatDateRange(startDate, endDate)],
                     ["Rounds", report.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ") || "—"],
                     ["Chief referee", chiefReferee || "—"]].map(([k, v]) => (
@@ -6349,7 +6419,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   );
 }
 
-function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
+function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, venueLocation, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
   suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
@@ -6590,7 +6660,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         </div>
       </div>
 
-      <WeatherBar hostVenue={hostVenue} />
+      <WeatherBar hostVenue={hostVenue} venueLocation={venueLocation} />
 
       {/* Where you are, and how to get somewhere else without leaving this page */}
       <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, margin: "12px 16px 0", padding: "10px 14px" }}>
@@ -9083,20 +9153,20 @@ async function fetchRoundById(id) {
   if (error) return null;
   return data;
 }
-async function createTournament({ name, hostVenue, format, hasQualifying, numRounds, year, startDate, endDate }) {
+async function createTournament({ name, hostVenue, location, format, hasQualifying, numRounds, year, startDate, endDate }) {
   try {
     const { data, error } = await supabase.from("tournaments")
       // Dates are optional: a competition is often created before the schedule
       // is confirmed, and an empty date must stay null rather than become "".
-      .insert({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null })
+      .insert({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null })
       .select().maybeSingle();
     if (error) return null;
     return data;
   } catch { return null; }
 }
-async function updateTournament(id, { name, hostVenue, format, hasQualifying, numRounds, year, startDate, endDate }) {
+async function updateTournament(id, { name, hostVenue, location, format, hasQualifying, numRounds, year, startDate, endDate }) {
   try {
-    await supabase.from("tournaments").update({ name, host_venue: hostVenue, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null }).eq("id", id);
+    await supabase.from("tournaments").update({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null }).eq("id", id);
   } catch {}
 }
 async function deleteTournament(id) {
@@ -10116,6 +10186,7 @@ export default function App() {
       onGoToDashboard={() => setScreen("dashboard")}
       tournamentName={currentTournament?.name || ""}
       hostVenue={currentTournament?.host_venue || ""}
+      venueLocation={currentTournament?.location || ""}
       roundLabel={currentRound?.label || ""}
       savedPars={currentTournament?.pars || null}
       savedParTimes={currentTournament?.par_times || null}
@@ -10151,6 +10222,7 @@ export default function App() {
       playersPerGroup={playersPerGroup}
       tournamentName={currentTournament?.name || ""}
       hostVenue={currentTournament?.host_venue || ""}
+      venueLocation={currentTournament?.location || ""}
       roundLabel={currentRound?.label || ""}
       onlineUsers={onlineUsers}
       onAccount={() => setShowAccount(true)}
@@ -10194,6 +10266,7 @@ export default function App() {
       roundLabel={currentRound?.label || ""}
       tournamentName={currentTournament?.name || ""}
       hostVenue={currentTournament?.host_venue || ""}
+      venueLocation={currentTournament?.location || ""}
       chiefReferee={rolesMap?.[currentTournament?.id]?.CR || ""}
       startDate={currentTournament?.start_date || ""}
       endDate={currentTournament?.end_date || ""}
