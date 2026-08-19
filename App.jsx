@@ -5368,12 +5368,17 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   // tournament — a player's rulings in round 1 matter when reviewing round 3.
   // The pace figures above stay per-round, because a benchmark only means
   // something within the round it was set.
-  const [allRounds, setAllRounds] = useState(false);
+  // Each section decides its own scope: a referee comparing pace across rounds
+  // still wants the rulings list for the round in front of them. One shared
+  // flag forced every section to move together.
+  const [scope, setScope] = useState({});         // { pace: true, rul: false, … }
   const [xRounds, setXRounds] = useState(null);   // [{ label, groups, groupData }]
+  const anyAll = Object.values(scope).some(Boolean);
   const [xLoading, setXLoading] = useState(false);
 
   useEffect(() => {
-    if (!allRounds || xRounds || !tournamentId) return;
+    // Loaded once, on the first section that asks for it.
+    if (!anyAll || xRounds || !tournamentId) return;
     let cancelled = false;
     (async () => {
       setXLoading(true);
@@ -5393,12 +5398,13 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       if (!cancelled) { setXRounds(out); setXLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [allRounds, xRounds, tournamentId]);
+  }, [anyAll, xRounds, tournamentId]);
   // Each per-round section reads from here. In "all rounds" mode every round
   // contributes its own rows, because a benchmark, a suspension and a green
   // speed all belong to the round they were set in — merging them would produce
   // numbers that describe no round that was actually played.
-  const roundSource = allRounds && xRounds
+  const isAll = (key) => !!scope[key] && !!xRounds;
+  const sourceFor = (key) => (isAll(key)
     ? xRounds.map(rd => ({
         label: rd.label, groups: rd.groups, groupData: rd.groupData,
         parTimes: rd.parTimes, playersPerGroup: rd.playersPerGroup,
@@ -5408,22 +5414,20 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     : [{
         label: roundLabel, groups, groupData, parTimes, playersPerGroup,
         suspensions: suspensions || [], greenSpeed, preferredLies,
-      }];
-  const showRoundCol = allRounds && !!xRounds;
+      }]);
   const roundTag = (l) => (l === "Q" ? "Q" : `R${l}`);
 
-  // One control for the whole page, styled like the Rulings toggle it replaces.
-  const scopeToggle = tournamentId ? (
-    <button onClick={() => setAllRounds(v => !v)}
-      style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-      {allRounds ? "All rounds" : "This round"}
+  const scopeToggle = (key) => (tournamentId ? (
+    <button onClick={() => setScope(v => ({ ...v, [key]: !v[key] }))}
+      style={{ background: scope[key] ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${scope[key] ? "#0969da" : "#d1d9e0"}`, color: scope[key] ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+      {scope[key] ? "All rounds" : "This round"}
     </button>
-  ) : null;
+  ) : null);
 
-  const sectionHead = (title, extra = null) => (
+  const sectionHead = (title, key) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
       <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>{title}</div>
-      {extra ?? scopeToggle}
+      {scopeToggle(key)}
     </div>
   );
 
@@ -5446,7 +5450,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     });
   };
 
-  const sideStats = roundSource.flatMap(rd => getGroupSides(rd.groups).map(side => {
+  const sideStats = sourceFor("pace").flatMap(rd => getGroupSides(rd.groups).map(side => {
     // The first group out sets the field's benchmark, so it has to be a full
     // one — two players go round faster than three, and a short early group
     // would drag the reference pace with it. Walk the draw in order, take the
@@ -5486,7 +5490,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   // fetch. Counting is done once and shared, because the same numbers appear in
   // more than one table and computing them twice invites them to disagree.
   const report = (() => {
-    const rds = allRounds && xRounds ? xRounds : null;
+    const rds = scope.report && xRounds ? xRounds : null;
     if (!rds) return null;
     return rds.map(rd => {
       const logs = [];
@@ -5633,9 +5637,9 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   // Follows the same scope control as the rest of the page. Group names carry
   // their round when several are shown, or "Group 12" would appear once per
   // round meaning a different set of players each time.
-  const tmSource = allRounds && xRounds
-    ? xRounds.flatMap(rd => rd.groups.map(g => ({ g, gd: rd.groupData[g.id], round: rd.label })))
-    : groups.map(g => ({ g, gd: groupData[g.id], round: null }));
+  const tmSource = sourceFor("tm").flatMap(rd =>
+    rd.groups.map(g => ({ g, gd: rd.groupData[g.id], round: isAll("tm") ? rd.label : null }))
+  );
 
   const tmGroupSummaries = tmSource.map(({ g, gd: gdIn, round }) => {
     // EST belongs here too: it's a one-off note against a player, so a report
@@ -5704,12 +5708,12 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
                 {/* Scope control for everything below: the per-round sections show the
             open round by default, or every round once loaded. */}
-        {sectionHead("PACE OF PLAY")}
+        {sectionHead("PACE OF PLAY", "pace")}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {showRoundCol && <th style={thS}>Round</th>}
+                {isAll("pace") && <th style={thS}>Round</th>}
                 <th style={thS}>Start point</th>
                 <th style={thS}>Groups</th>
                 <th style={thS}>Total<br />(Time allowed)</th>
@@ -5720,7 +5724,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             <tbody>
               {sideStats.map(s => (
                 <tr key={`${s.round}-${s.startHole}`}>
-                  {showRoundCol && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(s.round)}</td>}
+                  {isAll("pace") && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(s.round)}</td>}
                   <td style={{ ...tdS, textAlign: "left", color: s.meta.color, fontWeight: 700 }}>{s.meta.shortLabel}</td>
                   <td style={tdS}>{s.groupCount}</td>
                   <td style={tdS}>{minToHM(totalAllowed)}</td>
@@ -5762,12 +5766,12 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── Suspension & Resumption ──────────────────────────────── */}
-        {sectionHead("⏸ SUSPENSION & RESUMPTION")}
+        {sectionHead("⏸ SUSPENSION & RESUMPTION", "susp")}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {showRoundCol && <th style={thS}>Round</th>}
+                {isAll("susp") && <th style={thS}>Round</th>}
                 <th style={thS}>#</th>
                 <th style={thS}>Stop time</th>
                 <th style={thS}>Resume time</th>
@@ -5775,9 +5779,9 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
               </tr>
             </thead>
             <tbody>
-              {roundSource.flatMap(rd => rd.suspensions.map((sp, i) => ({ ...sp, round: rd.label, i }))).map((s, i) => (
+              {sourceFor("susp").flatMap(rd => rd.suspensions.map((sp, i) => ({ ...sp, round: rd.label, i }))).map((s, i) => (
                 <tr key={`${s.round}-${i}`}>
-                  {showRoundCol && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(s.round)}</td>}
+                  {isAll("susp") && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(s.round)}</td>}
                   <td style={tdS}>{s.i + 1}</td>
                   <td style={tdS}>{s.stopTime}</td>
                   <td style={tdS}>{s.resumeTime}</td>
@@ -5785,17 +5789,17 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 </tr>
               ))}
               {/* An in-progress suspension exists only in the open round */}
-              {isSuspended && !allRounds && (
+              {isSuspended && !isAll("susp") && (
                 <tr>
-                  {showRoundCol && <td style={tdS} />}
+                  {isAll("susp") && <td style={tdS} />}
                   <td style={tdS}>{suspensions.length + 1}</td>
                   <td style={{ ...tdS, color: "#9a6700" }}>{pendingStopTime}</td>
                   <td style={{ ...tdS, color: "#9a6700" }}>Ongoing…</td>
                   <td style={{ ...tdS, color: "#9a6700" }}>—</td>
                 </tr>
               )}
-              {roundSource.every(rd => rd.suspensions.length === 0) && (!isSuspended || allRounds) && (
-                <tr><td colSpan={showRoundCol ? 5 : 4} style={{ ...tdS, color: "#59636e", padding: 20 }}>No suspensions recorded</td></tr>
+              {sourceFor("susp").every(rd => rd.suspensions.length === 0) && (!isSuspended || isAll("susp")) && (
+                <tr><td colSpan={isAll("susp") ? 5 : 4} style={{ ...tdS, color: "#59636e", padding: 20 }}>No suspensions recorded</td></tr>
               )}
             </tbody>
             {(suspensions.length > 0 || isSuspended) && (
@@ -5810,20 +5814,20 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
-        <div style={{ marginTop: 24 }}>{sectionHead("COURSE CONDITIONS")}</div>
+        <div style={{ marginTop: 24 }}>{sectionHead("COURSE CONDITIONS", "cond")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {showRoundCol && <th style={thS}>Round</th>}
+                {isAll("cond") && <th style={thS}>Round</th>}
                 <th style={{ ...thS, textAlign: "left" }}>Speed green on board</th>
                 <th style={thS}>Preferred lies</th>
               </tr>
             </thead>
             <tbody>
-              {roundSource.map(rd => (
+              {sourceFor("cond").map(rd => (
                 <tr key={rd.label}>
-                  {showRoundCol && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(rd.label)}</td>}
+                  {isAll("cond") && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(rd.label)}</td>}
                   <td style={{ ...tdS, textAlign: "left", color: "#1a7f37", fontWeight: 700 }}>
                     {formatGreenSpeed(rd.greenSpeed) || "–"}
                   </td>
@@ -5841,9 +5845,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 
         {/* Rulings — the record behind any delay a group was given */}
         {(() => {
-          const source = allRounds && xRounds
-            ? xRounds
-            : [{ label: roundLabel, groups, groupData }];
+          const source = sourceFor("rul");
           const rows = [];
           source.forEach(rd => {
             rd.groups.forEach(g => {
@@ -5854,7 +5856,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           });
           return (
             <>
-              <div style={{ marginTop: 24 }}>{sectionHead("RULINGS")}</div>
+              <div style={{ marginTop: 24 }}>{sectionHead("RULINGS", "rul")}</div>
               {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
               {rows.length === 0 && !xLoading && (
                 <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
@@ -5900,7 +5902,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           );
         })()}
 
-        <div style={{ marginTop: 24 }}>{sectionHead("TM, BAD TIME & EST SUMMARY")}</div>
+        <div style={{ marginTop: 24 }}>{sectionHead("TM, BAD TIME & EST SUMMARY", "tm")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px", overflowX: "auto" }}>
           {tmGroupSummaries.length === 0 && (
             <div style={{ color: "#59636e", padding: 20, textAlign: "center", fontSize: 14 }}>No TM or EST records yet</div>
@@ -6036,25 +6038,25 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 4 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>CHIEF REFEREE'S REPORT</div>
           {tournamentId && (
-            <button onClick={() => setAllRounds(v => !v)}
-              style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
-              {allRounds ? "All rounds" : "Load all rounds"}
+            <button onClick={() => setScope(v => ({ ...v, report: !v.report }))}
+              style={{ background: scope.report ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${scope.report ? "#0969da" : "#d1d9e0"}`, color: scope.report ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
+              {scope.report ? "All rounds" : "Load all rounds"}
             </button>
           )}
         </div>
 
         <div style={{ fontSize: 11, color: "#8c959f", marginBottom: 14 }}>Whole tournament</div>
 
-        {!allRounds && (
+        {!scope.report && (
           <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
             These tables cover the whole tournament. Tap <b>Load all rounds</b> to build them.
           </div>
         )}
-        {allRounds && xLoading && (
+        {scope.report && xLoading && (
           <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e" }}>Loading rounds…</div>
         )}
 
-        {allRounds && report && (
+        {scope.report && report && (
           <>
             {/* TOURNAMENT */}
             <div style={{ ...secHead }}>TOURNAMENT</div>
