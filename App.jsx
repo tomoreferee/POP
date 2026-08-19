@@ -5828,9 +5828,12 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                         {/* Anyone reading this later needs to know why the
                             benchmark skipped the first groups out. */}
                         {s.skippedShort.length > 0 && (
-                          <span style={{ fontSize: 10, color: "#9a6700", whiteSpace: "nowrap" }}>
-                            skipped {s.skippedShort.map(g => `${g.name} (${g.players}P)`).join(", ")}
-                          </span>
+                          <div style={{ fontSize: 10, color: "#9a6700", display: "flex", flexDirection: "column" }}>
+                            <span>Skipped</span>
+                            {s.skippedShort.map((g, i) => (
+                              <span key={i} style={{ whiteSpace: "nowrap" }}>{g.name} ({g.players}P){i < s.skippedShort.length - 1 ? "," : ""}</span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ) : <span style={{ color: "#59636e" }}>–</span>}
