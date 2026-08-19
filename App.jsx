@@ -5978,9 +5978,14 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 
 {/* ── Chief referee's report ───────────────────────────────────────
             Tournament-level tables. They only mean anything across the whole
-            event, so they appear once the other rounds have been loaded. */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>CHIEF REFEREE'S REPORT</div>
+            event, so they appear once the other rounds have been loaded.
+            Set apart from the per-round sections above: same page, different
+            document, and running them together made the report read as one
+            more section of the round summary. */}
+        <div style={{ borderTop: "3px solid #d1d9e0", marginTop: 36, paddingTop: 28 }} />
+        <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 10, padding: 16, marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>CHIEF REFEREE'S REPORT</div>
           {tournamentId && (
             <button onClick={() => setAllRounds(v => !v)}
               style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
@@ -5989,8 +5994,10 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           )}
         </div>
 
+        <div style={{ fontSize: 11, color: "#8c959f", marginBottom: 14 }}>Whole tournament</div>
+
         {!allRounds && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
             These tables cover the whole tournament. Tap <b>Load all rounds</b> to build them.
           </div>
         )}
@@ -6199,6 +6206,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             </div>
           </>
         )}
+        </div>
 
       </div>
     </div>
