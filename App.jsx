@@ -4014,7 +4014,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                 {playerCode(group, rosterFor)} — at hole {currentHole + 1}
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                {["RTD", "DQ", "Ruling"].map(r => (
+                {["RTD", "DQ"].map(r => (
                   <button key={r} onClick={() => withdrawPlayer(rosterFor, r)}
                     style={{ background: "#ffebe9", border: "1px solid #cf222e44", color: "#cf222e", borderRadius: 6, padding: "7px 11px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
                     {r}
