@@ -2167,6 +2167,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
               chiefReferee={rolesMap?.[tournamentId]?.CR || ""}
               startDate={viewingTournament?.start_date || ""}
               endDate={viewingTournament?.end_date || ""}
+              greenSpeed={snapshot.greenSpeed || {}}
+              preferredLies={snapshot.preferredLies === true}
               groups={snapshot.groups || []}
               groupData={viewingRound.archived_group_data || {}}
               pars={snapshot.pars || []}
@@ -5361,7 +5363,7 @@ function btnStyle(bg, color) {
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
-function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee, startDate, endDate }) {
+function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee, startDate, endDate, greenSpeed, preferredLies }) {
   // Rulings are the one part of this report that reads better across the whole
   // tournament — a player's rulings in round 1 matter when reviewing round 3.
   // The pace figures above stay per-round, because a benchmark only means
@@ -10193,6 +10195,8 @@ export default function App() {
       chiefReferee={rolesMap?.[currentTournament?.id]?.CR || ""}
       startDate={currentTournament?.start_date || ""}
       endDate={currentTournament?.end_date || ""}
+      greenSpeed={greenSpeed}
+      preferredLies={preferredLies}
       groups={groups}
       groupData={groupData}
       pars={pars}
