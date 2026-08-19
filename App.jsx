@@ -5392,6 +5392,39 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     })();
     return () => { cancelled = true; };
   }, [allRounds, xRounds, tournamentId]);
+  // Each per-round section reads from here. In "all rounds" mode every round
+  // contributes its own rows, because a benchmark, a suspension and a green
+  // speed all belong to the round they were set in — merging them would produce
+  // numbers that describe no round that was actually played.
+  const roundSource = allRounds && xRounds
+    ? xRounds.map(rd => ({
+        label: rd.label, groups: rd.groups, groupData: rd.groupData,
+        parTimes: rd.parTimes, playersPerGroup: rd.playersPerGroup,
+        suspensions: rd.suspensions || [], greenSpeed: rd.greenSpeed || {},
+        preferredLies: rd.preferredLies === true,
+      }))
+    : [{
+        label: roundLabel, groups, groupData, parTimes, playersPerGroup,
+        suspensions: suspensions || [], greenSpeed, preferredLies,
+      }];
+  const showRoundCol = allRounds && !!xRounds;
+  const roundTag = (l) => (l === "Q" ? "Q" : `R${l}`);
+
+  // One control for the whole page, styled like the Rulings toggle it replaces.
+  const scopeToggle = tournamentId ? (
+    <button onClick={() => setAllRounds(v => !v)}
+      style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+      {allRounds ? "All rounds" : "This round"}
+    </button>
+  ) : null;
+
+  const sectionHead = (title, extra = null) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>{title}</div>
+      {extra ?? scopeToggle}
+    </div>
+  );
+
   const sides = getGroupSides(groups);
   const totalAllowed = (parTimes || []).reduce((a, b) => a + b, 0);
   const [expandedTMGroups, setExpandedTMGroups] = useState(() => new Set());
@@ -5411,7 +5444,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     });
   };
 
-  const sideStats = sides.map(side => {
+  const sideStats = roundSource.flatMap(rd => getGroupSides(rd.groups).map(side => {
     // The first group out sets the field's benchmark, so it has to be a full
     // one — two players go round faster than three, and a short early group
     // would drag the reference pace with it. Walk the draw in order, take the
@@ -5420,7 +5453,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     const chosen = [], skipped = [];
     for (const g of side.groups) {
       if (chosen.length === 1) break;
-      if (groupRoster(g, groupData[g.id], playersPerGroup).length >= playersPerGroup) chosen.push(g);
+      if (groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).length >= rd.playersPerGroup) chosen.push(g);
       else skipped.push(g);
     }
     // If every group on this side is short there's nothing to compare — fall
@@ -5429,21 +5462,22 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     const lastGroup = side.groups[side.groups.length - 1];
 
     const firstGroupDetails = firstGroup.map(g => {
-      const p = computeGroupProgress(g, groupData[g.id], parTimes);
-      return { name: g.name, diff: p.lastDiff, isComplete: p.isComplete, players: groupRoster(g, groupData[g.id], playersPerGroup).length };
+      const p = computeGroupProgress(g, rd.groupData[g.id], rd.parTimes);
+      return { name: g.name, diff: p.lastDiff, isComplete: p.isComplete, players: groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).length };
     });
 
-    const lastProgress = lastGroup ? computeGroupProgress(lastGroup, groupData[lastGroup.id], parTimes) : null;
+    const lastProgress = lastGroup ? computeGroupProgress(lastGroup, rd.groupData[lastGroup.id], rd.parTimes) : null;
 
     return {
       ...side,
       groupCount: side.groups.length,
       firstGroupDetails,
-      skippedShort: skipped.map(g => ({ name: g.name, players: groupRoster(g, groupData[g.id], playersPerGroup).length })),
+      skippedShort: skipped.map(g => ({ name: g.name, players: groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).length })),
       lastDiff: lastProgress?.lastDiff ?? null,
       lastComplete: lastProgress?.isComplete ?? false,
+      round: rd.label,
     };
-  });
+  }));
 
   // ── Chief referee's report ────────────────────────────────────────────────
   // Every table here spans the tournament, so it reads from the cross-round
@@ -5668,25 +5702,12 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
                 {/* Scope control for everything below: the per-round sections show the
             open round by default, or every round once loaded. */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>
-            PACE OF PLAY{allRounds ? "" : " — THIS ROUND"}
-          </div>
-          {tournamentId && (
-            <div style={{ display: "flex", gap: 4 }}>
-              {[[false, "This round"], [true, "All rounds"]].map(([v, label]) => (
-                <button key={label} onClick={() => setAllRounds(v)}
-                  style={{ background: allRounds === v ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds === v ? "#0969da" : "#d1d9e0"}`, color: allRounds === v ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {sectionHead("PACE OF PLAY")}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
+                {showRoundCol && <th style={thS}>Round</th>}
                 <th style={thS}>Start point</th>
                 <th style={thS}>Groups</th>
                 <th style={thS}>Total<br />(Time allowed)</th>
@@ -5696,7 +5717,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             </thead>
             <tbody>
               {sideStats.map(s => (
-                <tr key={s.startHole}>
+                <tr key={`${s.round}-${s.startHole}`}>
+                  {showRoundCol && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(s.round)}</td>}
                   <td style={{ ...tdS, textAlign: "left", color: s.meta.color, fontWeight: 700 }}>{s.meta.shortLabel}</td>
                   <td style={tdS}>{s.groupCount}</td>
                   <td style={tdS}>{minToHM(totalAllowed)}</td>
@@ -5738,11 +5760,12 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── Suspension & Resumption ──────────────────────────────── */}
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, marginBottom: 10 }}>⏸ SUSPENSION &amp; RESUMPTION</div>
+        {sectionHead("⏸ SUSPENSION & RESUMPTION")}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
+                {showRoundCol && <th style={thS}>Round</th>}
                 <th style={thS}>#</th>
                 <th style={thS}>Stop time</th>
                 <th style={thS}>Resume time</th>
@@ -5750,24 +5773,27 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
               </tr>
             </thead>
             <tbody>
-              {suspensions.map((s, i) => (
-                <tr key={i}>
-                  <td style={tdS}>{i + 1}</td>
+              {roundSource.flatMap(rd => rd.suspensions.map((sp, i) => ({ ...sp, round: rd.label, i }))).map((s, i) => (
+                <tr key={`${s.round}-${i}`}>
+                  {showRoundCol && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(s.round)}</td>}
+                  <td style={tdS}>{s.i + 1}</td>
                   <td style={tdS}>{s.stopTime}</td>
                   <td style={tdS}>{s.resumeTime}</td>
                   <td style={tdS}>{minToHM(s.offsetMin)}</td>
                 </tr>
               ))}
-              {isSuspended && (
+              {/* An in-progress suspension exists only in the open round */}
+              {isSuspended && !allRounds && (
                 <tr>
+                  {showRoundCol && <td style={tdS} />}
                   <td style={tdS}>{suspensions.length + 1}</td>
                   <td style={{ ...tdS, color: "#9a6700" }}>{pendingStopTime}</td>
                   <td style={{ ...tdS, color: "#9a6700" }}>Ongoing…</td>
                   <td style={{ ...tdS, color: "#9a6700" }}>—</td>
                 </tr>
               )}
-              {suspensions.length === 0 && !isSuspended && (
-                <tr><td colSpan={4} style={{ ...tdS, color: "#59636e", padding: 20 }}>No suspensions recorded</td></tr>
+              {roundSource.every(rd => rd.suspensions.length === 0) && (!isSuspended || allRounds) && (
+                <tr><td colSpan={showRoundCol ? 5 : 4} style={{ ...tdS, color: "#59636e", padding: 20 }}>No suspensions recorded</td></tr>
               )}
             </tbody>
             {(suspensions.length > 0 || isSuspended) && (
@@ -5782,6 +5808,35 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
+        <div style={{ marginTop: 24 }}>{sectionHead("COURSE CONDITIONS")}</div>
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                {showRoundCol && <th style={thS}>Round</th>}
+                <th style={{ ...thS, textAlign: "left" }}>Speed green on board</th>
+                <th style={thS}>Preferred lies</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roundSource.map(rd => (
+                <tr key={rd.label}>
+                  {showRoundCol && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(rd.label)}</td>}
+                  <td style={{ ...tdS, textAlign: "left", color: "#1a7f37", fontWeight: 700 }}>
+                    {formatGreenSpeed(rd.greenSpeed) || "–"}
+                  </td>
+                  <td style={tdS}>
+                    {rd.preferredLies
+                      ? <span style={{ color: "#0969da", fontWeight: 700 }}>Yes</span>
+                      : <span style={{ color: "#59636e" }}>No</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+
         {/* Rulings — the record behind any delay a group was given */}
         {(() => {
           const source = allRounds && xRounds
@@ -5797,15 +5852,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           });
           return (
             <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, margin: "24px 0 10px" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>RULINGS</div>
-                {tournamentId && (
-                  <button onClick={() => setAllRounds(v => !v)}
-                    style={{ background: allRounds ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${allRounds ? "#0969da" : "#d1d9e0"}`, color: allRounds ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
-                    {allRounds ? "All rounds" : "This round"}
-                  </button>
-                )}
-              </div>
+              <div style={{ marginTop: 24 }}>{sectionHead("RULINGS")}</div>
               {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
               {rows.length === 0 && !xLoading && (
                 <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
@@ -5851,7 +5898,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           );
         })()}
 
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2328", letterSpacing: 1, margin: "24px 0 10px" }}>TM, BAD TIME &amp; EST SUMMARY</div>
+        <div style={{ marginTop: 24 }}>{sectionHead("TM, BAD TIME & EST SUMMARY")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px", overflowX: "auto" }}>
           {tmGroupSummaries.length === 0 && (
             <div style={{ color: "#59636e", padding: 20, textAlign: "center", fontSize: 14 }}>No TM or EST records yet</div>
@@ -6070,35 +6117,6 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                       <td style={tdS}>{r.teeStarts.join(" & ") || "—"}</td>
                       <td style={tdS}>{r.firstTee}</td>
                       <td style={tdS}>{r.lastTee}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* COURSE CONDITIONS — green speed and preferred lies both change
-                how fast a round plays, so they belong beside the pace figures
-                rather than only on the round that is open. */}
-            <div style={{ ...secHead }}>COURSE CONDITIONS</div>
-            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thS, textAlign: "left" }}>Round</th>
-                    <th style={thS}>Speed green on board</th>
-                    <th style={thS}>Preferred lies</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.map(r => (
-                    <tr key={r.label}>
-                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
-                      <td style={{ ...tdS, color: "#1a7f37", fontWeight: 700 }}>{formatGreenSpeed(r.greenSpeed) || "–"}</td>
-                      <td style={tdS}>
-                        {r.preferredLies
-                          ? <span style={{ color: "#0969da", fontWeight: 700 }}>Yes</span>
-                          : <span style={{ color: "#59636e" }}>No</span>}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
