@@ -10284,6 +10284,9 @@ export default function App() {
         setPreferredLies(!!state.preferredLies);
         setPlayersPerGroup(state.playersPerGroup ?? 3);
         setTurnTime(state.turnTime ?? 1);
+        // Every other saved value was applied here except this one, so switching
+        // competition carried the previous one's H18 → H1 figure straight over.
+        setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
         setGroupData(gd || {});
       } else {
         // Round has never been set up — start it blank, but inherit the course
