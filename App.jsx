@@ -5896,7 +5896,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── Suspension & Resumption ──────────────────────────────── */}
-        <div style={{ marginTop: 24 }}>{sectionHead("⏸ SUSPENSION & RESUMPTION", "susp")}</div>
+        <div style={{ marginTop: 24 }}>{sectionHead("SUSPENSION & RESUMPTION", "susp")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
