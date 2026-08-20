@@ -5604,9 +5604,12 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       const withdrawn = logs.filter(({ l }) => l.type === "WD").length;
 
       // Timings counts the players put under TM, not the number of log rows —
-      // one "All" entry covers the whole group.
+      // one "All" entry covers the whole group. A Bad Time is a TM as well: the
+      // player was timed, and the bad time is the outcome of that timing, so it
+      // belongs in this count. Bad times are also reported on their own line
+      // below, which is a breakdown of this figure rather than a rival to it.
       const timed = new Set();
-      logs.filter(({ l }) => l.type === "TM" && !l.badTime).forEach(({ g, l }) => {
+      logs.filter(({ l }) => l.type === "TM").forEach(({ g, l }) => {
         if (l.target === "All") groupRoster(g, rd.groupData[g.id], rd.playersPerGroup).forEach(r => timed.add(`${g.id}:${playerCode(g, r.tag)}`));
         else (l.target || "").split(",").forEach(t => t.trim() && timed.add(`${g.id}:${playerCode(g, t.trim())}`));
       });
