@@ -10117,7 +10117,10 @@ export default function App() {
   // Loads a round (and its tournament) into the app. Shared by the Tournament
   // picker screen and the Switch round popup on the Setup screen, so both paths
   // behave identically.
-  const loadRound = async (tournament, round, action, rolesOverride) => {
+  // preferScreen lets the caller say where to land afterwards. Picking a round
+  // from the Setup page should leave you on Setup — you went there to set the
+  // round up, and being thrown to the Dashboard means finding your way back.
+  const loadRound = async (tournament, round, action, rolesOverride, preferScreen) => {
       // Every round now owns its data, so switching is simply "load that round".
       // Nothing belonging to the round we're leaving is ever cleared.
       // rolesOverride lets callers pass a freshly fetched map — right after login
@@ -10183,7 +10186,9 @@ export default function App() {
       // Only someone who can actually edit the setup is sent to it; everyone
       // else goes to the Dashboard, which now carries the same information.
       const mayEditSetup = canEditSetup(rolesMap, tournamentForSetup?.id, currentUser, isAdmin);
-      setScreen((state?.groups?.length ?? 0) || !mayEditSetup ? "dashboard" : "setup");
+      if (!mayEditSetup) setScreen("dashboard");
+      else if (preferScreen) setScreen(preferScreen);
+      else setScreen((state?.groups?.length ?? 0) ? "dashboard" : "setup");
   };
 
   // Switch round popup on the Setup screen: resolve (or create) the round for a
@@ -10200,7 +10205,7 @@ export default function App() {
       setScreen("tournament");
       return;
     }
-    await loadRound(t, target, target.status === "finished" ? "reopen" : "resume");
+    await loadRound(t, target, target.status === "finished" ? "reopen" : "resume", null, "setup");
   };
 
   const handlePickRoundFromSetup = async (label) => {
@@ -10211,7 +10216,7 @@ export default function App() {
       round = await createRound({ tournamentId: currentTournament.id, label, isQualifying: label === "Q" });
       if (!round) { window.alert("Could not create the round. Please try again."); return; }
     }
-    await loadRound(currentTournament, round, round.status === "finished" ? "reopen" : "resume");
+    await loadRound(currentTournament, round, round.status === "finished" ? "reopen" : "resume", null, "setup");
   };
 
   const handleSelectGroup = (g, targetSlot) => {
@@ -10398,7 +10403,7 @@ export default function App() {
       liveGroups={groups}
       onApplyLiveEdits={handleApplyLiveEdits}
       onSwitchTournament={() => setScreen("tournament")}
-      onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
+      onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume", null, "setup")}
       tournamentId={currentTournament?.id || null}
       onPickRound={handlePickRoundFromSetup}
       onPickTournament={handlePickTournamentFromSetup}
