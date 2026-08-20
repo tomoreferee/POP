@@ -5526,6 +5526,14 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       return next;
     });
   };
+  // Referee rows open to show the round-by-round split behind the totals.
+  const [expandedRefs, setExpandedRefs] = useState(() => new Set());
+  const toggleRef = (name) => setExpandedRefs(prev => {
+    const next = new Set(prev);
+    next.has(name) ? next.delete(name) : next.add(name);
+    return next;
+  });
+
   const [expandedBadTimePlayers, setExpandedBadTimePlayers] = useState(() => new Set());
   const toggleBadTimePlayer = (key) => {
     setExpandedBadTimePlayers(prev => {
@@ -6031,33 +6039,44 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             counted. */}
         {(() => {
           const tally = new Map();
-          const bump = (who, key) => {
-            const name = (who || "").trim() || "—";
-            if (!tally.has(name)) tally.set(name, { rul: 0, wn: 0, mn: 0 });
-            tally.get(name)[key] += 1;
+          const bump = (who, key, roundLbl) => {
+            const name = (who || "").trim() || "\u2014";
+            if (!tally.has(name)) tally.set(name, { rul: 0, wn: 0, mn: 0, byRound: new Map() });
+            const rec = tally.get(name);
+            rec[key] += 1;
+            if (!rec.byRound.has(roundLbl)) rec.byRound.set(roundLbl, { rul: 0, wn: 0, mn: 0 });
+            rec.byRound.get(roundLbl)[key] += 1;
           };
           sourceFor("ref").forEach(rd => {
             rd.groups.forEach(g => {
               (rd.groupData[g.id]?.actionLogs || []).forEach(l => {
-                if (l.type === "RUL") bump(l.name, "rul");
-                else if (l.type === "WN") bump(l.name, "wn");
-                else if (l.type === "MN" && !l.off) bump(l.name, "mn");
+                if (l.type === "RUL") bump(l.name, "rul", rd.label);
+                else if (l.type === "WN") bump(l.name, "wn", rd.label);
+                else if (l.type === "MN" && !l.off) bump(l.name, "mn", rd.label);
               });
             });
           });
           const refRows = Array.from(tally.entries())
-            .map(([name, c]) => ({ name, ...c, total: c.rul + c.wn + c.mn }))
+            .map(([name, c]) => ({
+              name, rul: c.rul, wn: c.wn, mn: c.mn,
+              total: c.rul + c.wn + c.mn,
+              rounds: Array.from(c.byRound.entries())
+                .map(([label, v]) => ({ label, ...v }))
+                .sort((a, b) => String(a.label).localeCompare(String(b.label))),
+            }))
             .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
           const totals = refRows.reduce((t, r) => ({
-            rul: t.rul + r.rul, wn: t.wn + r.wn, mn: t.mn + r.mn, total: t.total + r.total,
-          }), { rul: 0, wn: 0, mn: 0, total: 0 });
-          const numCell = (n, color) => (
-            <td style={{ ...tdS, fontWeight: n ? 700 : 400, color: n ? color : "#8c959f" }}>{n || "–"}</td>
+            rul: t.rul + r.rul, wn: t.wn + r.wn, mn: t.mn + r.mn,
+          }), { rul: 0, wn: 0, mn: 0 });
+          const numCell = (n, color, extra) => (
+            <td style={{ ...tdS, fontWeight: n ? 700 : 400, color: n ? color : "#8c959f", ...(extra || {}) }}>{n || "\u2013"}</td>
           );
+          // Only worth opening a row when there is more than one round behind it.
+          const canExpand = isAll("ref");
           return (
             <>
               <div style={{ marginTop: 24 }}>{sectionHead("REFEREE ACTIVITY", "ref")}</div>
-              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
+              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds\u2026</div>}
               {refRows.length === 0 && !xLoading ? (
                 <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
                   No referee actions recorded
@@ -6071,26 +6090,47 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                         <th style={thS}>Rulings</th>
                         <th style={thS}>Warning<br />(WN)</th>
                         <th style={thS}>Monitoring<br />(MN)</th>
-                        <th style={thS}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {refRows.map(r => (
-                        <tr key={r.name}>
-                          <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.name}</td>
-                          {numCell(r.rul, "#8250df")}
-                          {numCell(r.wn, "#9a6700")}
-                          {numCell(r.mn, "#0969da")}
-                          <td style={{ ...tdS, fontWeight: 700 }}>{r.total}</td>
-                        </tr>
-                      ))}
+                      {refRows.map(r => {
+                        const open = canExpand && expandedRefs.has(r.name);
+                        return (
+                          <Fragment key={r.name}>
+                            <tr onClick={canExpand ? () => toggleRef(r.name) : undefined}
+                              title={canExpand ? (open ? "Tap to collapse" : "Tap for the round-by-round split") : undefined}
+                              style={{ cursor: canExpand ? "pointer" : "default", background: open ? "#f6f8fa" : undefined }}>
+                              <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
+                                {canExpand && (
+                                  <span aria-hidden style={{ display: "inline-block", width: 12, color: "#8c959f", fontSize: 10, marginRight: 4 }}>
+                                    {open ? "\u25be" : "\u25b8"}
+                                  </span>
+                                )}
+                                {r.name}
+                              </td>
+                              {numCell(r.rul, "#8250df")}
+                              {numCell(r.wn, "#9a6700")}
+                              {numCell(r.mn, "#0969da")}
+                            </tr>
+                            {open && r.rounds.map(rr => (
+                              <tr key={`${r.name}-${rr.label}`} style={{ background: "#f6f8fa" }}>
+                                <td style={{ ...tdS, textAlign: "left", fontSize: 12, color: "#59636e", paddingLeft: 30 }}>
+                                  {roundTag(rr.label)}
+                                </td>
+                                {numCell(rr.rul, "#8250df", { fontSize: 12 })}
+                                {numCell(rr.wn, "#9a6700", { fontSize: 12 })}
+                                {numCell(rr.mn, "#0969da", { fontSize: 12 })}
+                              </tr>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
                       {refRows.length > 1 && (
                         <tr>
                           <td style={{ ...tdS, textAlign: "left", fontWeight: 700, color: "#59636e" }}>Total</td>
                           <td style={{ ...tdS, fontWeight: 700 }}>{totals.rul}</td>
                           <td style={{ ...tdS, fontWeight: 700 }}>{totals.wn}</td>
                           <td style={{ ...tdS, fontWeight: 700 }}>{totals.mn}</td>
-                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.total}</td>
                         </tr>
                       )}
                     </tbody>
