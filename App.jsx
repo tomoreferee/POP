@@ -8563,7 +8563,7 @@ function LoginScreen({ onLogin, users }) {
     const match = users.find(u => u.username === username.trim() && u.password === password);
     if (match) {
       setError("");
-      onLogin(username.trim(), match.isAdmin === true);
+      onLogin(username.trim(), match.isAdmin === true, match.password);
     } else {
       setError("Incorrect username or password");
     }
@@ -9540,6 +9540,12 @@ export default function App() {
   const [turnTime, setTurnTime] = useState(1);
   const [turnTimeBack, setTurnTimeBack] = useState(1);
   const [rolesMap, setRolesMap] = useState({});   // { tournamentId: { TD: "NP", ... } } — App-level copy
+  // The users subscription is set up once, so it would otherwise close over the
+  // signed-out state it was created with. Refs keep it looking at the present.
+  const currentUserRef = useRef(null);
+  const handleLogoutRef = useRef(null);
+  const sessionPasswordRef = useRef(null);
+  const isAdminRef = useRef(false);
   const [usersReturnTo, setUsersReturnTo] = useState("setup"); // where Manage users should go Back to
   const [onlineUsers, setOnlineUsers] = useState([]); // [{ username, isAdmin, since }] — live presence
   const [currentTournament, setCurrentTournament] = useState(null); // { id, name, host_venue, format }
@@ -9697,9 +9703,28 @@ export default function App() {
       // ─── Restore login session (survives refresh / pull-to-refresh) ─────────
       try {
         const savedUser = localStorage.getItem("pop_app_user");
-        const savedIsAdmin = localStorage.getItem("pop_app_is_admin") === "true";
+        let savedIsAdmin = localStorage.getItem("pop_app_is_admin") === "true";
+        // localStorage is the device's memory of the last sign-in, not proof of
+        // anything. Check it against the accounts table before honouring it, so
+        // a deleted or demoted account can't be restored by refreshing the page.
+        let restoredUser = savedUser;
         if (savedUser) {
-          setCurrentUser(savedUser);
+          const live = await fetchUsers();
+          const mine = live?.find(u => u.username === savedUser);
+          if (live && !mine) {
+            restoredUser = null;
+            try {
+              localStorage.removeItem("pop_app_user");
+              localStorage.removeItem("pop_app_is_admin");
+            } catch {}
+          } else if (mine) {
+            savedIsAdmin = mine.isAdmin;
+            sessionPasswordRef.current = mine.password;
+            try { localStorage.setItem("pop_app_is_admin", mine.isAdmin ? "true" : "false"); } catch {}
+          }
+        }
+        if (restoredUser) {
+          setCurrentUser(restoredUser);
           setIsAdmin(savedIsAdmin);
 
           // Reopen where this device left off. Admins may work in any tournament,
@@ -9808,15 +9833,70 @@ export default function App() {
   }, [currentRound?.id]);
 
   // Users are global, so this one isn't round-scoped.
+  //
+  // The list itself is only half the job. An account can be changed out from
+  // under a session that is already open — demoted, given a new password, or
+  // deleted outright — and until this was handled the old session simply
+  // carried on with the privileges it started with, which is exactly the case
+  // an admin is trying to end when they make that change.
   useEffect(() => {
+    const applyUsers = (list) => {
+      setUsers(list);
+      const me = currentUserRef.current;
+      if (!me) return;
+      const mine = list.find(u => u.username === me);
+
+      if (!mine) {
+        window.alert("Your account has been removed.\n\nYou will be signed out.");
+        handleLogoutRef.current?.();
+        return;
+      }
+
+      // The password we were admitted with. If it no longer matches, an admin
+      // has reset it, so this session should not outlive the old credential.
+      if (sessionPasswordRef.current == null) {
+        sessionPasswordRef.current = mine.password;
+      } else if (sessionPasswordRef.current !== mine.password) {
+        window.alert("Your password has been changed.\n\nPlease sign in again.");
+        handleLogoutRef.current?.();
+        return;
+      }
+
+      // Promotion or demotion takes effect immediately — no sign-out needed,
+      // since the account is still valid, only its reach has changed. Compared
+      // against a ref rather than inside a state updater, so the alert can't
+      // fire twice from a re-invoked updater.
+      if (isAdminRef.current !== mine.isAdmin) {
+        isAdminRef.current = mine.isAdmin;
+        setIsAdmin(mine.isAdmin);
+        try { localStorage.setItem("pop_app_is_admin", mine.isAdmin ? "true" : "false"); } catch {}
+        window.alert(mine.isAdmin
+          ? "You have been given administrator access."
+          : "Your administrator access has been removed.");
+      }
+    };
+
     const usersChannel = supabase
       .channel("users_sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "app_users" }, async () => {
         const u = await fetchUsers();
-        if (u) setUsers(u);
+        if (u) applyUsers(u);
       })
       .subscribe();
     return () => { supabase.removeChannel(usersChannel); };
+  }, []);
+
+  // Positions and tournament access were read once at startup, so revoking
+  // someone's access mid-session left their device showing the old roster
+  // until it happened to be reloaded.
+  useEffect(() => {
+    const refresh = async () => setRolesMap(await fetchAllRoles());
+    const channel = supabase
+      .channel("roles_access_sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_roles" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_access" }, refresh)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // ─── Live presence: who else is using the app right now ──────────────────────
@@ -9908,7 +9988,10 @@ export default function App() {
     saveAppState({ groups, pars, parTimes, baseSchedules, schedules, suspensions: nextSuspensions, isSuspended, pendingStopTime, refereeCalls, greenSpeed, preferredLies, roundId: currentRound?.id });
   };
 
-  const handleLogin = async (username, admin) => {
+  const handleLogin = async (username, admin, password) => {
+    // Remembered so the session can be ended if an admin resets this password
+    // while the person is still signed in.
+    sessionPasswordRef.current = password ?? null;
     setCurrentUser(username);
     setIsAdmin(admin === true);
     try {
@@ -9949,7 +10032,11 @@ export default function App() {
     return () => { supabase.removeChannel(channel); };
   }, [currentUser, isAdmin, currentTournament?.id]);
 
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+  useEffect(() => { isAdminRef.current = isAdmin; }, [isAdmin]);
+
   const handleLogout = () => {
+    sessionPasswordRef.current = null;
     setCurrentUser(null);
     setIsAdmin(false);
     setActiveGroup(null);
@@ -9960,6 +10047,8 @@ export default function App() {
       localStorage.removeItem("pop_app_is_admin");
     } catch {}
   };
+
+  handleLogoutRef.current = handleLogout;
 
   const handleStart = (grps, ps, pt, pxg, tt, ttb, gs, pl) => {
     // Was a session already running before this "Start tracking" press?
