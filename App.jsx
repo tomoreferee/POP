@@ -5799,10 +5799,40 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 
       <div style={{ padding: "20px 24px", maxWidth: 900, margin: "0 auto" }}>
 
+        {/* ─── Course conditions ─────────────────────────────────────── */}
+        {sectionHead("COURSE CONDITIONS", "cond")}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                {isAll("cond") && <th style={thS}>Round</th>}
+                <th style={{ ...thS, textAlign: "left" }}>Speed green on board</th>
+                <th style={thS}>Preferred lies</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sourceFor("cond").map(rd => (
+                <tr key={rd.label}>
+                  {isAll("cond") && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(rd.label)}</td>}
+                  <td style={{ ...tdS, textAlign: "left", color: "#1a7f37", fontWeight: 700 }}>
+                    {formatGreenSpeed(rd.greenSpeed) || "–"}
+                  </td>
+                  <td style={tdS}>
+                    {rd.preferredLies
+                      ? <span style={{ color: "#0969da", fontWeight: 700 }}>Yes</span>
+                      : <span style={{ color: "#59636e" }}>No</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
                 {/* Scope control for everything below: the per-round sections show the
             open round by default, or every round once loaded. */}
-        {sectionHead("PACE OF PLAY", "pace")}
+        <div style={{ marginTop: 24 }}>{sectionHead("PACE OF PLAY", "pace")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -5863,7 +5893,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         </div>
 
         {/* ─── Suspension & Resumption ──────────────────────────────── */}
-        {sectionHead("⏸ SUSPENSION & RESUMPTION", "susp")}
+        <div style={{ marginTop: 24 }}>{sectionHead("⏸ SUSPENSION & RESUMPTION", "susp")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -5909,254 +5939,6 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             )}
           </table>
         </div>
-
-        {/* ─── TM (Timing) / Bad Time Summary ──────────────────────── */}
-        <div style={{ marginTop: 24 }}>{sectionHead("COURSE CONDITIONS", "cond")}</div>
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                {isAll("cond") && <th style={thS}>Round</th>}
-                <th style={{ ...thS, textAlign: "left" }}>Speed green on board</th>
-                <th style={thS}>Preferred lies</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sourceFor("cond").map(rd => (
-                <tr key={rd.label}>
-                  {isAll("cond") && <td style={{ ...tdS, fontWeight: 700 }}>{roundTag(rd.label)}</td>}
-                  <td style={{ ...tdS, textAlign: "left", color: "#1a7f37", fontWeight: 700 }}>
-                    {formatGreenSpeed(rd.greenSpeed) || "–"}
-                  </td>
-                  <td style={tdS}>
-                    {rd.preferredLies
-                      ? <span style={{ color: "#0969da", fontWeight: 700 }}>Yes</span>
-                      : <span style={{ color: "#59636e" }}>No</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-
-        {/* Rulings — the record behind any delay a group was given */}
-        {(() => {
-          const source = sourceFor("rul");
-          const rows = [];
-          source.forEach(rd => {
-            rd.groups.forEach(g => {
-              (rd.groupData[g.id]?.actionLogs || [])
-                .filter(l => l.type === "RUL")
-                .forEach(l => rows.push({ round: rd.label, g, l }));
-            });
-          });
-          return (
-            <>
-              <div style={{ marginTop: 24 }}>{sectionHead("RULING REPORT", "rul")}</div>
-              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
-              {rows.length === 0 && !xLoading && (
-                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
-                  No rulings recorded
-                </div>
-              )}
-              {rows.length > 0 && (<>
-              <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      <th style={thS}>Round</th>
-                      <th style={thS}>Group</th>
-                      <th style={thS}>Start</th>
-                      <th style={thS}>Player</th>
-                      <th style={thS}>Hole</th>
-                      <th style={{ ...thS, textAlign: "left", minWidth: 160 }}>Ruling</th>
-                      <th style={thS}>Rule no.</th>
-                      <th style={thS}>By</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map(({ round, g, l }, i) => (
-                      <tr key={i}>
-                        <td style={tdS}>{round === "Q" ? "Q" : `R${round}`}</td>
-                        <td style={tdS}>{g.name}</td>
-                        <td style={tdS}>{l.start || g.startTime || "—"}</td>
-                        <td style={{ ...tdS, color: "#8250df", fontWeight: 700 }}>
-                          {l.target ? playerCode(g, l.target) : "Group"}
-                          {l.playerName ? <div style={{ fontSize: 11, color: "#59636e", fontWeight: 400 }}>{l.playerName}</div> : null}
-                        </td>
-                        <td style={tdS}>H{(l.holeIdx ?? 0) + 1}</td>
-                        <td style={{ ...tdS, textAlign: "left", fontSize: 13, minWidth: 160, maxWidth: 260, lineHeight: 1.45 }}>
-                          {!l.comment ? <span style={{ color: "#9a6700" }}>not filled in</span> : (() => {
-                            const open = expandedRulings.has(i);
-                            // Roughly what fits on two lines in this column. A
-                            // short decision is shown plainly: no fade, and no
-                            // tap target that would appear to do nothing.
-                            if (l.comment.length <= 64) return l.comment;
-                            return (
-                              // Nothing is added to the text itself. A "more"
-                              // label would be selected along with the ruling
-                              // when it is copied out, so the cue is a fade over
-                              // the last line instead — drawn, not written.
-                              <span onClick={() => toggleRuling(i)}
-                                title={open ? "Tap to collapse" : "Tap to read in full"}
-                                style={{ cursor: "pointer", display: "block", position: "relative" }}>
-                                {/* Clamped by lines, not characters: the column
-                                    is narrow and its width varies, so a fixed
-                                    character count would cut some entries mid-
-                                    line and let others run on. Two lines keeps
-                                    every row the same height. */}
-                                <span style={open ? undefined : {
-                                  display: "-webkit-box", WebkitLineClamp: 2,
-                                  WebkitBoxOrient: "vertical", overflow: "hidden",
-                                }}>{l.comment}</span>
-                                {!open && (
-                                  <span aria-hidden style={{
-                                    position: "absolute", right: 0, bottom: 0, width: 46, height: "1.45em",
-                                    background: "linear-gradient(to right, #ffffff00, #ffffff 70%)",
-                                    pointerEvents: "none",
-                                  }} />
-                                )}
-                              </span>
-                            );
-                          })()}
-                        </td>
-                        <td style={tdS}>{l.ruleNo || "—"}</td>
-                        <td style={tdS}>{l.name || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              </>)}
-            </>
-          );
-        })()}
-
-        {/* Referee activity — who logged what. Counted by the name stored on
-            each log, so a referee who signed an entry under someone else's name
-            is credited where the paperwork says. MN "off" rows are the system
-            closing a monitoring period, not a second decision, so they are not
-            counted.
-
-            MN is a group measure, not a player one: monitoring is put on the
-            whole group, so a group counts once however many times it was
-            logged. That is the opposite of TM, which is reported per player
-            because it is individuals who get timed. */}
-        {(() => {
-          const tally = new Map();
-          const rec = (who) => {
-            const name = (who || "").trim() || "\u2014";
-            if (!tally.has(name)) tally.set(name, { rul: 0, wn: 0, mnGroups: new Set(), byRound: new Map() });
-            return tally.get(name);
-          };
-          const roundRec = (r, roundLbl) => {
-            if (!r.byRound.has(roundLbl)) r.byRound.set(roundLbl, { rul: 0, wn: 0, mnGroups: new Set() });
-            return r.byRound.get(roundLbl);
-          };
-          const bump = (who, key, roundLbl) => {
-            const r = rec(who);
-            r[key] += 1;
-            roundRec(r, roundLbl)[key] += 1;
-          };
-          const bumpMN = (who, roundLbl, groupKey) => {
-            const r = rec(who);
-            r.mnGroups.add(groupKey);
-            roundRec(r, roundLbl).mnGroups.add(groupKey);
-          };
-          sourceFor("ref").forEach(rd => {
-            rd.groups.forEach(g => {
-              (rd.groupData[g.id]?.actionLogs || []).forEach(l => {
-                if (l.type === "RUL") bump(l.name, "rul", rd.label);
-                else if (l.type === "WN") bump(l.name, "wn", rd.label);
-                else if (l.type === "MN" && !l.off) bumpMN(l.name, rd.label, `${rd.label}:${g.id}`);
-              });
-            });
-          });
-          const refRows = Array.from(tally.entries())
-            .map(([name, c]) => ({
-              name, rul: c.rul, wn: c.wn, mn: c.mnGroups.size,
-              total: c.rul + c.wn + c.mnGroups.size,
-              rounds: Array.from(c.byRound.entries())
-                .map(([label, v]) => ({ label, rul: v.rul, wn: v.wn, mn: v.mnGroups.size }))
-                .sort((a, b) => byRoundOrder(a.label, b.label)),
-            }))
-            .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
-          const totals = refRows.reduce((t, r) => ({
-            rul: t.rul + r.rul, wn: t.wn + r.wn, mn: t.mn + r.mn,
-          }), { rul: 0, wn: 0, mn: 0 });
-          const numCell = (n, color, extra) => (
-            <td style={{ ...tdS, fontWeight: n ? 700 : 400, color: n ? color : "#8c959f", ...(extra || {}) }}>{n || "\u2013"}</td>
-          );
-          // Only worth opening a row when there is more than one round behind it.
-          const canExpand = isAll("ref");
-          return (
-            <>
-              <div style={{ marginTop: 24 }}>{sectionHead("REFEREE ACTIVITY", "ref")}</div>
-              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds\u2026</div>}
-              {refRows.length === 0 && !xLoading ? (
-                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
-                  No referee actions recorded
-                </div>
-              ) : (
-                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr>
-                        <th style={{ ...thS, textAlign: "left" }}>Referee</th>
-                        <th style={thS}>Rulings</th>
-                        <th style={thS}>Warning<br />(WN)</th>
-                        <th style={thS}>Monitoring<br />(MN, groups)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {refRows.map(r => {
-                        const open = canExpand && expandedRefs.has(r.name);
-                        return (
-                          <Fragment key={r.name}>
-                            <tr onClick={canExpand ? () => toggleRef(r.name) : undefined}
-                              title={canExpand ? (open ? "Tap to collapse" : "Tap for the round-by-round split") : undefined}
-                              style={{ cursor: canExpand ? "pointer" : "default", background: open ? "#f6f8fa" : undefined }}>
-                              <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
-                                {canExpand && (
-                                  <span aria-hidden style={{ display: "inline-block", width: 12, color: "#8c959f", fontSize: 10, marginRight: 4 }}>
-                                    {open ? "\u25be" : "\u25b8"}
-                                  </span>
-                                )}
-                                {r.name}
-                              </td>
-                              {numCell(r.rul, "#8250df")}
-                              {numCell(r.wn, "#9a6700")}
-                              {numCell(r.mn, "#0969da")}
-                            </tr>
-                            {open && r.rounds.map(rr => (
-                              <tr key={`${r.name}-${rr.label}`} style={{ background: "#f6f8fa" }}>
-                                <td style={{ ...tdS, textAlign: "left", fontSize: 12, color: "#59636e", paddingLeft: 30 }}>
-                                  {roundTag(rr.label)}
-                                </td>
-                                {numCell(rr.rul, "#8250df", { fontSize: 12 })}
-                                {numCell(rr.wn, "#9a6700", { fontSize: 12 })}
-                                {numCell(rr.mn, "#0969da", { fontSize: 12 })}
-                              </tr>
-                            ))}
-                          </Fragment>
-                        );
-                      })}
-                      {refRows.length > 1 && (
-                        <tr>
-                          <td style={{ ...tdS, textAlign: "left", fontWeight: 700, color: "#59636e" }}>Total</td>
-                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.rul}</td>
-                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.wn}</td>
-                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.mn}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          );
-        })()}
 
         <div style={{ marginTop: 24 }}>{sectionHead("TM, BAD TIME & EST SUMMARY", "tm")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px", overflowX: "auto" }}>
@@ -6282,6 +6064,224 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           )}
         </div>
 
+
+        {/* Referee activity — who logged what. Counted by the name stored on
+            each log, so a referee who signed an entry under someone else's name
+            is credited where the paperwork says. MN "off" rows are the system
+            closing a monitoring period, not a second decision, so they are not
+            counted.
+
+            MN is a group measure, not a player one: monitoring is put on the
+            whole group, so a group counts once however many times it was
+            logged. That is the opposite of TM, which is reported per player
+            because it is individuals who get timed. */}
+        {(() => {
+          const tally = new Map();
+          const rec = (who) => {
+            const name = (who || "").trim() || "—";
+            if (!tally.has(name)) tally.set(name, { rul: 0, wn: 0, mnGroups: new Set(), byRound: new Map() });
+            return tally.get(name);
+          };
+          const roundRec = (r, roundLbl) => {
+            if (!r.byRound.has(roundLbl)) r.byRound.set(roundLbl, { rul: 0, wn: 0, mnGroups: new Set() });
+            return r.byRound.get(roundLbl);
+          };
+          const bump = (who, key, roundLbl) => {
+            const r = rec(who);
+            r[key] += 1;
+            roundRec(r, roundLbl)[key] += 1;
+          };
+          const bumpMN = (who, roundLbl, groupKey) => {
+            const r = rec(who);
+            r.mnGroups.add(groupKey);
+            roundRec(r, roundLbl).mnGroups.add(groupKey);
+          };
+          sourceFor("ref").forEach(rd => {
+            rd.groups.forEach(g => {
+              (rd.groupData[g.id]?.actionLogs || []).forEach(l => {
+                if (l.type === "RUL") bump(l.name, "rul", rd.label);
+                else if (l.type === "WN") bump(l.name, "wn", rd.label);
+                else if (l.type === "MN" && !l.off) bumpMN(l.name, rd.label, `${rd.label}:${g.id}`);
+              });
+            });
+          });
+          const refRows = Array.from(tally.entries())
+            .map(([name, c]) => ({
+              name, rul: c.rul, wn: c.wn, mn: c.mnGroups.size,
+              total: c.rul + c.wn + c.mnGroups.size,
+              rounds: Array.from(c.byRound.entries())
+                .map(([label, v]) => ({ label, rul: v.rul, wn: v.wn, mn: v.mnGroups.size }))
+                .sort((a, b) => byRoundOrder(a.label, b.label)),
+            }))
+            .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+          const totals = refRows.reduce((t, r) => ({
+            rul: t.rul + r.rul, wn: t.wn + r.wn, mn: t.mn + r.mn,
+          }), { rul: 0, wn: 0, mn: 0 });
+          const numCell = (n, color, extra) => (
+            <td style={{ ...tdS, fontWeight: n ? 700 : 400, color: n ? color : "#8c959f", ...(extra || {}) }}>{n || "–"}</td>
+          );
+          // Only worth opening a row when there is more than one round behind it.
+          const canExpand = isAll("ref");
+          return (
+            <>
+              <div style={{ marginTop: 24 }}>{sectionHead("REFEREE ACTIVITY", "ref")}</div>
+              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
+              {refRows.length === 0 && !xLoading ? (
+                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
+                  No referee actions recorded
+                </div>
+              ) : (
+                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...thS, textAlign: "left" }}>Referee</th>
+                        <th style={thS}>Rulings</th>
+                        <th style={thS}>Warning<br />(WN)</th>
+                        <th style={thS}>Monitoring<br />(MN, groups)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {refRows.map(r => {
+                        const open = canExpand && expandedRefs.has(r.name);
+                        return (
+                          <Fragment key={r.name}>
+                            <tr onClick={canExpand ? () => toggleRef(r.name) : undefined}
+                              title={canExpand ? (open ? "Tap to collapse" : "Tap for the round-by-round split") : undefined}
+                              style={{ cursor: canExpand ? "pointer" : "default", background: open ? "#f6f8fa" : undefined }}>
+                              <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
+                                {canExpand && (
+                                  <span aria-hidden style={{ display: "inline-block", width: 12, color: "#8c959f", fontSize: 10, marginRight: 4 }}>
+                                    {open ? "▾" : "▸"}
+                                  </span>
+                                )}
+                                {r.name}
+                              </td>
+                              {numCell(r.rul, "#8250df")}
+                              {numCell(r.wn, "#9a6700")}
+                              {numCell(r.mn, "#0969da")}
+                            </tr>
+                            {open && r.rounds.map(rr => (
+                              <tr key={`${r.name}-${rr.label}`} style={{ background: "#f6f8fa" }}>
+                                <td style={{ ...tdS, textAlign: "left", fontSize: 12, color: "#59636e", paddingLeft: 30 }}>
+                                  {roundTag(rr.label)}
+                                </td>
+                                {numCell(rr.rul, "#8250df", { fontSize: 12 })}
+                                {numCell(rr.wn, "#9a6700", { fontSize: 12 })}
+                                {numCell(rr.mn, "#0969da", { fontSize: 12 })}
+                              </tr>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
+                      {refRows.length > 1 && (
+                        <tr>
+                          <td style={{ ...tdS, textAlign: "left", fontWeight: 700, color: "#59636e" }}>Total</td>
+                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.rul}</td>
+                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.wn}</td>
+                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.mn}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          );
+        })()}
+
+        {/* Rulings — the record behind any delay a group was given */}
+        {(() => {
+          const source = sourceFor("rul");
+          const rows = [];
+          source.forEach(rd => {
+            rd.groups.forEach(g => {
+              (rd.groupData[g.id]?.actionLogs || [])
+                .filter(l => l.type === "RUL")
+                .forEach(l => rows.push({ round: rd.label, g, l }));
+            });
+          });
+          return (
+            <>
+              <div style={{ marginTop: 24 }}>{sectionHead("RULING REPORT", "rul")}</div>
+              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
+              {rows.length === 0 && !xLoading && (
+                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
+                  No rulings recorded
+                </div>
+              )}
+              {rows.length > 0 && (<>
+              <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={thS}>Round</th>
+                      <th style={thS}>Group</th>
+                      <th style={thS}>Start</th>
+                      <th style={thS}>Player</th>
+                      <th style={thS}>Hole</th>
+                      <th style={{ ...thS, textAlign: "left", minWidth: 160 }}>Ruling</th>
+                      <th style={thS}>Rule no.</th>
+                      <th style={thS}>By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(({ round, g, l }, i) => (
+                      <tr key={i}>
+                        <td style={tdS}>{round === "Q" ? "Q" : `R${round}`}</td>
+                        <td style={tdS}>{g.name}</td>
+                        <td style={tdS}>{l.start || g.startTime || "—"}</td>
+                        <td style={{ ...tdS, color: "#8250df", fontWeight: 700 }}>
+                          {l.target ? playerCode(g, l.target) : "Group"}
+                          {l.playerName ? <div style={{ fontSize: 11, color: "#59636e", fontWeight: 400 }}>{l.playerName}</div> : null}
+                        </td>
+                        <td style={tdS}>H{(l.holeIdx ?? 0) + 1}</td>
+                        <td style={{ ...tdS, textAlign: "left", fontSize: 13, minWidth: 160, maxWidth: 260, lineHeight: 1.45 }}>
+                          {!l.comment ? <span style={{ color: "#9a6700" }}>not filled in</span> : (() => {
+                            const open = expandedRulings.has(i);
+                            // Roughly what fits on two lines in this column. A
+                            // short decision is shown plainly: no fade, and no
+                            // tap target that would appear to do nothing.
+                            if (l.comment.length <= 64) return l.comment;
+                            return (
+                              // Nothing is added to the text itself. A "more"
+                              // label would be selected along with the ruling
+                              // when it is copied out, so the cue is a fade over
+                              // the last line instead — drawn, not written.
+                              <span onClick={() => toggleRuling(i)}
+                                title={open ? "Tap to collapse" : "Tap to read in full"}
+                                style={{ cursor: "pointer", display: "block", position: "relative" }}>
+                                {/* Clamped by lines, not characters: the column
+                                    is narrow and its width varies, so a fixed
+                                    character count would cut some entries mid-
+                                    line and let others run on. Two lines keeps
+                                    every row the same height. */}
+                                <span style={open ? undefined : {
+                                  display: "-webkit-box", WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical", overflow: "hidden",
+                                }}>{l.comment}</span>
+                                {!open && (
+                                  <span aria-hidden style={{
+                                    position: "absolute", right: 0, bottom: 0, width: 46, height: "1.45em",
+                                    background: "linear-gradient(to right, #ffffff00, #ffffff 70%)",
+                                    pointerEvents: "none",
+                                  }} />
+                                )}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td style={tdS}>{l.ruleNo || "—"}</td>
+                        <td style={tdS}>{l.name || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              </>)}
+            </>
+          );
+        })()}
 
 {/* ── Chief referee's report ───────────────────────────────────────
             Tournament-level tables. They only mean anything across the whole
