@@ -6024,6 +6024,83 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           );
         })()}
 
+        {/* Referee activity — who logged what. Counted by the name stored on
+            each log, so a referee who signed an entry under someone else's name
+            is credited where the paperwork says. MN "off" rows are the system
+            closing a monitoring period, not a second decision, so they are not
+            counted. */}
+        {(() => {
+          const tally = new Map();
+          const bump = (who, key) => {
+            const name = (who || "").trim() || "—";
+            if (!tally.has(name)) tally.set(name, { rul: 0, wn: 0, mn: 0 });
+            tally.get(name)[key] += 1;
+          };
+          sourceFor("ref").forEach(rd => {
+            rd.groups.forEach(g => {
+              (rd.groupData[g.id]?.actionLogs || []).forEach(l => {
+                if (l.type === "RUL") bump(l.name, "rul");
+                else if (l.type === "WN") bump(l.name, "wn");
+                else if (l.type === "MN" && !l.off) bump(l.name, "mn");
+              });
+            });
+          });
+          const refRows = Array.from(tally.entries())
+            .map(([name, c]) => ({ name, ...c, total: c.rul + c.wn + c.mn }))
+            .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+          const totals = refRows.reduce((t, r) => ({
+            rul: t.rul + r.rul, wn: t.wn + r.wn, mn: t.mn + r.mn, total: t.total + r.total,
+          }), { rul: 0, wn: 0, mn: 0, total: 0 });
+          const numCell = (n, color) => (
+            <td style={{ ...tdS, fontWeight: n ? 700 : 400, color: n ? color : "#8c959f" }}>{n || "–"}</td>
+          );
+          return (
+            <>
+              <div style={{ marginTop: 24 }}>{sectionHead("REFEREE ACTIVITY", "ref")}</div>
+              {xLoading && <div style={{ fontSize: 12, color: "#59636e", marginBottom: 8 }}>Loading other rounds…</div>}
+              {refRows.length === 0 && !xLoading ? (
+                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, textAlign: "center", color: "#59636e", fontSize: 13 }}>
+                  No referee actions recorded
+                </div>
+              ) : (
+                <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...thS, textAlign: "left" }}>Referee</th>
+                        <th style={thS}>Rulings</th>
+                        <th style={thS}>Warning<br />(WN)</th>
+                        <th style={thS}>Monitoring<br />(MN)</th>
+                        <th style={thS}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {refRows.map(r => (
+                        <tr key={r.name}>
+                          <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.name}</td>
+                          {numCell(r.rul, "#8250df")}
+                          {numCell(r.wn, "#9a6700")}
+                          {numCell(r.mn, "#0969da")}
+                          <td style={{ ...tdS, fontWeight: 700 }}>{r.total}</td>
+                        </tr>
+                      ))}
+                      {refRows.length > 1 && (
+                        <tr>
+                          <td style={{ ...tdS, textAlign: "left", fontWeight: 700, color: "#59636e" }}>Total</td>
+                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.rul}</td>
+                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.wn}</td>
+                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.mn}</td>
+                          <td style={{ ...tdS, fontWeight: 700 }}>{totals.total}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          );
+        })()}
+
         <div style={{ marginTop: 24 }}>{sectionHead("TM, BAD TIME & EST SUMMARY", "tm")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px", overflowX: "auto" }}>
           {tmGroupSummaries.length === 0 && (
