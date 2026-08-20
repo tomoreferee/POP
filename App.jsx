@@ -9675,11 +9675,16 @@ export default function App() {
       try {
         // First run after upgrading from the single-tournament build: nothing is
         // saved on this device yet, so fall back to the old app_state pointer.
+        // Only a device that has never been migrated may read the old tables.
+        // Tracked explicitly, because "this round has no groups" is a perfectly
+        // normal state for a competition that was only just created.
+        let fromLegacyPointer = false;
         if (!savedTid && !savedRid) {
           const legacy = await fetchLegacyLiveRoundIds();
           if (legacy) {
             savedTid = legacy.tournamentId;
             savedRid = legacy.roundId;
+            fromLegacyPointer = true;
           }
         }
         if (savedTid) tournament = await fetchTournamentById(savedTid);
@@ -9695,15 +9700,21 @@ export default function App() {
         if (round) {
           state = await fetchAppState(round.id);
           let gd = await fetchAllGroupData(round.id);
-          // Safety net: if the migration didn't reach this round, read the old
-          // single-tournament tables rather than showing an empty dashboard.
-          if (!state || (state.groups?.length ?? 0) === 0) {
-            const legacyState = await fetchLegacyAppState();
-            if (legacyState && (legacyState.groups?.length ?? 0) > 0) state = legacyState;
-          }
-          if (!gd || Object.keys(gd).length === 0) {
-            const legacyGd = await fetchLegacyGroupData();
-            if (legacyGd && Object.keys(legacyGd).length > 0) gd = legacyGd;
+          // Safety net for the upgrade path only: if the migration never reached
+          // this round, read the old single-tournament tables. This used to run
+          // for ANY round that came back empty, which meant a brand-new
+          // competition — correctly empty — was filled in with groups and
+          // recorded times belonging to some earlier event, and only on the
+          // devices that happened to refresh.
+          if (fromLegacyPointer) {
+            if (!state || (state.groups?.length ?? 0) === 0) {
+              const legacyState = await fetchLegacyAppState();
+              if (legacyState && (legacyState.groups?.length ?? 0) > 0) state = legacyState;
+            }
+            if (!gd || Object.keys(gd).length === 0) {
+              const legacyGd = await fetchLegacyGroupData();
+              if (legacyGd && Object.keys(legacyGd).length > 0) gd = legacyGd;
+            }
           }
           setGroupData(gd || {});
           if (state) {
