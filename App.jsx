@@ -2441,6 +2441,22 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
   }, [liveEditKey, hasLiveSession, isAdmin]);
 
 
+  // Footer totals for the TM section. Derived from tmGroupSummaries rather than
+  // from this round's raw logs, so they follow the This round / All rounds
+  // toggle like the tables directly above them.
+  const tmFooter = tmGroupSummaries.reduce((acc, gs) => {
+    gs.players.forEach(p => {
+      const wasTimed = p.firstHole != null;
+      if (wasTimed) {
+        acc.timed += 1;
+        if (p.badTimeCount > 0) acc.viaBadTime += 1; else acc.viaNormal += 1;
+      }
+      acc.badTime += p.badTimeCount;
+      acc.est += p.estHoles.length;
+    });
+    return acc;
+  }, { timed: 0, viaNormal: 0, viaBadTime: 0, badTime: 0, est: 0 });
+
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
 
@@ -5682,55 +5698,6 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
   const thS = { padding: "10px 8px", color: "#59636e", fontWeight: 700, textAlign: "center", borderBottom: "1px solid #d1d9e0", fontSize: 12, letterSpacing: 0.5 };
   const tdS = { padding: "10px 8px", textAlign: "center", borderBottom: "1px solid #f6f8fa", fontSize: 14 };
 
-  // ─── TM (Timing) / Bad Time summary — every TM log across all groups, plus totals ──
-  const tmRows = [];
-  groups.forEach(g => {
-    const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM");
-    logs.forEach(l => {
-      const players = l.target === "All" ? ["All"] : (l.target || "").split(",").map(s => s.trim()).filter(Boolean);
-      tmRows.push({
-        groupName: g.name,
-        holeIdx: l.holeIdx,
-        players,
-        time: l.time,
-        by: l.name || "—",
-        badTime: !!l.badTime,
-      });
-    });
-  });
-  tmRows.sort((a, b) => (a.groupName || "").localeCompare(b.groupName || "") || (a.holeIdx - b.holeIdx));
-
-  // Split distinct-player counting into two non-overlapping buckets, since Bad Time is
-  // always a subset of TM (a Bad-timed player is also "under TM") but should be reported
-  // as its own category rather than double-counted inside the "normal TM" bucket:
-  //   - badTimePlayers: players ever flagged via a Bad Time press, per group
-  //   - normalTmPlayers: players targeted via a normal TM selection, MINUS anyone who was
-  //     also Bad-timed (so the two buckets never overlap)
-  // "All" is treated as covering all 4 player slots (P1–P4) offered in the TM/Bad-Time controls.
-  const totalBadTimePlayers = groups.reduce((sum, g) => {
-    const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM" && l.badTime);
-    const set = new Set();
-    logs.forEach(l => set.add(l.target));
-    return sum + set.size;
-  }, 0);
-  const totalNormalTMPlayers = groups.reduce((sum, g) => {
-    const logs = (groupData[g.id]?.actionLogs || []).filter(l => l.type === "TM");
-    const badTimeSet = new Set(logs.filter(l => l.badTime).map(l => l.target));
-    const allSet = new Set();
-    logs.forEach(l => {
-      if (l.target === "All") {
-        groupRoster(g, groupData[g.id], playersPerGroup).forEach(r => allSet.add(r.tag));
-      } else {
-        (l.target || "").split(",").map(s => s.trim()).filter(Boolean).forEach(p => allSet.add(p));
-      }
-    });
-    let count = 0;
-    allSet.forEach(p => { if (!badTimeSet.has(p)) count += 1; });
-    return sum + count;
-  }, 0);
-  const totalPlayersTimed = totalNormalTMPlayers + totalBadTimePlayers;
-  const totalBadTime = tmRows.filter(r => r.badTime).length;
-
   // Per-group, per-player breakdown: which holes a player was under TM (first → last hole
   // logged) and how many times they were specifically Bad-timed. "All" is expanded to all
   // 4 player slots. Used to render the collapsible group-by-group summary below.
@@ -6052,19 +6019,23 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             <div style={{ borderTop: "1px solid #d1d9e0", marginTop: 6, paddingTop: 10, fontSize: 13 }}>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px" }}>
                 <span style={{ color: "#59636e", fontWeight: 700 }}>Timing</span>
-                <span style={{ color: "#bf3989", fontWeight: 700 }}>{totalPlayersTimed}</span>
+                <span style={{ color: "#bf3989", fontWeight: 700 }}>{tmFooter.timed}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px", fontSize: 12 }}>
                 <span style={{ color: "#59636e" }}>⤷ via normal TM selection</span>
-                <span style={{ color: "#bf3989" }}>{totalNormalTMPlayers}</span>
+                <span style={{ color: "#bf3989" }}>{tmFooter.viaNormal}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px", fontSize: 12 }}>
                 <span style={{ color: "#59636e" }}>⤷ via Bad Time</span>
-                <span style={{ color: "#9a6700" }}>{totalBadTimePlayers}</span>
+                <span style={{ color: "#9a6700" }}>{tmFooter.viaBadTime}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px" }}>
                 <span style={{ color: "#59636e", fontWeight: 700 }}>Bad Time</span>
-                <span style={{ color: "#9a6700", fontWeight: 700 }}>{totalBadTime}</span>
+                <span style={{ color: "#9a6700", fontWeight: 700 }}>{tmFooter.badTime}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 4px" }}>
+                <span style={{ color: "#59636e", fontWeight: 700 }}>EST</span>
+                <span style={{ color: "#bc4c00", fontWeight: 700 }}>{tmFooter.est}</span>
               </div>
             </div>
           )}
