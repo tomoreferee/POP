@@ -2206,7 +2206,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, clearSignal, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
   const [headerRef, headerH] = useHeaderHeight();
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
@@ -2238,6 +2238,18 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
   // shows the real group list (and so pressing the start/update button can't wipe
   // a live session just because this device's local draft happens to be empty).
   const liveGroupsKey = (liveGroups || []).map(g => `${g.id}:${g.name}:${g.startTime}:${g.startHole}:${g.section || ""}`).join("|");
+  // "Clear all group data" empties the live session but leaves this screen on the
+  // same round, so the draft below can't tell that from a round still loading.
+  // This signal says the emptiness was deliberate, so the draft goes too —
+  // otherwise the next edit or "Start tracking" writes the old groups back.
+  const skipFirstApply = useRef(true);
+  const lastClearSignal = useRef(clearSignal);
+  useEffect(() => {
+    if (lastClearSignal.current === clearSignal) return;
+    lastClearSignal.current = clearSignal;
+    setGroups1([]); setGroups10([]); setGroupsShotgun([]);
+    skipFirstApply.current = true;
+  }, [clearSignal]);
   const lastRoundKey = useRef(roundKey);
   useEffect(() => {
     const roundChanged = lastRoundKey.current !== roundKey;
@@ -2428,7 +2440,6 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
     // value happened to change at the same time.
     pars, parTimes, turnTime, turnTimeBack, playersPerGroup, greenSpeed, preferredLies,
   });
-  const skipFirstApply = useRef(true);
   useEffect(() => {
     if (!hasLiveSession || !isAdmin || !onApplyLiveEdits) return;
     if (allGroups.length === 0) return;
@@ -9117,6 +9128,21 @@ async function fetchAllGroupData(roundId) {
 // and retried until they land.
 const pendingGroupWrites = new Map();   // key `${roundId}|${groupId}` → payload
 let groupWriteFailures = 0;
+// When a round is cleared, writes that were already in flight or sitting in the
+// retry queue would land afterwards and put the deleted rows straight back.
+// Remembering when each round was cleared lets those older writes be dropped.
+const roundClearedAt = new Map();       // roundId → ISO timestamp of the clear
+function markRoundCleared(roundId) {
+  if (!roundId) return;
+  roundClearedAt.set(roundId, new Date().toISOString());
+  Array.from(pendingGroupWrites.keys())
+    .filter(k => k.startsWith(`${roundId}|`))
+    .forEach(k => pendingGroupWrites.delete(k));
+}
+function isStaleAfterClear(roundId, updatedAt) {
+  const clearedAt = roundClearedAt.get(roundId);
+  return !!clearedAt && !!updatedAt && updatedAt < clearedAt;
+}
 
 async function pushGroupRow(row) {
   const { error } = await supabase.from("round_group_data").upsert(row);
@@ -9126,6 +9152,7 @@ async function pushGroupRow(row) {
 async function flushPendingGroupWrites() {
   if (!pendingGroupWrites.size) return;
   for (const [key, row] of Array.from(pendingGroupWrites.entries())) {
+    if (isStaleAfterClear(row.round_id, row.updated_at)) { pendingGroupWrites.delete(key); continue; }
     const err = await pushGroupRow(row);
     if (!err) pendingGroupWrites.delete(key);
     else console.warn("retry failed for", key, err.message);
@@ -9141,6 +9168,10 @@ async function saveGroupData(roundId, groupId, data, updatedAt) {
     updated_at: updatedAt || new Date().toISOString(),
   };
   const key = `${roundId}|${groupId}`;
+  if (isStaleAfterClear(roundId, row.updated_at)) {
+    pendingGroupWrites.delete(key);
+    return { ok: false, error: "round was cleared" };
+  }
   try {
     const err = await pushGroupRow(row);
     if (!err) {
@@ -9514,6 +9545,7 @@ export default function App() {
   // realtime echo of an OLDER write can't stomp a NEWER local write (race condition
   // that was silently dropping WN/MN/TM/Bad Time log entries recorded in quick succession).
   const lastLocalWriteAt = useRef({});
+  const [clearTick, setClearTick] = useState(0);
   const groupDataRef = useRef({});
   // Mirrors groups so a roster change can build the next array without going
   // through the state updater.
@@ -10372,8 +10404,15 @@ export default function App() {
   };
 
   // Clear the entire session (admin only)
-  const handleClearSession = () => {
-    clearAppState(currentRound?.id);
+  const handleClearSession = async () => {
+    const roundId = currentRound?.id;
+    // Order matters: block the writes first, then delete. Doing it the other way
+    // round leaves a window where a queued write can re-create what was deleted.
+    markRoundCleared(roundId);
+    lastLocalWriteAt.current = {};
+    // Tells the Setup screen this empty list is a deliberate clear, not a round
+    // that simply hasn't finished loading.
+    setClearTick(n => n + 1);
     setGroups([]);
     setPars([]);
     setParTimes([]);
@@ -10384,6 +10423,7 @@ export default function App() {
     setSuspensions([]);
     setIsSuspended(false);
     setPendingStopTime("");
+    await clearAppState(roundId);
   };
 
   if (loading) return (
@@ -10473,6 +10513,7 @@ export default function App() {
       onAccount={() => setShowAccount(true)}
       onChangePassword={() => setShowChangePassword(true)}
       onClearSession={handleClearSession}
+      clearSignal={clearTick}
       hasLiveSession={groups.length > 0}
       onGoToDashboard={() => setScreen("dashboard")}
       tournamentName={currentTournament?.name || ""}
