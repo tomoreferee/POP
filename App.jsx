@@ -764,7 +764,10 @@ function summarizeStatusLogs(logs, mnActive, tmActive, startHole = 1, group = nu
     if (cur) runs.push(cur);
     return runs.map((r, i) => {
       const isLast = i === runs.length - 1;
-      const targetSuffix = r.target ? ` (${r.target.split(",").map(t => code(t.trim())).join(", ")})` : "";
+      // TM is put on named players, so it says who. MN is put on the group as a
+      // whole, so a player suffix there is misleading even when an old log
+      // carries one.
+      const targetSuffix = (type !== "MN" && r.target) ? ` (${r.target.split(",").map(t => code(t.trim())).join(", ")})` : "";
       const bySuffix = r.name ? ` by ${r.name}` : "";
       const label = r.offHole
         ? `${type} @H${r.startHole} → Off @H${r.offHole}${targetSuffix}${bySuffix}`
@@ -4498,7 +4501,7 @@ function GroupMonitor({ group, pars, parTimes, playersPerGroup, schedule, onUpda
                                     ) : l.off ? (
                                       <><span style={{ fontWeight: 700 }}>✕ {logTypeLabel(l)}</span>{l.name ? ` - ${l.name}` : ""}</>
                                     ) : (
-                                      <><span style={{ fontWeight: 700 }}>{l.type === "WD" ? (l.reason || "RTD") : l.type === "IN" ? "In" : l.type === "OUT" ? "Out" : l.type}</span> {l.target ? `${playerCode(group, l.target)} ` : ""}{l.name ? `- ${l.name}` : ""}</>
+                                      <><span style={{ fontWeight: 700 }}>{l.type === "WD" ? (l.reason || "RTD") : l.type === "IN" ? "In" : l.type === "OUT" ? "Out" : l.type}</span> {(l.target && l.type !== "WN" && l.type !== "MN") ? `${playerCode(group, l.target)} ` : ""}{l.name ? `- ${l.name}` : ""}</>
                                     )}
                                   </span>
                                   <button
@@ -7667,7 +7670,13 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               const who = l.name ? ` ${l.name}` : "";
               // Full round-wide codes here: the table is read across many groups
               // at once, so "P2" alone would be ambiguous.
-              const t = (l.target || "").split(",").map(x => playerCode(rowGroup, x.trim())).filter(Boolean).join(",");
+              // WN and MN are group-level: they are issued to the whole group,
+              // never to a named player. Older logs can still carry a target
+              // ("All"), so it is dropped here rather than printed as if the
+              // warning had been aimed at someone.
+              const t = (l.type === "WN" || l.type === "MN")
+                ? ""
+                : (l.target || "").split(",").map(x => playerCode(rowGroup, x.trim())).filter(Boolean).join(",");
               if (l.badTime) return `BT${t ? ` ${t}` : ""}${who}`;
               if (l.off) return `Off ${l.type}${who}`;
               return `${logTypeLabel(l)}${t ? ` ${t}` : ""}${who}`;
@@ -8250,7 +8259,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                     ))}
                   </select>
                 </div>
-                {(l.target || l.badTime) && (() => {
+                {((l.target && l.type !== "WN" && l.type !== "MN") || l.badTime) && (() => {
                   // Buttons rather than free text: typing a code invites typos
                   // that silently create a player who was never in the group.
                   const eg = groups.find(g => g.id === editLogPopup.groupId);
