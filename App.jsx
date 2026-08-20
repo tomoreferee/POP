@@ -6037,32 +6037,48 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
             each log, so a referee who signed an entry under someone else's name
             is credited where the paperwork says. MN "off" rows are the system
             closing a monitoring period, not a second decision, so they are not
-            counted. */}
+            counted.
+
+            MN is a group measure, not a player one: monitoring is put on the
+            whole group, so a group counts once however many times it was
+            logged. That is the opposite of TM, which is reported per player
+            because it is individuals who get timed. */}
         {(() => {
           const tally = new Map();
-          const bump = (who, key, roundLbl) => {
+          const rec = (who) => {
             const name = (who || "").trim() || "\u2014";
-            if (!tally.has(name)) tally.set(name, { rul: 0, wn: 0, mn: 0, byRound: new Map() });
-            const rec = tally.get(name);
-            rec[key] += 1;
-            if (!rec.byRound.has(roundLbl)) rec.byRound.set(roundLbl, { rul: 0, wn: 0, mn: 0 });
-            rec.byRound.get(roundLbl)[key] += 1;
+            if (!tally.has(name)) tally.set(name, { rul: 0, wn: 0, mnGroups: new Set(), byRound: new Map() });
+            return tally.get(name);
+          };
+          const roundRec = (r, roundLbl) => {
+            if (!r.byRound.has(roundLbl)) r.byRound.set(roundLbl, { rul: 0, wn: 0, mnGroups: new Set() });
+            return r.byRound.get(roundLbl);
+          };
+          const bump = (who, key, roundLbl) => {
+            const r = rec(who);
+            r[key] += 1;
+            roundRec(r, roundLbl)[key] += 1;
+          };
+          const bumpMN = (who, roundLbl, groupKey) => {
+            const r = rec(who);
+            r.mnGroups.add(groupKey);
+            roundRec(r, roundLbl).mnGroups.add(groupKey);
           };
           sourceFor("ref").forEach(rd => {
             rd.groups.forEach(g => {
               (rd.groupData[g.id]?.actionLogs || []).forEach(l => {
                 if (l.type === "RUL") bump(l.name, "rul", rd.label);
                 else if (l.type === "WN") bump(l.name, "wn", rd.label);
-                else if (l.type === "MN" && !l.off) bump(l.name, "mn", rd.label);
+                else if (l.type === "MN" && !l.off) bumpMN(l.name, rd.label, `${rd.label}:${g.id}`);
               });
             });
           });
           const refRows = Array.from(tally.entries())
             .map(([name, c]) => ({
-              name, rul: c.rul, wn: c.wn, mn: c.mn,
-              total: c.rul + c.wn + c.mn,
+              name, rul: c.rul, wn: c.wn, mn: c.mnGroups.size,
+              total: c.rul + c.wn + c.mnGroups.size,
               rounds: Array.from(c.byRound.entries())
-                .map(([label, v]) => ({ label, ...v }))
+                .map(([label, v]) => ({ label, rul: v.rul, wn: v.wn, mn: v.mnGroups.size }))
                 .sort((a, b) => byRoundOrder(a.label, b.label)),
             }))
             .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
@@ -6090,7 +6106,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                         <th style={{ ...thS, textAlign: "left" }}>Referee</th>
                         <th style={thS}>Rulings</th>
                         <th style={thS}>Warning<br />(WN)</th>
-                        <th style={thS}>Monitoring<br />(MN)</th>
+                        <th style={thS}>Monitoring<br />(MN, groups)</th>
                       </tr>
                     </thead>
                     <tbody>
