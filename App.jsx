@@ -2440,23 +2440,6 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
     return () => clearTimeout(t);
   }, [liveEditKey, hasLiveSession, isAdmin]);
 
-
-  // Footer totals for the TM section. Derived from tmGroupSummaries rather than
-  // from this round's raw logs, so they follow the This round / All rounds
-  // toggle like the tables directly above them.
-  const tmFooter = tmGroupSummaries.reduce((acc, gs) => {
-    gs.players.forEach(p => {
-      const wasTimed = p.firstHole != null;
-      if (wasTimed) {
-        acc.timed += 1;
-        if (p.badTimeCount > 0) acc.viaBadTime += 1; else acc.viaNormal += 1;
-      }
-      acc.badTime += p.badTimeCount;
-      acc.est += p.estHoles.length;
-    });
-    return acc;
-  }, { timed: 0, viaNormal: 0, viaBadTime: 0, badTime: 0, est: 0 });
-
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
 
@@ -5758,6 +5741,23 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       totalEst: players.reduce((s, p) => s + p.estHoles.length, 0),
     };
   }).filter(Boolean);
+
+  // Footer totals for the TM section. Derived from tmGroupSummaries rather than
+  // from this round's raw logs, so they follow the This round / All rounds
+  // toggle like the tables directly above them.
+  const tmFooter = tmGroupSummaries.reduce((acc, gs) => {
+    gs.players.forEach(p => {
+      const wasTimed = p.firstHole != null;
+      if (wasTimed) {
+        acc.timed += 1;
+        if (p.badTimeCount > 0) acc.viaBadTime += 1; else acc.viaNormal += 1;
+      }
+      acc.badTime += p.badTimeCount;
+      acc.est += p.estHoles.length;
+    });
+    return acc;
+  }, { timed: 0, viaNormal: 0, viaBadTime: 0, badTime: 0, est: 0 });
+
 
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
