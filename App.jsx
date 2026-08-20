@@ -9890,13 +9890,30 @@ export default function App() {
   // someone's access mid-session left their device showing the old roster
   // until it happened to be reloaded.
   useEffect(() => {
-    const refresh = async () => setRolesMap(await fetchAllRoles());
+    // Saving a roster is a delete-then-insert, so a single save emits a burst of
+    // row events. Refetching on each one would read the table mid-write and see
+    // a roster that is briefly empty, and those replies can land out of order —
+    // so the reads are debounced past the burst and the stale ones discarded.
+    let timer = null;
+    let seq = 0;
+    let applied = 0;
+    let dead = false;
+    const refresh = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const mine = ++seq;
+        const roles = await fetchAllRoles();
+        if (dead || mine < applied) return;
+        applied = mine;
+        setRolesMap(roles);
+      }, 400);
+    };
     const channel = supabase
       .channel("roles_access_sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "tournament_roles" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "tournament_access" }, refresh)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { dead = true; clearTimeout(timer); supabase.removeChannel(channel); };
   }, []);
 
   // ─── Live presence: who else is using the app right now ──────────────────────
