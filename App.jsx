@@ -2206,7 +2206,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, clearSignal, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
+function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, clearSignal, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveTurnTimeBack, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
   const [headerRef, headerH] = useHeaderHeight();
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
@@ -2218,13 +2218,16 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
   const [groups1, setGroups1] = useState(() => draft?.groups1 ?? []);
   const [groups10, setGroups10] = useState(() => draft?.groups10 ?? []);
   const [groupsShotgun, setGroupsShotgun] = useState(() => draft?.groupsShotgun ?? []);
-  const [pars, setPars] = useState(() => savedPars ?? loadSetup()?.pars ?? [...DEFAULT_PARS]);
-  const [parTimes, setParTimes] = useState(() => savedParTimes ?? loadSetup()?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
-  const [playersPerGroup, setPlayersPerGroup] = useState(() => loadSetup()?.playersPerGroup ?? 3);
+  // These read `draft`, not loadSetup() directly: the stored draft belongs to
+  // one round, and reading it raw let a previous competition's course values
+  // seed this screen.
+  const [pars, setPars] = useState(() => savedPars ?? draft?.pars ?? [...DEFAULT_PARS]);
+  const [parTimes, setParTimes] = useState(() => savedParTimes ?? draft?.parTimes ?? DEFAULT_PARS.map(p => PAR_TIMES[p]));
+  const [playersPerGroup, setPlayersPerGroup] = useState(() => draft?.playersPerGroup ?? 3);
   const [greenSpeed, setGreenSpeed] = useState({});
   const [preferredLies, setPreferredLies] = useState(false);
-  const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? loadSetup()?.turnTime ?? 1);
-  const [turnTimeBack, setTurnTimeBack] = useState(() => savedTurnTimeBack ?? loadSetup()?.turnTimeBack ?? 1);
+  const [turnTime, setTurnTime] = useState(() => savedTurnTime ?? draft?.turnTime ?? 1);
+  const [turnTimeBack, setTurnTimeBack] = useState(() => savedTurnTimeBack ?? draft?.turnTimeBack ?? 1);
 
   // The Year / Tournament / Round selector bar replaced the two popup pickers
   // that used to live here, so the Setup and Dashboard screens switch context
@@ -2280,6 +2283,9 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
     const p = (livePars?.length === 18 ? livePars : null) ?? (savedPars?.length === 18 ? savedPars : null);
     const pt = (liveParTimes?.length === 18 ? liveParTimes : null) ?? (savedParTimes?.length === 18 ? savedParTimes : null);
     const tt = liveTurnTime ?? savedTurnTime;
+    // H18 → H1 was left out here, so switching competition kept showing the
+    // previous one's figure while every other course value updated.
+    const ttb = liveTurnTimeBack ?? savedTurnTimeBack;
 
     const applyIfChanged = (key, value, setter) => {
       if (value === null || value === undefined) return;
@@ -2292,10 +2298,11 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
     applyIfChanged("pars", p, setPars);
     applyIfChanged("parTimes", pt, setParTimes);
     applyIfChanged("turnTime", tt, setTurnTime);
+    applyIfChanged("turnTimeBack", ttb, setTurnTimeBack);
     applyIfChanged("playersPerGroup", livePlayersPerGroup, setPlayersPerGroup);
     applyIfChanged("greenSpeed", liveGreenSpeed, setGreenSpeed);
     applyIfChanged("preferredLies", livePreferredLies, setPreferredLies);
-  }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, livePlayersPerGroup, liveGreenSpeed, livePreferredLies]);
+  }, [savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveTurnTimeBack, livePlayersPerGroup, liveGreenSpeed, livePreferredLies]);
 
   // Lifted up from QuickGeneratePanel so the H1/H10 group-list columns below can hide
   // themselves while the "Shotgun" tab is selected, and reappear for H1 only / H10 only / H1+H10.
@@ -10283,7 +10290,12 @@ export default function App() {
         // setup so pars / par times / transit time don't have to be re-entered.
         let courseSetup = null;
         if (tournament?.pars?.length === 18 && tournament?.par_times?.length === 18) {
-          courseSetup = { pars: tournament.pars, parTimes: tournament.par_times, turnTime: tournament.turn_time ?? 1 };
+          courseSetup = {
+            pars: tournament.pars,
+            parTimes: tournament.par_times,
+            turnTime: tournament.turn_time ?? 1,
+            turnTimeBack: tournament.turn_time_back ?? tournament.turn_time ?? 1,
+          };
         } else {
           courseSetup = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
         }
@@ -10291,6 +10303,9 @@ export default function App() {
         setPars(courseSetup?.pars || []);
         setParTimes(courseSetup?.parTimes || []);
         setTurnTime(courseSetup?.turnTime ?? 1);
+        // Without this, a round that hasn't been set up yet kept the H18 → H1
+        // transit time belonging to whatever was open before it.
+        setTurnTimeBack(courseSetup?.turnTimeBack ?? courseSetup?.turnTime ?? 1);
         setBaseSchedules({});
         setSchedules({});
         setGroupData({});
@@ -10310,7 +10325,13 @@ export default function App() {
       if (!hasCourseSetup) {
         const recovered = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
         if (recovered) {
-          tournamentForSetup = { ...tournament, pars: recovered.pars, par_times: recovered.parTimes, turn_time: recovered.turnTime };
+          tournamentForSetup = {
+            ...tournament,
+            pars: recovered.pars,
+            par_times: recovered.parTimes,
+            turn_time: recovered.turnTime,
+            turn_time_back: recovered.turnTimeBack ?? recovered.turnTime,
+          };
         }
       }
       setCurrentTournament(tournamentForSetup);
@@ -10538,6 +10559,7 @@ export default function App() {
       livePars={groups.length > 0 ? pars : null}
       liveParTimes={groups.length > 0 ? parTimes : null}
       liveTurnTime={groups.length > 0 ? turnTime : null}
+      liveTurnTimeBack={groups.length > 0 ? turnTimeBack : null}
       livePlayersPerGroup={groups.length > 0 ? playersPerGroup : null}
       liveGreenSpeed={greenSpeed}
       livePreferredLies={preferredLies}
