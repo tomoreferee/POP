@@ -5471,6 +5471,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           greenSpeed: st.greenSpeed || {}, preferredLies: st.preferredLies === true,
         });
       }
+      out.sort((a, b) => byRoundOrder(a.label, b.label));
       if (!cancelled) { setXRounds(out); setXLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -6062,7 +6063,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
               total: c.rul + c.wn + c.mn,
               rounds: Array.from(c.byRound.entries())
                 .map(([label, v]) => ({ label, ...v }))
-                .sort((a, b) => String(a.label).localeCompare(String(b.label))),
+                .sort((a, b) => byRoundOrder(a.label, b.label)),
             }))
             .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
           const totals = refRows.reduce((t, r) => ({
@@ -9351,6 +9352,17 @@ async function saveTournamentCourseSetup(id, { pars, parTimes, turnTime, turnTim
     }).eq("id", id);
   } catch {}
 }
+// Qualifying comes before the numbered rounds because that is the order they
+// are played in. Creation order can't be trusted for this: a Q round is often
+// added after R1 has already been set up.
+function roundSortKey(label) {
+  const s = String(label ?? "");
+  if (s === "Q") return -1;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 999;
+}
+const byRoundOrder = (a, b) => roundSortKey(a) - roundSortKey(b) || String(a).localeCompare(String(b));
+
 async function fetchRounds(tournamentId) {
   const { data, error } = await supabase.from("tournament_rounds").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: true });
   if (error || !data) return [];
