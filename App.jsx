@@ -1567,8 +1567,11 @@ function saveSetup(data) {
 const SYNC_PERIOD_MS = 30000;
 // How long data may sit unrefreshed before the screen admits it may be stale.
 const STALE_AFTER_SEC = 180;
-// How often to look for a newer build on the server.
-const VERSION_CHECK_MS = 120000;
+// How often to look for a newer build on the server. A deploy usually lands
+// while someone is sitting on the page, so this is the longest they can be
+// looking at a stale build without being told — two minutes was long enough
+// that the banner appeared to require leaving the app and coming back.
+const VERSION_CHECK_MS = 25000;
 
 // ─── Live-sync indicator ────────────────────────────────────────────────────
 // The warning has to appear on every screen, but the connection state lives in
@@ -1650,8 +1653,10 @@ function useVersionWatch() {
     if (!loadedRef.current || !/assets\//.test(loadedRef.current)) return;
 
     let dead = false;
+    let busy = false;
     const check = async () => {
-      if (dead || document.visibilityState !== "visible") return;
+      if (dead || busy || document.visibilityState !== "visible") return;
+      busy = true;
       try {
         const res = await fetch(`/?v=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) return;
@@ -1660,15 +1665,27 @@ function useVersionWatch() {
         if (m && m[1] && m[1] !== loadedRef.current) setOutdated(true);
       } catch {
         // Offline, or the check was blocked. Not knowing is not a new version.
+      } finally {
+        busy = false;
       }
     };
     const id = setInterval(check, VERSION_CHECK_MS);
+    // iOS throttles timers hard in the background, so the moment the page comes
+    // back to the front is the one reliable opportunity to catch up. pageshow
+    // covers the case where the page is restored from the back/forward cache,
+    // where no timer ran at all and visibilitychange doesn't always fire.
     document.addEventListener("visibilitychange", check);
+    window.addEventListener("focus", check);
+    window.addEventListener("pageshow", check);
+    window.addEventListener("online", check);
     check();
     return () => {
       dead = true;
       clearInterval(id);
       document.removeEventListener("visibilitychange", check);
+      window.removeEventListener("focus", check);
+      window.removeEventListener("pageshow", check);
+      window.removeEventListener("online", check);
     };
   }, []);
 
