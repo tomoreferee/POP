@@ -1558,6 +1558,47 @@ function saveSetup(data) {
   try { memoryStorage.setItem(STORAGE_KEY_SETUP, JSON.stringify(data)); } catch {}
 }
 
+// ─── Live-sync indicator ────────────────────────────────────────────────────
+// Two jobs in one small control: say honestly whether the live feed is up, and
+// let anyone force a read when they don't trust what they're looking at. The
+// time of the last successful read is the part that matters — "connected" alone
+// tells a referee nothing about how old the numbers on screen are.
+function SyncIndicator({ status, lastSyncAt, syncing, onSync }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick(n => n + 1), 15000);
+    return () => clearInterval(id);
+  }, []);
+
+  const ageSec = lastSyncAt ? Math.floor((Date.now() - lastSyncAt.getTime()) / 1000) : null;
+  const stale = ageSec != null && ageSec > 180;
+  const down = status === "down";
+  const colour = down || stale ? "#cf222e" : status === "live" ? "#1a7f37" : "#9a6700";
+  const label = ageSec == null ? "—"
+    : ageSec < 60 ? `${ageSec}s`
+    : ageSec < 3600 ? `${Math.floor(ageSec / 60)}m`
+    : `${Math.floor(ageSec / 3600)}h`;
+
+  return (
+    <button
+      onClick={onSync}
+      disabled={syncing}
+      title={down ? "Live connection lost — tap to refresh" : `Last updated ${label} ago`}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 5,
+        background: down || stale ? "#ffebe9" : "#ffffff",
+        border: `1px solid ${down || stale ? "#cf222e55" : "#d1d9e0"}`,
+        borderRadius: 20, padding: "3px 9px", cursor: syncing ? "default" : "pointer",
+        opacity: syncing ? 0.6 : 1, flexShrink: 0,
+      }}>
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: colour, flexShrink: 0 }} />
+      <span style={{ fontSize: 11, color: "#59636e", fontWeight: 600, whiteSpace: "nowrap" }}>
+        {syncing ? "Syncing…" : down ? "Offline" : label}
+      </span>
+    </button>
+  );
+}
+
 // ─── Tournament / Round picker ──────────────────────────────────────────────
 // Gate before Setup: pick or create a Tournament, then pick or create a Round
 // (Q, 1, 2, 3, 4) within it. Each round keeps its own data, so switching between
@@ -6601,7 +6642,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 }
 
 function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, venueLocation, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
-  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
+  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, syncing, onSync }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
@@ -6823,6 +6864,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, justifyContent: "flex-end" }}>
           {/* Online indicator hidden for now — re-enable by restoring this line:
               <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
+          <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} syncing={syncing} onSync={onSync} />
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <AnalogClock minutes={now} size={30} />
             <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
@@ -9553,6 +9595,12 @@ export default function App() {
   // that was silently dropping WN/MN/TM/Bad Time log entries recorded in quick succession).
   const lastLocalWriteAt = useRef({});
   const [clearTick, setClearTick] = useState(0);
+  const [liveStatus, setLiveStatus] = useState("connecting"); // connecting | live | down
+  const [lastSyncAt, setLastSyncAt] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const syncingRef = useRef(false);
+  const syncNowRef = useRef(null);
+  const currentRoundRef = useRef(null);
   const groupDataRef = useRef({});
   // Mirrors groups so a roster change can build the next array without going
   // through the state updater.
@@ -9857,7 +9905,7 @@ export default function App() {
         if (row.green_speed != null) setGreenSpeed(row.green_speed);
         if (row.preferred_lies != null) setPreferredLies(row.preferred_lies);
       })
-      .subscribe();
+      .subscribe(status => setLiveStatus(status === "SUBSCRIBED" ? "live" : "down"));
 
     const groupChannel = supabase
       .channel(`round_group_data_sync_${roundId}`)
@@ -9874,11 +9922,88 @@ export default function App() {
         }
         setGroupData(prev => ({ ...prev, [row.group_id]: row.data }));
       })
-      .subscribe();
+      .subscribe(status => setLiveStatus(status === "SUBSCRIBED" ? "live" : "down"));
 
     return () => {
       supabase.removeChannel(stateChannel);
       supabase.removeChannel(groupChannel);
+      setLiveStatus("connecting");
+    };
+  }, [currentRound?.id]);
+
+  // ─── Staying in sync when the connection doesn't ────────────────────────────
+  // Realtime is a push feed, which is quicker and lighter than polling — but a
+  // dropped socket is silent. A phone that locked, a tab left in the background,
+  // or a walk through a dead spot on the course can all leave the screen showing
+  // an hour-old picture that looks perfectly current. So: pull a fresh copy
+  // whenever the device comes back to life, and give the user a way to ask.
+  const syncNow = useCallback(async () => {
+    const roundId = currentRoundRef.current?.id;
+    if (!roundId || syncingRef.current) return;
+    syncingRef.current = true;
+    setSyncing(true);
+    try {
+      const [state, gd] = await Promise.all([fetchAppState(roundId), fetchAllGroupData(roundId)]);
+      // A round that was cleared elsewhere legitimately comes back empty; the
+      // absence of a row is the answer, not a failed read.
+      if (state) {
+        setGroups(state.groups ?? []);
+        setPars(state.pars ?? []);
+        setParTimes(state.parTimes ?? []);
+        setBaseSchedules(state.baseSchedules ?? {});
+        setSchedules(state.schedules ?? {});
+        setSuspensions(state.suspensions ?? []);
+        setIsSuspended(!!state.isSuspended);
+        setPendingStopTime(state.pendingStopTime ?? "");
+        setRefereeCalls(state.refereeCalls ?? []);
+        setPlayersPerGroup(state.playersPerGroup ?? 3);
+        setTurnTime(state.turnTime ?? 1);
+        setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
+        setGreenSpeed(state.greenSpeed ?? {});
+        setPreferredLies(!!state.preferredLies);
+      }
+      // Local edits that haven't been acknowledged yet must survive the refresh,
+      // otherwise pressing it during a bad patch of signal would throw away the
+      // referee's most recent entries.
+      setGroupData(prev => {
+        const merged = { ...(gd || {}) };
+        Object.keys(prev).forEach(gid => {
+          if (pendingGroupWrites.has(`${roundId}|${gid}`)) merged[gid] = prev[gid];
+        });
+        return merged;
+      });
+      setLastSyncAt(new Date());
+      await flushPendingGroupWrites();
+    } catch {
+      // Leave what's on screen alone — a failed refresh shouldn't blank the round.
+    } finally {
+      syncingRef.current = false;
+      setSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => { syncNowRef.current = syncNow; }, [syncNow]);
+
+  useEffect(() => {
+    if (!currentRound?.id) return;
+    const onWake = () => {
+      if (document.visibilityState === "visible") syncNowRef.current?.();
+    };
+    const onOnline = () => syncNowRef.current?.();
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
+    window.addEventListener("online", onOnline);
+    // A slow safety net for the case where the socket dies without ever telling
+    // us. Rare, but the cost of being wrong here is a referee acting on stale
+    // pace data, so it's worth one quiet read a minute.
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") syncNowRef.current?.();
+    }, 60000);
+    return () => {
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+      window.removeEventListener("online", onOnline);
+      clearInterval(id);
     };
   }, [currentRound?.id]);
 
@@ -10101,6 +10226,7 @@ export default function App() {
 
   useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
   useEffect(() => { isAdminRef.current = isAdmin; }, [isAdmin]);
+  useEffect(() => { currentRoundRef.current = currentRound; }, [currentRound]);
 
   const handleLogout = () => {
     sessionPasswordRef.current = null;
@@ -10288,6 +10414,7 @@ export default function App() {
         // competition carried the previous one's H18 → H1 figure straight over.
         setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
         setGroupData(gd || {});
+        setLastSyncAt(new Date());
       } else {
         // Round has never been set up — start it blank, but inherit the course
         // setup so pars / par times / transit time don't have to be re-entered.
@@ -10582,6 +10709,10 @@ export default function App() {
     {accountModal}
     {passwordModal}
     <Dashboard
+      liveStatus={liveStatus}
+      lastSyncAt={lastSyncAt}
+      syncing={syncing}
+      onSync={syncNow}
       groups={groups}
       groupData={groupData}
       pars={pars}
