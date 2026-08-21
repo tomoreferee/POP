@@ -5863,7 +5863,6 @@ function CourseSetupScreen({
     setHoles(Array.from({ length: 18 }, (_, i) => normaliseHole({ ...blankHole(), ...(src?.[i] || {}) })));
     setPar3Base(courseSetup?.par3Base ?? {});
     setPracticeGreen(courseSetup?.practiceGreen ?? null);
-    setTargetOverride(courseSetup?.positionsFor ?? null);
     setSaved(false);
   }, [savedStamp]);
 
@@ -5941,14 +5940,10 @@ function CourseSetupScreen({
     ? firstPlayed
     : (recordsOwn ? roundLabel : nextTarget);
 
-  // …and the referee can say otherwise. The schedule in the app is a plan, and
-  // weeks get rearranged — a round cancelled to weather, a Pro-Am moved — so
-  // the suggestion is a starting point rather than a verdict. What was saved
-  // last wins over the suggestion, because it was a deliberate choice.
-  const [targetOverride, setTargetOverride] = useState(
-    () => courseSetup?.positionsFor ?? null
-  );
-  const positionsFor = targetOverride ?? suggestedTarget;
+  // The set-up day picker above already says which day this sheet belongs to,
+  // and the round it prepares follows from that — so there is nothing left to
+  // choose here.
+  const positionsFor = suggestedTarget;
   const positionsNeeded = !!positionsFor;
   const positionsAreForToday = positionsNeeded && positionsFor === roundLabel;
 
@@ -5957,7 +5952,9 @@ function CourseSetupScreen({
   // and no green to read: the sheet is there for the hole positions alone.
   const dayHasPlay = !isPreDay;
   const mayEditAnything = editableHoles.some(Boolean) || canEditPracticeGreen({ isAdmin, position });
-  const mayEditPG = canEditPracticeGreen({ isAdmin, position });
+  // The practice green is read on the morning of play, so a set-up day has no
+  // reading to take — the same reason the on-course stimp column is closed.
+  const mayEditPG = canEditPracticeGreen({ isAdmin, position }) && dayHasPlay;
 
   const setHole = (i, patch) => {
     setSaved(false);
@@ -6381,36 +6378,11 @@ function CourseSetupScreen({
           </div>
         )}
 
-        {/* Which round these flags are for. Filled in from the schedule, but
-            left open: a week gets rearranged more often than the app is told
-            about it, and a locked field just means the sheet is filed under the
-            wrong day. */}
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>HOLE POSITIONS FOR</span>
-          <select
-            value={positionsFor || ""}
-            disabled={!mayEditAnything}
-            onChange={e => { setTargetOverride(e.target.value || null); setSaved(false); }}
-            style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: mayEditAnything ? "#ffffff" : "#f6f8fa", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
-            <option value="">— not recorded today —</option>
-            {playedRounds.map(l => (
-              <option key={l} value={l}>{roundFull(l)}</option>
-            ))}
-          </select>
-          {positionsFor !== suggestedTarget && (
-            <button
-              onClick={() => { setTargetOverride(null); setSaved(false); }}
-              style={{ fontSize: 11, fontWeight: 700, fontFamily: "inherit", color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 6, padding: "5px 10px", cursor: "pointer" }}>
-              Use {suggestedTarget ? roundFull(suggestedTarget) : "none"}
-            </button>
-          )}
-        </div>
-
         <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
           {isPreDay
             ? (positionsFor
                 ? `No play today — Front and Side are the flags being cut for ${roundFull(positionsFor)}.`
-                : "No play today. Choose which round these flags are for.")
+                : "No play today, and no round follows this one.")
             : positionsAreForToday
               ? `Front and Side are the positions ${roundFull(roundLabel)} itself is played to.`
               : positionsNeeded
@@ -6475,7 +6447,7 @@ function CourseSetupScreen({
               {avgRow("BACK NINE GREEN SPEED AVERAGE", back)}
               {avgRow("ALL 18 HOLES GREEN SPEED AVERAGE", all18)}
               <tr>
-                <td colSpan={5} style={{ ...cell, padding: "8px 6px", fontSize: 9, fontWeight: 700, color: "#59636e", letterSpacing: 0.3, textAlign: "right", lineHeight: 1.25 }}>
+                <td colSpan={5} style={{ ...cell, padding: "8px 6px", fontSize: 9, fontWeight: 700, color: dayHasPlay ? "#59636e" : "#8c959f", letterSpacing: 0.3, textAlign: "right", lineHeight: 1.25 }}>
                   PRACTICE GREEN SPEED
                 </td>
                 <td style={cell}>
