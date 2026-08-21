@@ -1710,12 +1710,18 @@ function useTournamentListSync(onChange) {
       clearTimeout(timer);
       timer = setTimeout(() => { if (!dead) cbRef.current?.(); }, 400);
     };
-    const channel = supabase
-      .channel(`tournaments_list_sync_${Math.random().toString(36).slice(2, 8)}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, bump)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_access" }, bump)
-      .subscribe();
-    return () => { dead = true; clearTimeout(timer); supabase.removeChannel(channel); };
+    // One channel per table on purpose. Subscribing to a table that isn't in the
+    // realtime publication errors the whole channel, which would silently take
+    // down the sibling subscriptions sharing it — the failure mode is a feed
+    // that looks fine and delivers nothing.
+    const suffix = Math.random().toString(36).slice(2, 8);
+    const channels = ["tournaments", "tournament_access"].map(table =>
+      supabase
+        .channel(`tlist_${table}_${suffix}`)
+        .on("postgres_changes", { event: "*", schema: "public", table }, bump)
+        .subscribe()
+    );
+    return () => { dead = true; clearTimeout(timer); channels.forEach(c => supabase.removeChannel(c)); };
   }, []);
 }
 
@@ -10212,12 +10218,15 @@ function AppShell() {
         setRolesMap(roles);
       }, 400);
     };
-    const channel = supabase
-      .channel("roles_access_sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_roles" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_access" }, refresh)
-      .subscribe();
-    return () => { dead = true; clearTimeout(timer); supabase.removeChannel(channel); };
+    // Split for the same reason as the tournament list: an unpublished table
+    // must not be able to silence the one beside it.
+    const channels = ["tournament_roles", "tournament_access"].map(table =>
+      supabase
+        .channel(`roles_access_sync_${table}`)
+        .on("postgres_changes", { event: "*", schema: "public", table }, refresh)
+        .subscribe()
+    );
+    return () => { dead = true; clearTimeout(timer); channels.forEach(c => supabase.removeChannel(c)); };
   }, []);
 
   // ─── Live presence: who else is using the app right now ──────────────────────
