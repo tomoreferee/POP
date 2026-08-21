@@ -1781,7 +1781,15 @@ const ROUND_NAMES = {
 // A Pro-Am is played to a tee sheet the host club runs, not to a pace benchmark
 // set by the referees — there is nothing to measure a group against, so pace of
 // play does not apply to it.
-const PACELESS_ROUND_LABELS = ["PRE", "PA"];
+// Practice and Pro-Am days are played to the host's own tee sheet rather than
+// to a pace benchmark set by the referees, so there is nothing to measure a
+// group against on either of them.
+const PACELESS_ROUND_LABELS = ["PRE", "PT", "PA"];
+
+// A practice day runs to the club's standard window rather than to a tee sheet
+// the referees draw up, so the report states that window rather than deriving
+// one from groups that were never entered.
+const PRACTICE_TEE_WINDOW = { teeStarts: [1, 10], firstTee: "07:00", lastTee: "Before 15:00" };
 
 // A set-up day isn't a round of golf. It exists only so the Course Setup sheet
 // has somewhere to file the opening round's hole positions, so it is kept out
@@ -2495,6 +2503,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
               hostVenue={viewingTournament?.host_venue || ""}
               venueLocation={viewingTournament?.location || ""}
               chiefReferee={rolesMap?.[tournamentId]?.CR || ""}
+              advanceReferee={rolesMap?.[tournamentId]?.R1 || ""}
               startDate={viewingTournament?.start_date || ""}
               endDate={viewingTournament?.end_date || ""}
               greenSpeed={snapshot.greenSpeed || {}}
@@ -2761,15 +2770,28 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
     pars, parTimes, turnTime, turnTimeBack, playersPerGroup, greenSpeed, preferredLies,
   });
   useEffect(() => {
-    if (!hasLiveSession || !isAdmin || !onApplyLiveEdits) return;
-    if (allGroups.length === 0) return;
+    if (!isAdmin || !onApplyLiveEdits) return;
     // Don't fire on the initial mount / on the sync-down from the live session
     if (skipFirstApply.current) { skipFirstApply.current = false; return; }
+
+    // A Practice or Pro-Am day has no tee sheet, so it never becomes a "live
+    // session" — and the green speed typed in for it was quietly going nowhere.
+    // Those rounds still have conditions worth recording, so the course values
+    // are saved on their own, with the groups left exactly as they are. The
+    // draft group list is deliberately not written here: nothing should start a
+    // round that the user hasn't pressed Start on.
+    const conditionsOnly = !hasLiveSession;
+    if (conditionsOnly && !roundLabel) return;
+    if (!conditionsOnly && allGroups.length === 0) return;
+
     const t = setTimeout(() => {
-      onApplyLiveEdits(allGroups, pars, parTimes, playersPerGroup, turnTime, turnTimeBack, greenSpeed, preferredLies);
+      onApplyLiveEdits(
+        conditionsOnly ? (liveGroups || []) : allGroups,
+        pars, parTimes, playersPerGroup, turnTime, turnTimeBack, greenSpeed, preferredLies
+      );
     }, 700);
     return () => clearTimeout(t);
-  }, [liveEditKey, hasLiveSession, isAdmin]);
+  }, [liveEditKey, hasLiveSession, isAdmin, roundLabel]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", color: "#1f2328", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'" }}>
@@ -6013,6 +6035,10 @@ function CourseSetupScreen({
   // block a save. All of them are about spreading the round out: not repeating
   // a side, and not stacking the short pins together.
   const SINGLE_DIGIT_MAX_PER_NINE = 3;
+  // How often the same Front figure may appear, and how far apart repeats of it
+  // have to be. Three holes apart means 5 and 8 are fine, 5 and 7 are not.
+  const FRONT_REPEAT_MAX = 3;
+  const FRONT_REPEAT_MIN_GAP = 3;
 
   const sideClashes = (() => {
     const bad = new Set();
@@ -6064,6 +6090,27 @@ function CourseSetupScreen({
         run = [];
       }
     }
+
+    // The same depth shouldn't keep coming up: no more than three holes on the
+    // same figure across the round, and when it does repeat the holes should be
+    // well apart rather than back to back — a player meeting 12 paces on three
+    // consecutive greens is being asked the same question three times.
+    const byValue = new Map();
+    holes.forEach((h, i) => {
+      const n = Number(h?.front);
+      if (h?.front === "" || h?.front == null || !Number.isFinite(n)) return;
+      if (!byValue.has(n)) byValue.set(n, []);
+      byValue.get(n).push(i);
+    });
+    byValue.forEach(list => {
+      if (list.length > FRONT_REPEAT_MAX) list.forEach(i => bad.add(i));
+      for (let k = 1; k < list.length; k++) {
+        if (list[k] - list[k - 1] < FRONT_REPEAT_MIN_GAP) {
+          bad.add(list[k - 1]);
+          bad.add(list[k]);
+        }
+      }
+    });
     return bad;
   })();
 
@@ -6412,7 +6459,12 @@ function CourseSetupScreen({
           <div style={{ background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 6, padding: "10px 12px", marginBottom: 8, fontSize: 11, color: "#7d4e00" }}>
             <div style={{ fontWeight: 700, marginBottom: 4 }}>Set-up guidelines — underlined in red below</div>
             {sideClashes.size > 0 && <div>· Sides: avoid three holes running on the same side, and split the par 3s and par 5s of a nine between left and right.</div>}
-            {frontFlags.size > 0 && <div>· Front: avoid more than {SINGLE_DIGIT_MAX_PER_NINE} single-figure pins on a nine, and three of them in a row.</div>}
+            {frontFlags.size > 0 && (
+              <>
+                <div>· Front: avoid more than {SINGLE_DIGIT_MAX_PER_NINE} single-figure pins on a nine, and three of them in a row.</div>
+                <div>· Front: avoid using the same figure more than {FRONT_REPEAT_MAX} times, and keep repeats at least {FRONT_REPEAT_MIN_GAP} holes apart.</div>
+              </>
+            )}
             <div style={{ marginTop: 4, color: "#9a6700" }}>These are guidelines only — the course may leave you no choice, and saving is not blocked.</div>
           </div>
         )}
@@ -6505,7 +6557,7 @@ function CourseSetupScreen({
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
-function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee, startDate, endDate, greenSpeed, preferredLies, venueLocation }) {
+function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, suspensions, isSuspended, pendingStopTime, totalOffsetMin, onBack, currentUser, onLogout, tournamentId, roundLabel, tournamentName, hostVenue, chiefReferee, advanceReferee, startDate, endDate, greenSpeed, preferredLies, venueLocation }) {
   // Rulings are the one part of this report that reads better across the whole
   // tournament — a player's rulings in round 1 matter when reviewing round 3.
   // The pace figures above stay per-round, because a benchmark only means
@@ -6535,6 +6587,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
           parTimes: st.parTimes, turnTime: st.turnTime, turnTimeBack: st.turnTimeBack,
           playersPerGroup: st.playersPerGroup, suspensions: st.suspensions || [],
           greenSpeed: st.greenSpeed || {}, preferredLies: st.preferredLies === true,
+          courseSetup: st.courseSetup || {},
         });
       }
       out.sort((a, b) => byRoundOrder(a.label, b.label));
@@ -6658,6 +6711,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 
       const starts = rd.groups.map(g => g.startTime).filter(Boolean).sort();
       const teeStarts = Array.from(new Set(rd.groups.map(g => g.startHole || 1))).sort((a, b) => a - b);
+      const cs = rd.courseSetup || {};
 
       // A player is counted once, wherever they finished: joining another group
       // is a move, not an extra entry.
@@ -6721,6 +6775,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       return {
         label: rd.label,
         teeStarts,
+        courseSetup: cs,
+        greenSpeed: rd.greenSpeed || {},
         firstTee: starts[0] || "—",
         lastTee: starts[starts.length - 1] || "—",
         groupCount: rd.groups.length,
@@ -6837,13 +6893,13 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
       <div style={{ padding: "20px 24px", maxWidth: 900, margin: "0 auto" }}>
 
         {/* ─── Course conditions ─────────────────────────────────────── */}
-        {sectionHead("COURSE CONDITIONS", "cond")}
+        {sectionHead("INFORMATION", "cond")}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
                 {isAll("cond") && <th style={thS}>Round</th>}
-                <th style={{ ...thS, textAlign: "left" }}>Speed green on board</th>
+                <th style={{ ...thS, textAlign: "left" }}>Green speed on board</th>
                 <th style={thS}>Preferred lies</th>
               </tr>
             </thead>
@@ -7426,14 +7482,32 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   </tr>
                 </thead>
                 <tbody>
-                  {report.map(r => (
-                    <tr key={r.label}>
-                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{roundFull(r.label)}</td>
-                      <td style={tdS}>{r.teeStarts.join(" & ") || "—"}</td>
-                      <td style={tdS}>{r.firstTee}</td>
-                      <td style={tdS}>{r.lastTee}</td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    // The practice day belongs in this table even though no tee
+                    // sheet is drawn up for it — it is part of the week, and a
+                    // report that skips it reads as though play began on Round
+                    // 1. Its window is the club's standard one, so it is stated
+                    // rather than derived, and only when nothing was recorded.
+                    const rows = [...report];
+                    if (!rows.some(r => r.label === "PT")) {
+                      rows.push({ label: "PT", ...PRACTICE_TEE_WINDOW, synthetic: true });
+                    }
+                    rows.sort((a, b) => byRoundOrder(a.label, b.label));
+                    return rows.map(r => {
+                      const noSheet = r.label === "PT" && (r.synthetic || !r.teeStarts?.length);
+                      const teeStarts = noSheet ? PRACTICE_TEE_WINDOW.teeStarts : r.teeStarts;
+                      const firstTee = noSheet ? PRACTICE_TEE_WINDOW.firstTee : r.firstTee;
+                      const lastTee = noSheet ? PRACTICE_TEE_WINDOW.lastTee : r.lastTee;
+                      return (
+                        <tr key={r.label}>
+                          <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{roundFull(r.label)}</td>
+                          <td style={tdS}>{(teeStarts || []).join(" & ") || "—"}</td>
+                          <td style={tdS}>{firstTee}</td>
+                          <td style={tdS}>{lastTee}</td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -7536,6 +7610,111 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   ))}
                 </tbody>
               </table>
+            </div>
+          </>
+        )}
+        </div>
+
+{/* ── Advance referee (R1) report ──────────────────────────────────
+            The stimp record for the week, one column per day. It is the R1's
+            own document rather than a section of the chief referee's, so it is
+            set apart the same way. Scrolls sideways rather than shrinking: at
+            seven or eight columns on a phone there is no type size that keeps
+            10′ 11″ readable and still fits. */}
+        <div style={{ borderTop: "3px solid #d1d9e0", marginTop: 36, paddingTop: 28 }} />
+        <div style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", borderRadius: 10, padding: 16, marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328", letterSpacing: 1 }}>ADVANCE REFEREE (R1) REPORT</div>
+          {tournamentId && (
+            <button onClick={() => setScope(v => ({ ...v, report: !v.report }))}
+              style={{ background: scope.report ? "#ddf4ff" : "#f6f8fa", border: `1px solid ${scope.report ? "#0969da" : "#d1d9e0"}`, color: scope.report ? "#0969da" : "#59636e", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}>
+              {scope.report ? "All rounds" : "Load all rounds"}
+            </button>
+          )}
+        </div>
+
+        <div style={{ fontSize: 11, color: "#8c959f", marginBottom: 14 }}>Whole tournament</div>
+
+        {!scope.report && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 16, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
+            These tables cover the whole tournament. Tap <b>Load all rounds</b> to build them.
+          </div>
+        )}
+
+        {scope.report && report && (
+          <>
+            <div style={{ ...secHead }}>TOURNAMENT</div>
+            <div style={{ ...card, marginBottom: 20 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <tbody>
+                  {[["Name", tournamentName || "—"],
+                    ["Venue", [hostVenue, venueLocation].filter(Boolean).join(", ") || "—"],
+                    ["Date", formatDateRange(startDate, endDate)],
+                    ["Advance Referee R1", advanceReferee || "—"]].map(([k, v]) => (
+                    <tr key={k}>
+                      <td style={{ ...tdS, textAlign: "left", width: 130, color: "#59636e" }}>{k}</td>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ ...secHead }}>STIMP AVERAGE READINGS</div>
+            <div style={{ ...card, marginBottom: 20, overflowX: "auto" }}>
+              {(() => {
+                // Measured on the course versus posted on the notice board: the
+                // form keeps them apart because they are allowed to differ, and
+                // a report that merged them would hide the day they did.
+                const rows = [
+                  { key: "holes", label: "Hole 1–18", read: r => averageStimp(r.courseSetup?.holes || [], 0, 17) },
+                  { key: "pg", label: "Practice Green/s", read: r => r.courseSetup?.practiceGreen ?? null },
+                  { key: "holesBoard", label: "H1–18 on Notice Board", read: r => (r.greenSpeed?.avgFeet != null ? { ft: r.greenSpeed.avgFeet, in: r.greenSpeed.avgInches ?? 0 } : null) },
+                  { key: "pgBoard", label: "Pract Grn Notice Board", read: r => (r.greenSpeed?.ptFeet != null ? { ft: r.greenSpeed.ptFeet, in: r.greenSpeed.ptInches ?? 0 } : null) },
+                ];
+                // "Av R1-4" is the competition rounds only — practice and
+                // pro-am days are set up differently and would drag it.
+                const compRounds = report.filter(r => !NAMED_ROUND_LABELS.includes(r.label));
+                const avgOf = (list) => {
+                  const v = list.map(x => (x && x.ft != null ? x.ft * 12 + (x.in ?? 0) : null)).filter(n => n != null);
+                  if (!v.length) return null;
+                  const t = Math.round(v.reduce((a, b) => a + b, 0) / v.length);
+                  return { ft: Math.floor(t / 12), in: t % 12 };
+                };
+                const cellS = { ...tdS, padding: "9px 6px", fontSize: 13, whiteSpace: "nowrap" };
+                const headS = { ...thS, padding: "9px 6px", fontSize: 11, whiteSpace: "nowrap" };
+                return (
+                  <table style={{ borderCollapse: "collapse", minWidth: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...headS, textAlign: "left", position: "sticky", left: 0, background: "#ffffff", zIndex: 1 }} />
+                        {report.map(r => <th key={r.label} style={headS}>{roundShort(r.label)}</th>)}
+                        {compRounds.length > 0 && <th style={{ ...headS, color: "#1f2328" }}>Av R1–4</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(row => (
+                        <tr key={row.key}>
+                          <td style={{ ...cellS, textAlign: "left", fontWeight: 700, color: "#59636e", position: "sticky", left: 0, background: "#ffffff", zIndex: 1 }}>
+                            {row.label}
+                          </td>
+                          {report.map(r => (
+                            <td key={r.label} style={cellS}>{fmtStimp(row.read(r))}</td>
+                          ))}
+                          {compRounds.length > 0 && (
+                            <td style={{ ...cellS, fontWeight: 700 }}>
+                              {fmtStimp(avgOf(compRounds.map(row.read)))}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
+            </div>
+            <div style={{ fontSize: 11, color: "#8c959f", marginBottom: 4 }}>
+              Hole 1–18 and Practice Green/s are the readings taken on the course; the Notice Board rows are the figures posted for players.
             </div>
           </>
         )}
@@ -11996,6 +12175,7 @@ function AppShell() {
       hostVenue={currentTournament?.host_venue || ""}
       venueLocation={currentTournament?.location || ""}
       chiefReferee={rolesMap?.[currentTournament?.id]?.CR || ""}
+      advanceReferee={rolesMap?.[currentTournament?.id]?.R1 || ""}
       startDate={currentTournament?.start_date || ""}
       endDate={currentTournament?.end_date || ""}
       greenSpeed={greenSpeed}
