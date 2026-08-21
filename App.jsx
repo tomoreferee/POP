@@ -1751,15 +1751,16 @@ function UpdateBanner({ show }) {
 // Every round slot a competition can hold, in the order they are played.
 // Q/PT/PA are named slots; the rest are the numbered competition rounds.
 const NUMBERED_ROUND_LABELS = ["1", "2", "3", "4"];
-const NAMED_ROUND_LABELS = ["Q", "PT", "PA"];
+const NAMED_ROUND_LABELS = ["PRE", "Q", "PT", "PA"];
 const ROUND_LABELS = [...NAMED_ROUND_LABELS, ...NUMBERED_ROUND_LABELS];
 // What a tournament gets when nobody has said otherwise: no practice or pro-am.
-const DEFAULT_ROUND_LABELS = ROUND_LABELS.filter(l => l !== "PT" && l !== "PA");
+const DEFAULT_ROUND_LABELS = ROUND_LABELS.filter(l => !["PRE", "PT", "PA"].includes(l));
 
 // The slots one particular competition holds, from its own configuration.
 function roundLabelsFor(tournament) {
   if (!tournament) return DEFAULT_ROUND_LABELS;
   return [
+    ...(tournament.has_pre === true ? ["PRE"] : []),
     ...(tournament.has_qualifying !== false ? ["Q"] : []),
     ...(tournament.has_practice === true ? ["PT"] : []),
     ...(tournament.has_proam === true ? ["PA"] : []),
@@ -1770,6 +1771,10 @@ function roundLabelsFor(tournament) {
 // One place that knows what a round label is called, so a new slot doesn't have
 // to be taught to seventeen separate ternaries scattered through the file.
 const ROUND_NAMES = {
+  // A set-up day before play starts. Nothing is played on it — it exists so the
+  // flags for the opening round have a day to be cut and written down on, the
+  // same as every other round gets.
+  PRE: { short: "PRE", long: "Pre-tournament", full: "Pre-tournament" },
   Q:  { short: "Q",  long: "Round Q",  full: "Qualifying" },
   PT: { short: "PT", long: "Practice", full: "Practice" },
   PA: { short: "PA", long: "Pro-Am",   full: "Pro-Am" },
@@ -1777,7 +1782,7 @@ const ROUND_NAMES = {
 // A Pro-Am is played to a tee sheet the host club runs, not to a pace benchmark
 // set by the referees — there is nothing to measure a group against, so pace of
 // play does not apply to it.
-const PACELESS_ROUND_LABELS = ["PA"];
+const PACELESS_ROUND_LABELS = ["PRE", "PA"];
 const isPaceRound = (l) => !PACELESS_ROUND_LABELS.includes(l);
 
 // Hole positions are cut ahead of the day they are played on, and one cutting
@@ -1850,6 +1855,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   const [newHasQualifying, setNewHasQualifying] = useState(true);
   // Practice and Pro-Am days are the exception rather than the rule, so they
   // are off unless someone asks for them.
+  const [newHasPre, setNewHasPre] = useState(false);
   const [newHasPractice, setNewHasPractice] = useState(false);
   const [newHasProAm, setNewHasProAm] = useState(false);
   const [newNumRounds, setNewNumRounds] = useState(4);
@@ -1994,6 +2000,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
 
     if (configured) {
       const list = [
+        ...(selectedTournament.has_pre === true ? ["PRE"] : []),
         ...(selectedTournament.has_qualifying !== false ? ["Q"] : []),
         ...(selectedTournament.has_practice === true ? ["PT"] : []),
         ...(selectedTournament.has_proam === true ? ["PA"] : []),
@@ -2015,7 +2022,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
 
   const resetForm = () => {
     setNewName(""); setNewVenue(""); setNewLocation(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
-    setNewHasPractice(false); setNewHasProAm(false);
+    setNewHasPre(false); setNewHasPractice(false); setNewHasProAm(false);
     setNewYear(String(new Date().getFullYear()));
     setNewStartDate(""); setNewEndDate(""); setNewRoles({});
     setEditingTournamentId(null);
@@ -2027,6 +2034,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
     setNewLocation(t.location || "");
     setNewFormat(t.format || "stroke");
     setNewHasQualifying(t.has_qualifying !== false);
+    setNewHasPre(t.has_pre === true);
     setNewHasPractice(t.has_practice === true);
     setNewHasProAm(t.has_proam === true);
     setNewNumRounds(t.num_rounds ?? 4);
@@ -2042,17 +2050,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
     if (!newName.trim() || busy) return;
     setBusy(true);
     if (editingTournamentId) {
-      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, hasPractice: newHasPractice, hasProAm: newHasProAm, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, hasPre: newHasPre, hasPractice: newHasPractice, hasProAm: newHasProAm, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       await setTournamentRoles(editingTournamentId, newRoles);
       setRolesMap(r => ({ ...r, [editingTournamentId]: newRoles }));
       setTournaments(prev => prev.map(t => t.id === editingTournamentId
-        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), location: newLocation.trim() || null, format: newFormat, has_qualifying: newHasQualifying, has_practice: newHasPractice, has_proam: newHasProAm, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
+        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), location: newLocation.trim() || null, format: newFormat, has_qualifying: newHasQualifying, has_pre: newHasPre, has_practice: newHasPractice, has_proam: newHasProAm, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
         : t));
       setBusy(false);
       setShowCreate(false);
       resetForm();
     } else {
-      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, hasPractice: newHasPractice, hasProAm: newHasProAm, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, hasPre: newHasPre, hasPractice: newHasPractice, hasProAm: newHasProAm, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       if (t?.id) {
         await setTournamentRoles(t.id, newRoles);
         setRolesMap(r => ({ ...r, [t.id]: newRoles }));
@@ -2368,6 +2376,14 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
                     }}>Q{newHasQualifying ? " ✓" : ""}</button>
                   {/* Practice and Pro-Am are optional days that many events
                       simply don't hold, so they are opt-in per tournament. */}
+                  <button onClick={() => setNewHasPre(v => !v)}
+                    title="Pre-tournament set-up day — no play, used to cut the opening round's flags"
+                    style={{
+                      padding: "8px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                      background: newHasPre ? "#faf2ff" : "#f6f8fa",
+                      border: `1px solid ${newHasPre ? "#8250df" : "#d1d9e0"}`,
+                      color: newHasPre ? "#8250df" : "#59636e",
+                    }}>PRE{newHasPre ? " ✓" : ""}</button>
                   <button onClick={() => setNewHasPractice(v => !v)}
                     title="Practice day"
                     style={{
@@ -5859,6 +5875,7 @@ function CourseSetupScreen({
     setHoles(Array.from({ length: 18 }, (_, i) => normaliseHole({ ...blankHole(), ...(src?.[i] || {}) })));
     setPar3Base(courseSetup?.par3Base ?? {});
     setPracticeGreen(courseSetup?.practiceGreen ?? null);
+    if (courseSetup?.positionsFor) setPreTarget(courseSetup.positionsFor);
     setSaved(false);
   }, [savedStamp]);
 
@@ -5912,15 +5929,32 @@ function CourseSetupScreen({
   const recordedHere = positionsLoaded
     ? todayPositions?.fromLabel === roundLabel
     : courseSetup?.positionsFor === roundLabel;
-  const positionsFor = positionsLoaded
-    ? (inheritsOwn
-        ? (nextLabel && !nextInherits ? nextLabel : null)
-        : ((!todayPositions || recordedHere) ? roundLabel : (nextLabel && !nextInherits ? nextLabel : null)))
-    // Before the lookup returns: this round's own saved sheet already records
-    // which round it was filled in for, and that is the answer in every case
-    // except one this form can't create.
-    : (courseSetup?.positionsFor
-        ?? ((nextLabel && !nextInherits) ? nextLabel : (inheritsOwn ? null : roundLabel)));
+
+  // The day after this one, unless that day plays to somebody else's flags.
+  const nextTarget = (nextLabel && !nextInherits) ? nextLabel : null;
+
+  // Every day cuts the flags for the day that follows it. A Pre-tournament day
+  // exists so the opening round has such a day — without one, the first round
+  // has nobody before it and has to record its own.
+  const schedule = availableRoundLabels || ROUND_LABELS;
+  const isPreDay = roundLabel === "PRE";
+  const isFirstRound = schedule[0] === roundLabel;
+  const recordsOwn = !inheritsOwn && isFirstRound && !isPreDay;
+
+  // On a Pre day the target is the first round actually played, but which round
+  // that is can vary with how the week is arranged, so it stays a choice.
+  const firstPlayed = schedule.find(l => l !== "PRE") ?? null;
+  const [preTarget, setPreTarget] = useState(
+    () => courseSetup?.positionsFor ?? firstPlayed ?? null
+  );
+
+  const positionsFor = isPreDay
+    ? preTarget
+    : positionsLoaded
+      ? (recordsOwn ? roundLabel : nextTarget)
+      // Before the lookup returns, the round's own saved sheet already says
+      // which round it was filled in for.
+      : (courseSetup?.positionsFor ?? (recordsOwn ? roundLabel : nextTarget));
   const positionsNeeded = !!positionsFor;
   const positionsAreForToday = positionsNeeded && positionsFor === roundLabel;
 
@@ -6330,8 +6364,31 @@ function CourseSetupScreen({
           </div>
         )}
 
+        {/* The one day where the target is a decision rather than a fact: a
+            set-up day can precede a Qualifying, a Practice or a Round 1
+            depending on how the week is arranged. */}
+        {isPreDay && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>CUTTING FLAGS FOR</span>
+            <select
+              value={preTarget || ""}
+              disabled={!mayEditAnything}
+              onChange={e => { setPreTarget(e.target.value || null); setSaved(false); }}
+              style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: mayEditAnything ? "#ffffff" : "#f6f8fa", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+              <option value="">— round —</option>
+              {schedule.filter(l => l !== "PRE").map(l => (
+                <option key={l} value={l}>{roundFull(l)}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
-          {positionsAreForToday
+          {isPreDay
+            ? (positionsFor
+                ? `No play today — Front and Side are the flags being cut for ${roundFull(positionsFor)}.`
+                : "No play today. Choose which round these flags are for.")
+            : positionsAreForToday
               ? `Front and Side are the positions ${roundFull(roundLabel)} itself is played to.`
               : positionsNeeded
                 ? `Front and Side are cut today for ${roundFull(positionsFor)}.`
@@ -10408,20 +10465,20 @@ async function fetchRoundById(id) {
   if (error) return null;
   return data;
 }
-async function createTournament({ name, hostVenue, location, format, hasQualifying, hasPractice, hasProAm, numRounds, year, startDate, endDate }) {
+async function createTournament({ name, hostVenue, location, format, hasQualifying, hasPre, hasPractice, hasProAm, numRounds, year, startDate, endDate }) {
   try {
     const { data, error } = await supabase.from("tournaments")
       // Dates are optional: a competition is often created before the schedule
       // is confirmed, and an empty date must stay null rather than become "".
-      .insert({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, has_practice: hasPractice === true, has_proam: hasProAm === true, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null })
+      .insert({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, has_pre: hasPre === true, has_practice: hasPractice === true, has_proam: hasProAm === true, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null })
       .select().maybeSingle();
     if (error) return null;
     return data;
   } catch { return null; }
 }
-async function updateTournament(id, { name, hostVenue, location, format, hasQualifying, hasPractice, hasProAm, numRounds, year, startDate, endDate }) {
+async function updateTournament(id, { name, hostVenue, location, format, hasQualifying, hasPre, hasPractice, hasProAm, numRounds, year, startDate, endDate }) {
   try {
-    await supabase.from("tournaments").update({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, has_practice: hasPractice === true, has_proam: hasProAm === true, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null }).eq("id", id);
+    await supabase.from("tournaments").update({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, has_pre: hasPre === true, has_practice: hasPractice === true, has_proam: hasProAm === true, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null }).eq("id", id);
   } catch {}
 }
 async function deleteTournament(id) {
