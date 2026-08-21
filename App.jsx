@@ -6091,19 +6091,31 @@ function CourseSetupScreen({
             const clash = sideClashes.has(i);
             return plainCell(off, (
               <>
-                {numInput(h.side, val => setHole(i, { side: val }), off)}
+                <input
+                  value={h.side ?? ""}
+                  onChange={e => setHole(i, { side: e.target.value })}
+                  disabled={off}
+                  inputMode="numeric"
+                  style={{
+                    flex: 1, minWidth: 0, width: "50%", boxSizing: "border-box",
+                    border: "none", outline: "none", background: "transparent",
+                    color: off ? "#8c959f" : "#1f2328",
+                    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    textAlign: "right", padding: "0 1px", height: "100%",
+                  }}
+                />
                 <span
                   onClick={off ? undefined : () => cycleSide(i)}
                   role={off ? undefined : "button"}
                   title={clash ? "Another hole of the same par on this nine is on the same side" : (off ? undefined : "Tap to change side")}
                   style={{
-                    width: 26, flexShrink: 0, alignSelf: "stretch",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    borderLeft: "1px solid #d1d9e0",
+                    flex: 1, minWidth: 0, width: "50%", alignSelf: "stretch",
+                    display: "flex", alignItems: "center", justifyContent: "flex-start",
+                    paddingLeft: 1,
                     cursor: off ? "default" : "pointer",
                     fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                    background: clash ? "#ffebe9" : v ? "#ddf4ff" : "transparent",
-                    color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#0969da" : "#c2c8cf",
+                    color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#1f2328" : "#c2c8cf",
+                    textDecoration: clash ? "underline" : "none",
                   }}>{v || "–"}</span>
               </>
             ));
