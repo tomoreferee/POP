@@ -1782,6 +1782,13 @@ const ROUND_NAMES = {
 // set by the referees — there is nothing to measure a group against, so pace of
 // play does not apply to it.
 const PACELESS_ROUND_LABELS = ["PRE", "PA"];
+
+// A set-up day isn't a round of golf. It exists only so the Course Setup sheet
+// has somewhere to file the opening round's hole positions, so it is kept out
+// of every place rounds are otherwise chosen — nobody opens it to record play.
+const SETUP_ONLY_ROUNDS = ["PRE"];
+const isSetupOnlyRound = (l) => SETUP_ONLY_ROUNDS.includes(l);
+const playableRounds = (labels) => (labels || []).filter(l => !isSetupOnlyRound(l));
 const isPaceRound = (l) => !PACELESS_ROUND_LABELS.includes(l);
 
 // Hole positions are cut ahead of the day they are played on, and one cutting
@@ -1992,7 +1999,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   // tournaments created before that setting existed have it blank — for those,
   // infer the list from the rounds that actually exist instead of assuming Q+4.
   const availableRoundLabels = (() => {
-    if (!selectedTournament) return DEFAULT_ROUND_LABELS;
+    if (!selectedTournament) return playableRounds(DEFAULT_ROUND_LABELS);
     const existing = rounds.map(r => r.label);
     const configured = selectedTournament.num_rounds != null || selectedTournament.has_qualifying != null;
 
@@ -2005,16 +2012,16 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
       ];
       // Never hide a round that already holds data
       existing.forEach(l => { if (!list.includes(l)) list.push(l); });
-      return ROUND_LABELS.filter(l => list.includes(l));
+      return playableRounds(ROUND_LABELS.filter(l => list.includes(l)));
     }
 
     // Unconfigured: show what exists (plus the next round so it can be started)
-    if (existing.length === 0) return DEFAULT_ROUND_LABELS;
+    if (existing.length === 0) return playableRounds(DEFAULT_ROUND_LABELS);
     const numbered = existing.filter(l => !NAMED_ROUND_LABELS.includes(l)).map(Number).filter(n => !isNaN(n));
     const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
     const list = [...existing];
     if (nextNum <= 4 && !list.includes(String(nextNum))) list.push(String(nextNum));
-    return ROUND_LABELS.filter(l => list.includes(l));
+    return playableRounds(ROUND_LABELS.filter(l => list.includes(l)));
   })();
 
   const resetForm = () => {
@@ -7595,7 +7602,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
     const existing = rounds.map(r => r.label);
     // Anything already created stays on the list even if the configuration has
     // since changed, so an open round can never become unreachable.
-    const merged = [...new Set([...allowed, ...existing])];
+    const merged = playableRounds([...new Set([...allowed, ...existing])]);
     return merged.sort(byRoundOrder).map(l => ({
       label: l,
       exists: existing.includes(l),
