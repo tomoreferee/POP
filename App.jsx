@@ -1571,6 +1571,29 @@ const STALE_AFTER_SEC = 180;
 const VERSION_CHECK_MS = 120000;
 
 // ─── Live-sync indicator ────────────────────────────────────────────────────
+// The warning has to appear on every screen, but the connection state lives in
+// AppShell, which returns from a dozen different branches. Rather than thread
+// props through all of them, AppShell publishes here and the notice — mounted
+// once, above everything — reads from it.
+const liveFeedStore = {
+  value: { status: "connecting", lastSyncAt: null, onSync: null },
+  listeners: new Set(),
+  set(next) {
+    this.value = { ...this.value, ...next };
+    this.listeners.forEach(fn => fn());
+  },
+  subscribe(fn) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  },
+};
+
+function useLiveFeed() {
+  const [, force] = useState(0);
+  useEffect(() => liveFeedStore.subscribe(() => force(n => n + 1)), []);
+  return liveFeedStore.value;
+}
+
 // Silent while the feed is healthy. It deliberately says nothing during a normal
 // refresh: those happen every 30s, and a chip that appeared and vanished each
 // time made the whole header nudge up and down — motion that reads as a glitch
@@ -1650,6 +1673,25 @@ function useVersionWatch() {
   }, []);
 
   return outdated;
+}
+
+// Centred and fixed to the top so it reads the same on every screen and can't
+// disturb the layout underneath — on the Dashboard that layout is a table being
+// read during play, and shifting it down a row is worse than the warning helps.
+function LiveFeedNotice() {
+  const { status, lastSyncAt, onSync } = useLiveFeed();
+  if (!onSync) return null;
+  return (
+    <div style={{
+      position: "fixed", top: 8, left: 0, right: 0, zIndex: 3500,
+      display: "flex", justifyContent: "center", pointerEvents: "none",
+      fontFamily: APP_FONT,
+    }}>
+      <span style={{ pointerEvents: "auto" }}>
+        <SyncIndicator status={status} lastSyncAt={lastSyncAt} onSync={onSync} />
+      </span>
+    </div>
+  );
 }
 
 function UpdateBanner({ show }) {
@@ -6772,7 +6814,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 }
 
 function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, venueLocation, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
-  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, onSync }) {
+  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
@@ -6990,13 +7032,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           </div>
           <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
         </div>
-        {/* Right side: clock sits beside the account menu. */}
-        {/* Clock and account on the top line. The warning below them is absolutely
-            positioned so that its appearing can't change the header's height —
-            the table underneath is being read while play is going on, and having
-            it jump down a row is worse than the warning is useful. */}
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Right side: clock sits beside the account menu. The connection warning
+            is not here — it is mounted once, centred, above every screen. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             {/* Online indicator hidden for now — re-enable by restoring this line:
                 <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -7014,10 +7052,6 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 onGoToSetup={canEditSetup_ ? onBack : null}
               />
             )}
-          </div>
-          <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4 }}>
-            <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} onSync={onSync} />
-          </div>
         </div>
       </div>
 
@@ -10395,6 +10429,8 @@ function AppShell() {
   useEffect(() => { isAdminRef.current = isAdmin; }, [isAdmin]);
   useEffect(() => { currentRoundRef.current = currentRound; }, [currentRound]);
   useEffect(() => { liveStatusRef.current = liveStatus; }, [liveStatus]);
+  useEffect(() => { liveFeedStore.set({ status: liveStatus, lastSyncAt }); }, [liveStatus, lastSyncAt]);
+  useEffect(() => { liveFeedStore.set({ onSync: currentUser ? syncNow : null }); }, [syncNow, currentUser]);
 
   const handleLogout = () => {
     sessionPasswordRef.current = null;
@@ -10877,9 +10913,6 @@ function AppShell() {
     {accountModal}
     {passwordModal}
     <Dashboard
-      liveStatus={liveStatus}
-      lastSyncAt={lastSyncAt}
-      onSync={syncNow}
       groups={groups}
       groupData={groupData}
       pars={pars}
@@ -11002,6 +11035,7 @@ export default function App() {
   return (
     <>
       <AppShell />
+      <LiveFeedNotice />
       <UpdateBanner show={updateAvailable} />
     </>
   );
