@@ -11766,7 +11766,7 @@ function AppShell() {
       onAccount={() => setShowAccount(true)}
       onChangePassword={() => setShowChangePassword(true)}
       onManageTournaments={() => setScreen("tournament")}
-      onGoToDashboard={groups.length > 0 ? () => setScreen("dashboard") : null}
+      onGoToDashboard={() => setScreen("dashboard")}
       onGoToSetup={() => setScreen(usersReturnTo === "dashboard" ? "setup" : usersReturnTo)}
     />
     </>
@@ -11791,8 +11791,12 @@ function AppShell() {
       onAccount={() => setShowAccount(true)}
       onChangePassword={() => setShowChangePassword(true)}
       onManageUsers={isAdmin ? () => { setUsersReturnTo("courseSetup"); setScreen("users"); } : null}
-      onManageTournaments={isAdmin ? () => setScreen("tournament") : null}
-      onGoToDashboard={groups.length > 0 ? () => setScreen("dashboard") : null}
+      // Every one of these used to be conditional, and on a Practice round with
+      // no groups yet, opened by a referee who isn't an admin, all of them came
+      // back null at once — leaving the account menu with no way out of the
+      // screen at all. There must always be a route back.
+      onManageTournaments={() => setScreen("tournament")}
+      onGoToDashboard={() => setScreen("dashboard")}
       onGoToSetup={canEditSetup(rolesMap, currentTournament?.id, currentUser, isAdmin) ? () => setScreen("setup") : null}
       onLogout={handleLogout}
     />
