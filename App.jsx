@@ -1691,6 +1691,34 @@ function UpdateBanner({ show }) {
 // chooses its own round independently.
 const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
 
+// Competitions are created on one device and picked on others, so the list has
+// to be live. It was only ever read once per screen, which meant a referee
+// standing on the first tee could not select an event the tournament director
+// had just set up — they had to be told to reload the page.
+//
+// The callback is held in a ref so callers don't have to memoise it, and the
+// reads are debounced because creating a competition also writes its rounds and
+// roles, which arrive as a burst.
+function useTournamentListSync(onChange) {
+  const cbRef = useRef(onChange);
+  useEffect(() => { cbRef.current = onChange; }, [onChange]);
+
+  useEffect(() => {
+    let timer = null;
+    let dead = false;
+    const bump = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { if (!dead) cbRef.current?.(); }, 400);
+    };
+    const channel = supabase
+      .channel(`tournaments_list_sync_${Math.random().toString(36).slice(2, 8)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_access" }, bump)
+      .subscribe();
+    return () => { dead = true; clearTimeout(timer); supabase.removeChannel(channel); };
+  }, []);
+}
+
 function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onChangePassword, onManageUsers, onRoundSelected, liveTournamentId, openRoundId, hasLiveGroups, allUsers, refereeCalls, onClearRefereeCall }) {
   const [headerRef, headerH] = useHeaderHeight();
   const [tournaments, setTournaments] = useState([]);
@@ -1813,6 +1841,12 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
       }
     })();
   }, []);
+
+  // Keeps the list current while this screen is open — a competition created
+  // elsewhere now appears without the device having to be reloaded. The create
+  // form is left alone: refreshing the list behind a half-typed form would be
+  // its own bug.
+  useTournamentListSync(() => { reloadTournaments().catch(() => {}); });
 
   const openRoundPicker = (t) => {
     setSelectedTournamentId(t.id);
@@ -6631,15 +6665,20 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
     return t.created_at ? String(new Date(t.created_at).getFullYear()) : String(new Date().getFullYear());
   };
 
-  useEffect(() => {
-    (async () => {
-      const all = await fetchTournaments();
-      const visible = all.filter(t => isAdmin || t.status !== "closed");
-      setTournaments(visible);
-      const current = visible.find(t => t.id === tournamentId) || visible[0];
-      if (current) { setYear(yearOf(current)); setTid(current.id); }
-    })();
-  }, [tournamentId, isAdmin]);
+  const loadTournaments = useCallback(async ({ seedSelection }) => {
+    const all = await fetchTournaments();
+    const visible = all.filter(t => isAdmin || t.status !== "closed");
+    setTournaments(visible);
+    // Only move the dropdowns on first load. Doing it on every refresh would
+    // yank a selection out from under someone mid-choice.
+    if (!seedSelection) return;
+    const current = visible.find(t => t.id === tournamentId) || visible[0];
+    if (current) { setYear(yearOf(current)); setTid(current.id); }
+  }, [isAdmin, tournamentId]);
+
+  useEffect(() => { loadTournaments({ seedSelection: true }); }, [tournamentId, isAdmin]);
+
+  useTournamentListSync(() => { loadTournaments({ seedSelection: false }).catch(() => {}); });
 
   useEffect(() => {
     if (!tid) { setRounds([]); return; }
