@@ -5936,14 +5936,15 @@ function CourseSetupScreen({
     />
   );
   const selStyle = (disabled) => ({
-    flex: 1, minWidth: 0, border: "1px solid #d1d9e0", borderRadius: 4, height: 28,
+    flex: 1, minWidth: 0, width: "100%", boxSizing: "border-box",
+    border: "1px solid #d1d9e0", borderRadius: 4, height: 28, padding: 0,
     background: disabled ? "#f6f8fa" : "#ffffff",
     fontFamily: "inherit", fontSize: 12, fontWeight: 700,
     textAlign: "center", textAlignLast: "center",
     color: disabled ? "#8c959f" : "#1f2328",
   });
   const stimpPicker = (value, onChange, disabled) => (
-    <div style={{ display: "flex", gap: 2, padding: 3 }}>
+    <div style={{ display: "flex", gap: 2, padding: 2 }}>
       <select
         value={value?.ft ?? ""}
         disabled={disabled}
@@ -5999,10 +6000,10 @@ function CourseSetupScreen({
           {isPar3 ? (() => {
             const y = par3PlayingYards(i);
             return (
-              <div style={{ textAlign: "center", padding: "6px 2px", fontSize: 12, fontWeight: 700, color: y == null ? "#8c959f" : "#1f2328", whiteSpace: "nowrap" }}>
+              <div style={{ textAlign: "center", padding: "6px 2px", fontSize: 11, fontWeight: 700, color: y == null ? "#8c959f" : "#1f2328", lineHeight: 1.3 }}>
                 {y == null
-                  ? <span style={{ fontWeight: 400 }}>set BOT→FOG</span>
-                  : <>{y}y / {Math.round(y * YARDS_TO_M)}m</>}
+                  ? <span style={{ fontWeight: 400, color: "#8c959f" }}>y / m</span>
+                  : <>{y}y<br />{Math.round(y * YARDS_TO_M)}m</>}
               </div>
             );
           })() : (
@@ -6018,7 +6019,7 @@ function CourseSetupScreen({
 
   const avgRow = (label, value) => (
     <tr style={{ background: "#f6f8fa" }}>
-      <td colSpan={5} style={{ ...cell, padding: "8px 8px", fontSize: 10, fontWeight: 700, color: "#59636e", letterSpacing: 0.5, textAlign: "right" }}>
+      <td colSpan={5} style={{ ...cell, padding: "8px 6px", fontSize: 9, fontWeight: 700, color: "#59636e", letterSpacing: 0.3, textAlign: "right", lineHeight: 1.25 }}>
         {label}
       </td>
       <td style={{ ...cell, padding: "8px 4px", textAlign: "center", fontSize: 13, fontWeight: 700, color: value ? "#1f2328" : "#8c959f" }}>
@@ -6077,11 +6078,11 @@ function CourseSetupScreen({
             <div style={{ fontSize: 11, color: "#818b98", marginBottom: 10 }}>
               From the yardage book, in yards. Fixed for the hole — the Par 3 column works itself out from this.
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
               {par3Holes.map(i => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1f2328", minWidth: 24 }}>H{i + 1}</span>
-                  <div style={{ width: 76, border: "1px solid #d1d9e0", borderRadius: 6, background: editableHoles[i] ? "#ffffff" : "#f6f8fa", height: 32, display: "flex", alignItems: "center" }}>
+                <div key={i} style={{ flex: "1 1 0", minWidth: 60 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#59636e", textAlign: "center", marginBottom: 3 }}>H{i + 1}</div>
+                  <div style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: editableHoles[i] ? "#ffffff" : "#f6f8fa", height: 32, display: "flex", alignItems: "center" }}>
                     {numInput(par3Base[i] ?? "", v => setBase(i, v), !editableHoles[i], "y")}
                   </div>
                 </div>
@@ -6110,12 +6111,12 @@ function CourseSetupScreen({
         )}
 
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 430 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               {/* Grouped exactly as the paper form groups them, so which round a
                   column belongs to is answered before it is asked. */}
               <tr>
-                <th rowSpan={2} style={{ ...th, width: 30 }}>HOLE</th>
+                <th rowSpan={2} style={{ ...th, width: "9%" }}>HOLE</th>
                 <th colSpan={2} style={groupTh("this")}>{roundFull(roundLabel)}</th>
                 <th colSpan={2} style={{
                   ...groupTh(positionsAreForToday ? "this" : "next"),
@@ -6127,11 +6128,11 @@ function CourseSetupScreen({
                 <th style={groupTh("this")}>{roundFull(roundLabel)}</th>
               </tr>
               <tr>
-                <th style={th}>From<br />BOT</th>
-                <th style={th}>Par 3<br />y / m</th>
-                <th style={th}>Front</th>
-                <th style={th}>Side</th>
-                <th style={{ ...th, minWidth: 104 }}>Stimp</th>
+                <th style={{ ...th, width: "14%" }}>From<br />BOT</th>
+                <th style={{ ...th, width: "21%" }}>Par 3<br />y / m</th>
+                <th style={{ ...th, width: "13%" }}>Front</th>
+                <th style={{ ...th, width: "13%" }}>Side</th>
+                <th style={{ ...th, width: "30%" }}>Stimp</th>
               </tr>
             </thead>
             <tbody>
@@ -6141,7 +6142,7 @@ function CourseSetupScreen({
               {avgRow("BACK NINE GREEN SPEED AVERAGE", back)}
               {avgRow("ALL 18 HOLES GREEN SPEED AVERAGE", all18)}
               <tr>
-                <td colSpan={5} style={{ ...cell, padding: "8px 8px", fontSize: 10, fontWeight: 700, color: "#59636e", letterSpacing: 0.5, textAlign: "right" }}>
+                <td colSpan={5} style={{ ...cell, padding: "8px 6px", fontSize: 9, fontWeight: 700, color: "#59636e", letterSpacing: 0.3, textAlign: "right", lineHeight: 1.25 }}>
                   PRACTICE GREEN SPEED
                 </td>
                 <td style={cell}>
