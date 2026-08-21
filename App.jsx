@@ -1752,6 +1752,26 @@ const ROUND_NAMES = {
 const PACELESS_ROUND_LABELS = ["PA"];
 const isPaceRound = (l) => !PACELESS_ROUND_LABELS.includes(l);
 
+// Hole positions are cut ahead of the day they are played on, and one cutting
+// can serve more than one day: Practice is played to the Qualifying positions,
+// so nobody goes out and measures a separate set for it. Everything else gets
+// its own. Keeping that here means the Course Setup form can work out what the
+// referee is actually walking the course to record.
+const SHARES_POSITIONS_WITH = { PT: "Q" };
+const needsOwnPositions = (l) => !(l in SHARES_POSITIONS_WITH);
+
+// Which round's positions are being prepared while this round is the one in
+// hand — the next one along that isn't inheriting somebody else's.
+function nextRoundNeedingPositions(currentLabel, availableLabels) {
+  const order = (availableLabels || ROUND_LABELS).filter(needsOwnPositions);
+  const i = order.indexOf(currentLabel);
+  if (i >= 0) return order[i + 1] ?? null;
+  // Practice isn't in the list, so step off it via the round it inherits from.
+  const inherited = SHARES_POSITIONS_WITH[currentLabel];
+  const j = inherited ? order.indexOf(inherited) : -1;
+  return j >= 0 ? (order[j + 1] ?? null) : (order[0] ?? null);
+}
+
 const roundShort = (l) => ROUND_NAMES[l]?.short ?? `R${l}`;
 const roundLong  = (l) => ROUND_NAMES[l]?.long  ?? `Round ${l}`;
 const roundFull  = (l) => ROUND_NAMES[l]?.full  ?? `Round ${l}`;
@@ -2464,7 +2484,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   );
 }
 
-function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, clearSignal, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveTurnTimeBack, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
+function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueAdmin, onAccount, onChangePassword, myPosition, onManageUsers, onLogout, onClearSession, clearSignal, hasLiveSession, onGoToDashboard, tournamentName, hostVenue, roundLabel, savedPars, savedParTimes, savedTurnTime, savedTurnTimeBack, livePars, liveParTimes, liveTurnTime, liveTurnTimeBack, livePlayersPerGroup, liveGreenSpeed, livePreferredLies, liveGroups, onApplyLiveEdits, onSwitchTournament, onPickTournament, tournamentId, onPickRound, onOpenRound, refereeCalls, onClearRefereeCall }) {
   const [headerRef, headerH] = useHeaderHeight();
   // The local draft is per round. It used to be one global blob, so creating a
   // new tournament inherited whatever groups were last typed anywhere.
@@ -2745,6 +2765,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
                 onManageUsers={isTrueAdmin ? onManageUsers : null}
                 onManageTournaments={isTrueAdmin ? onSwitchTournament : null}
                 onGoToDashboard={hasLiveSession ? onGoToDashboard : null}
+                onGoToCourseSetup={onGoToCourseSetup}
                 badges={
                   <>
                     <span style={{ fontSize: 9, fontWeight: 700, color: isTrueAdmin ? "#9a6700" : "#0969da", background: isTrueAdmin ? "#fff8c5" : "#ddf4ff", border: `1px solid ${isTrueAdmin ? "#9a670044" : "#0969da44"}`, borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1 }}>
@@ -5628,7 +5649,7 @@ function HelpGuideModal({ onClose }) {
   );
 }
 
-function UserMenu({ currentUser, onAccount, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToDashboard, onGoToSetup, badges = null, align = "right" }) {
+function UserMenu({ currentUser, onAccount, onChangePassword, onLogout, onManageUsers, onManageTournaments, onGoToDashboard, onGoToSetup, onGoToCourseSetup, badges = null, align = "right" }) {
   const [showHelp, setShowHelp] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -5693,6 +5714,7 @@ function UserMenu({ currentUser, onAccount, onChangePassword, onLogout, onManage
               {onManageTournaments && item("Manage tournaments", onManageTournaments)}
               {onGoToDashboard && item("Dashboard", onGoToDashboard)}
               {onGoToSetup && item("Setup", onGoToSetup)}
+              {onGoToCourseSetup && item("Course setup", onGoToCourseSetup)}
               {item("Help guides", () => setShowHelp(true))}
             </div>
 
@@ -5714,6 +5736,321 @@ function btnStyle(bg, color) {
     borderRadius: 6, padding: "8px 14px", cursor: "pointer",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 13, fontWeight: 700,
   };
+}
+
+// ─── Course Setup (the R1 / R2 paper form, on a phone) ──────────────────────
+// Mirrors the printed COURSE SET UP FORM so a referee can transcribe straight
+// down the page: hole, distance from the back of the tee, par-3 length, the
+// hole position for the next round, and the stimp reading.
+//
+// The nine-by-nine split is not cosmetic. R2 walks the front nine and reads the
+// practice green; R1 walks the back nine. Each can only edit what they measured,
+// which is what stops two referees on opposite sides of the course from
+// overwriting each other's readings.
+const COURSE_SETUP_EDIT_ALL = ["TD", "CR"];
+
+function canEditHoleSetup({ isAdmin, position, holeIdx }) {
+  if (isAdmin || COURSE_SETUP_EDIT_ALL.includes(position)) return true;
+  if (position === "R2") return holeIdx < 9;   // front nine
+  if (position === "R1") return holeIdx >= 9;  // back nine
+  return false;
+}
+function canEditPracticeGreen({ isAdmin, position }) {
+  return isAdmin || COURSE_SETUP_EDIT_ALL.includes(position) || position === "R2";
+}
+
+const YARDS_TO_M = 0.9144;
+
+// Stimp readings are taken in feet and inches, so they are stored that way.
+// Averaging needs a single number, hence inches as the working unit — but the
+// value that goes back on screen is converted to feet and inches again, because
+// "10′ 3″" is what a referee reads off the meter and writes on the form.
+const stimpToInches = (v) =>
+  (v && v.ft != null) ? Number(v.ft) * 12 + Number(v.in ?? 0) : null;
+const inchesToStimp = (t) => {
+  if (t == null) return null;
+  const r = Math.round(t);
+  return { ft: Math.floor(r / 12), in: r % 12 };
+};
+const fmtStimp = (v) => (v && v.ft != null ? `${v.ft}′ ${v.in ?? 0}″` : "–");
+function averageStimp(holes, from, to) {
+  const vals = [];
+  for (let i = from; i <= to; i++) {
+    const t = stimpToInches(holes?.[i]?.stimp);
+    if (t != null) vals.push(t);
+  }
+  if (!vals.length) return null;
+  return inchesToStimp(vals.reduce((a, b) => a + b, 0) / vals.length);
+}
+
+function CourseSetupScreen({
+  courseSetup, onSave, pars, roundLabel, tournamentName, hostVenue, tournamentId,
+  availableRoundLabels, currentUser, isAdmin, position,
+  onAccount, onChangePassword, onManageUsers, onManageTournaments,
+  onGoToDashboard, onGoToSetup, onLogout,
+}) {
+  const blankHole = () => ({ bot: "", par3y: "", par3m: "", front: "", side: "", stimp: null });
+  const [holes, setHoles] = useState(() => {
+    const saved = courseSetup?.holes;
+    return Array.from({ length: 18 }, (_, i) => ({ ...blankHole(), ...(saved?.[i] || {}) }));
+  });
+  const suggestedFor = nextRoundNeedingPositions(roundLabel, availableRoundLabels);
+  const [positionsFor, setPositionsFor] = useState(
+    courseSetup?.positionsFor ?? suggestedFor ?? ""
+  );
+  const [practiceGreen, setPracticeGreen] = useState(courseSetup?.practiceGreen ?? null);
+  const [saved, setSaved] = useState(false);
+
+  const editableHoles = holes.map((_, i) => canEditHoleSetup({ isAdmin, position, holeIdx: i }));
+  const mayEditAnything = editableHoles.some(Boolean) || canEditPracticeGreen({ isAdmin, position });
+  const mayEditPG = canEditPracticeGreen({ isAdmin, position });
+
+  const setHole = (i, patch) => {
+    setSaved(false);
+    setHoles(hs => hs.map((h, idx) => (idx === i ? { ...h, ...patch } : h)));
+  };
+
+  // Yards and metres are two views of one measurement, so typing either fills
+  // the other. Both stay editable: the card the referee copies from sometimes
+  // rounds them independently, and overwriting what they typed would be wrong.
+  const setPar3 = (i, which, raw) => {
+    const n = raw === "" ? "" : Number(raw);
+    if (raw !== "" && !Number.isFinite(n)) return;
+    if (which === "y") {
+      setHole(i, { par3y: raw, par3m: raw === "" ? "" : String(Math.round(n * YARDS_TO_M)) });
+    } else {
+      setHole(i, { par3m: raw, par3y: raw === "" ? "" : String(Math.round(n / YARDS_TO_M)) });
+    }
+  };
+
+  const front = averageStimp(holes, 0, 8);
+  const back = averageStimp(holes, 9, 17);
+  const all18 = averageStimp(holes, 0, 17);
+
+  const handleSave = () => {
+    onSave({
+      holes: holes.map(h => ({
+        bot: h.bot === "" ? null : Number(h.bot),
+        par3y: h.par3y === "" ? null : Number(h.par3y),
+        par3m: h.par3m === "" ? null : Number(h.par3m),
+        front: h.front === "" ? null : Number(h.front),
+        side: h.side === "" ? null : Number(h.side),
+        stimp: h.stimp ?? null,
+      })),
+      positionsFor: positionsFor || null,
+      practiceGreen: practiceGreen ?? null,
+      // Averages are deliberately not stored. They are one edit away from
+      // disagreeing with the readings above them, and a stale average on a
+      // course report is worse than no average at all.
+      updatedBy: currentUser || null,
+      updatedAt: new Date().toISOString(),
+    }, { all18 });
+    setSaved(true);
+  };
+
+  const cell = { border: "1px solid #d1d9e0", padding: 0 };
+  const numInput = (value, onChange, disabled, placeholder) => (
+    <input
+      value={value ?? ""}
+      onChange={e => onChange(e.target.value)}
+      disabled={disabled}
+      placeholder={placeholder || ""}
+      inputMode="numeric"
+      style={{
+        width: "100%", boxSizing: "border-box", border: "none", outline: "none",
+        background: disabled ? "#f6f8fa" : "#ffffff",
+        color: disabled ? "#8c959f" : "#1f2328",
+        fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+        textAlign: "center", padding: "8px 2px", minWidth: 0,
+      }}
+    />
+  );
+  const stimpPicker = (value, onChange, disabled) => (
+    <div style={{ display: "flex", gap: 2, padding: 2 }}>
+      <select
+        value={value?.ft ?? ""}
+        disabled={disabled}
+        onChange={e => onChange(e.target.value === "" ? null : { ft: Number(e.target.value), in: value?.in ?? 0 })}
+        style={{ flex: 1, minWidth: 0, border: "1px solid #d1d9e0", borderRadius: 4, background: disabled ? "#f6f8fa" : "#ffffff", fontFamily: "inherit", fontSize: 12, fontWeight: 700, textAlign: "center", textAlignLast: "center", padding: "5px 0", color: disabled ? "#8c959f" : "#1f2328" }}>
+        <option value="">ft</option>
+        {Array.from({ length: 10 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
+      </select>
+      <select
+        value={value?.in ?? ""}
+        disabled={disabled || value?.ft == null}
+        onChange={e => onChange({ ft: value?.ft ?? 10, in: e.target.value === "" ? 0 : Number(e.target.value) })}
+        style={{ flex: 1, minWidth: 0, border: "1px solid #d1d9e0", borderRadius: 4, background: (disabled || value?.ft == null) ? "#f6f8fa" : "#ffffff", fontFamily: "inherit", fontSize: 12, fontWeight: 700, textAlign: "center", textAlignLast: "center", padding: "5px 0", color: (disabled || value?.ft == null) ? "#8c959f" : "#1f2328" }}>
+        <option value="">in</option>
+        {Array.from({ length: 12 }, (_, i) => i).map(n => <option key={n} value={n}>{n}″</option>)}
+      </select>
+    </div>
+  );
+
+  const avgRow = (label, value, span) => (
+    <tr style={{ background: "#f6f8fa" }}>
+      <td colSpan={span} style={{ ...cell, padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#59636e", letterSpacing: 1, textAlign: "right" }}>
+        {label}
+      </td>
+      <td style={{ ...cell, padding: "8px 4px", textAlign: "center", fontSize: 13, fontWeight: 700, color: value ? "#1f2328" : "#8c959f" }}>
+        {fmtStimp(value)}
+      </td>
+    </tr>
+  );
+
+  const holeRows = (from, to) => holes.slice(from, to + 1).map((h, k) => {
+    const i = from + k;
+    const locked = !editableHoles[i];
+    const isPar3 = pars?.[i] === 3;
+    return (
+      <tr key={i}>
+        <td style={{ ...cell, textAlign: "center", fontWeight: 700, fontSize: 13, padding: "8px 2px", background: locked ? "#f6f8fa" : "#ffffff", color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</td>
+        <td style={cell}>{numInput(h.bot, v => setHole(i, { bot: v }), locked)}</td>
+        <td style={cell}>
+          {/* Only par 3s carry a measured length on this form, so the other
+              holes show a dash rather than an input nobody should fill in. */}
+          {isPar3 ? (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {numInput(h.par3y, v => setPar3(i, "y", v), locked, "y")}
+              <span style={{ fontSize: 10, color: "#8c959f" }}>/</span>
+              {numInput(h.par3m, v => setPar3(i, "m", v), locked, "m")}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "8px 0" }}>–</div>
+          )}
+        </td>
+        <td style={cell}>{numInput(h.front, v => setHole(i, { front: v }), locked)}</td>
+        <td style={cell}>{numInput(h.side, v => setHole(i, { side: v }), locked)}</td>
+        <td style={cell}>{stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}</td>
+      </tr>
+    );
+  });
+
+  const th = { border: "1px solid #d1d9e0", background: "#f6f8fa", padding: "8px 4px", fontSize: 10, fontWeight: 700, color: "#59636e", letterSpacing: 0.5, textAlign: "center" };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#f6f8fa", fontFamily: APP_FONT, color: "#1f2328" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, color: "#1f2328" }}>COURSE SETUP</div>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
+          </div>
+          <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {tournamentName || "—"}{roundLabel ? ` — ${roundLong(roundLabel)}` : ""}
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", minWidth: 0 }}>
+          {currentUser && (
+            <UserMenu
+              currentUser={currentUser}
+              onAccount={onAccount}
+              onChangePassword={onChangePassword}
+              onLogout={onLogout}
+              onManageUsers={onManageUsers}
+              onManageTournaments={onManageTournaments}
+              onGoToDashboard={onGoToDashboard}
+              onGoToSetup={onGoToSetup}
+              badges={
+                position ? (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#1a7f37", background: "#dafbe1", border: "1px solid #1a7f3755", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1 }}>{position}</span>
+                ) : null
+              }
+            />
+          )}
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "16px 12px 40px" }}>
+
+        {/* Who may edit what. Said plainly and up front, because a referee who
+            finds half the form greyed out should know why without asking. */}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#59636e" }}>
+          {isAdmin || COURSE_SETUP_EDIT_ALL.includes(position)
+            ? "You can edit every hole."
+            : position === "R2" ? "You can edit the front nine (H1–H9) and the practice green."
+            : position === "R1" ? "You can edit the back nine (H10–H18)."
+            : "You have view-only access to this form."}
+        </div>
+
+        {/* Hole positions belong to the round being prepared, not the one being
+            played — the paper form has a separate "Hole Positions Round" box for
+            exactly this reason. */}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>HOLE POSITIONS FOR</span>
+          <select
+            value={positionsFor}
+            disabled={!mayEditAnything}
+            onChange={e => { setPositionsFor(e.target.value); setSaved(false); }}
+            style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: mayEditAnything ? "#ffffff" : "#f6f8fa", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+            <option value="">— round —</option>
+            {(availableRoundLabels || []).filter(needsOwnPositions).map(l => (
+              <option key={l} value={l}>{roundFull(l)}</option>
+            ))}
+          </select>
+          {/* Said out loud, because "why is there no Practice option?" is the
+              first thing anyone will wonder looking at this list. */}
+          <div style={{ fontSize: 11, color: "#818b98", width: "100%" }}>
+            {positionsFor && Object.entries(SHARES_POSITIONS_WITH)
+              .filter(([, src]) => src === positionsFor)
+              .map(([l]) => roundFull(l)).length > 0
+              ? `${Object.entries(SHARES_POSITIONS_WITH).filter(([, src]) => src === positionsFor).map(([l]) => roundFull(l)).join(", ")} plays to these same positions.`
+              : "Practice is played to the Qualifying positions, so it isn't cut separately."}
+          </div>
+        </div>
+
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
+            <thead>
+              <tr>
+                <th style={{ ...th, width: 34 }}>HOLE</th>
+                <th style={th}>From<br />BOT</th>
+                <th style={th}>Par 3<br />y / m</th>
+                <th style={th}>Front</th>
+                <th style={th}>Side</th>
+                <th style={{ ...th, minWidth: 110 }}>Stimp</th>
+              </tr>
+            </thead>
+            <tbody>
+              {holeRows(0, 8)}
+              {avgRow("FRONT NINE AVERAGE", front, 5)}
+              {holeRows(9, 17)}
+              {avgRow("BACK NINE AVERAGE", back, 5)}
+              {avgRow("ALL 18 AVERAGE", all18, 5)}
+              <tr>
+                <td colSpan={5} style={{ ...cell, padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#59636e", letterSpacing: 1, textAlign: "right" }}>
+                  PRACTICE GREEN
+                </td>
+                <td style={cell}>
+                  {stimpPicker(practiceGreen, v => { setPracticeGreen(v); setSaved(false); }, !mayEditPG)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {courseSetup?.updatedBy && (
+          <div style={{ fontSize: 11, color: "#818b98", marginTop: 8 }}>
+            Last saved by {courseSetup.updatedBy}
+            {courseSetup.updatedAt ? ` · ${new Date(courseSetup.updatedAt).toLocaleString("th-TH")}` : ""}
+          </div>
+        )}
+
+        {mayEditAnything && (
+          <button
+            onClick={handleSave}
+            style={{
+              width: "100%", marginTop: 16, padding: "12px 0", borderRadius: 6, cursor: "pointer",
+              fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+              background: saved ? "#dafbe1" : "#1f883d",
+              border: `1px solid ${saved ? "#1a7f37" : "#1a7f37"}`,
+              color: saved ? "#1a7f37" : "#ffffff",
+            }}>
+            {saved ? "✓ Saved" : "Save course setup"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Summary Report (Pace of Play + Suspension & Resumption) ───────────────────────
@@ -6079,7 +6416,19 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
 
 
         {/* ─── Pace of Play ─────────────────────────────────────────── */}
-                {/* Scope control for everything below: the per-round sections show the
+        {/* A Pro-Am is played to the host's tee sheet rather than to a pace
+            benchmark, so there is nothing here to measure a group against and
+            the section is left out entirely rather than shown full of dashes. */}
+        {!isPaceRound(roundLabel) ? (
+          <>
+            <div style={{ marginTop: 24 }}>{sectionHead("PACE OF PLAY", "pace")}</div>
+            <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 18, marginBottom: 24, textAlign: "center", color: "#59636e", fontSize: 13 }}>
+              Pace of play is not monitored for {roundFull(roundLabel)}.
+            </div>
+          </>
+        ) : (
+        <>
+        {/* Scope control for everything below: the per-round sections show the
             open round by default, or every round once loaded. */}
         <div style={{ marginTop: 24 }}>{sectionHead("PACE OF PLAY", "pace")}</div>
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "4px 0", marginBottom: 24, overflowX: "auto" }}>
@@ -6140,6 +6489,8 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         <div style={{ fontSize: 11, color: "#59636e", marginTop: -14, marginBottom: 24 }}>
           * = based on the most recently completed hole (round not finished yet). Δ is minutes ahead (–) / behind (+) of scheduled pace.
         </div>
+        </>
+        )}
 
         {/* ─── Suspension & Resumption ──────────────────────────────── */}
         <div style={{ marginTop: 24 }}>{sectionHead("SUSPENSION & RESUMPTION", "susp")}</div>
@@ -6864,7 +7215,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 }
 
 function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, venueLocation, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
-  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData }) {
+  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, onGoToCourseSetup }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
@@ -7100,10 +7451,17 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
                 onManageUsers={isTrueAdmin ? onManageUsers : null}
                 onManageTournaments={isTrueAdmin ? onManageTournaments : null}
                 onGoToSetup={canEditSetup_ ? onBack : null}
+                onGoToCourseSetup={onGoToCourseSetup}
               />
             )}
         </div>
       </div>
+
+      {!isPaceRound(roundLabel) && (
+        <div style={{ background: "#fff8c5", borderBottom: "1px solid #9a670044", padding: "8px 20px", fontSize: 12, color: "#7d4e00", fontWeight: 600 }}>
+          {roundFull(roundLabel)} — pace of play is not monitored. Times may still be recorded, but the ahead/behind figures do not apply.
+        </div>
+      )}
 
       <WeatherBar hostVenue={hostVenue} venueLocation={venueLocation} />
 
@@ -9351,9 +9709,10 @@ async function fetchAppState(roundId) {
     refereeCalls: data.referee_calls ?? [],
     greenSpeed: data.green_speed ?? {},
     preferredLies: data.preferred_lies ?? false,
+    courseSetup: data.course_setup ?? {},
   };
 }
-async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack, refereeCalls, greenSpeed, preferredLies }) {
+async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended, pendingStopTime, playersPerGroup, turnTime, turnTimeBack, refereeCalls, greenSpeed, preferredLies, courseSetup }) {
   if (!roundId) return { ok: false, error: "no round" };
   const base = {
     round_id: roundId,
@@ -9375,6 +9734,7 @@ async function saveAppState({ roundId, groups, pars, parTimes, baseSchedules, sc
     ...(refereeCalls !== undefined ? { referee_calls: refereeCalls } : {}),
     ...(greenSpeed !== undefined ? { green_speed: greenSpeed } : {}),
     ...(preferredLies !== undefined ? { preferred_lies: preferredLies } : {}),
+    ...(courseSetup !== undefined ? { course_setup: courseSetup } : {}),
   };
   const row = { ...base, ...optional };
   try {
@@ -9840,6 +10200,7 @@ function AppShell() {
   // realtime echo of an OLDER write can't stomp a NEWER local write (race condition
   // that was silently dropping WN/MN/TM/Bad Time log entries recorded in quick succession).
   const lastLocalWriteAt = useRef({});
+  const [courseSetup, setCourseSetup] = useState({});
   const [clearTick, setClearTick] = useState(0);
   const [liveStatus, setLiveStatus] = useState("connecting"); // connecting | live | down
   // Bumping this tears the realtime channels down and builds them again, which
@@ -10174,6 +10535,7 @@ function AppShell() {
         if (row.turn_time_back != null) setTurnTimeBack(row.turn_time_back);
         if (row.green_speed != null) setGreenSpeed(row.green_speed);
         if (row.preferred_lies != null) setPreferredLies(row.preferred_lies);
+        if (row.course_setup != null) setCourseSetup(row.course_setup);
       })
       .subscribe(status => report("state", status));
 
@@ -10231,6 +10593,7 @@ function AppShell() {
         setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
         setGreenSpeed(state.greenSpeed ?? {});
         setPreferredLies(!!state.preferredLies);
+        setCourseSetup(state.courseSetup ?? {});
       }
       // Local edits that haven't been acknowledged yet must survive the refresh,
       // otherwise pressing it during a bad patch of signal would throw away the
@@ -10691,35 +11054,37 @@ function AppShell() {
         // Every other saved value was applied here except this one, so switching
         // competition carried the previous one's H18 → H1 figure straight over.
         setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
+        setCourseSetup(state.courseSetup || {});
         setGroupData(gd || {});
         setLastSyncAt(new Date());
       } else {
         // Round has never been set up — start it blank, but inherit the course
         // setup so pars / par times / transit time don't have to be re-entered.
-        let courseSetup = null;
+        let courseDefaults = null;
         if (tournament?.pars?.length === 18 && tournament?.par_times?.length === 18) {
-          courseSetup = {
+          courseDefaults = {
             pars: tournament.pars,
             parTimes: tournament.par_times,
             turnTime: tournament.turn_time ?? 1,
             turnTimeBack: tournament.turn_time_back ?? tournament.turn_time ?? 1,
           };
         } else {
-          courseSetup = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
+          courseDefaults = await fetchCourseSetupFromPreviousRounds(tournament.id, round.id);
         }
         setGroups([]);
-        setPars(courseSetup?.pars || []);
-        setParTimes(courseSetup?.parTimes || []);
-        setTurnTime(courseSetup?.turnTime ?? 1);
+        setPars(courseDefaults?.pars || []);
+        setParTimes(courseDefaults?.parTimes || []);
+        setTurnTime(courseDefaults?.turnTime ?? 1);
         // Without this, a round that hasn't been set up yet kept the H18 → H1
         // transit time belonging to whatever was open before it.
-        setTurnTimeBack(courseSetup?.turnTimeBack ?? courseSetup?.turnTime ?? 1);
+        setTurnTimeBack(courseDefaults?.turnTimeBack ?? courseDefaults?.turnTime ?? 1);
         setBaseSchedules({});
         setSchedules({});
         setGroupData({});
         setSuspensions([]);
         setIsSuspended(false);
         setPendingStopTime("");
+        setCourseSetup({});
         // Green speed and preferred lies are measured on the day, so a round
         // that hasn't been set up starts blank rather than inheriting the
         // previous round's readings.
@@ -10843,6 +11208,30 @@ function AppShell() {
     handleUpdateGroup(toGroupId, { actionLogs: logs });
   };
 
+  // Saving the course setup also republishes the 18-hole stimp average as the
+  // round's green speed, so the Dashboard and Summary — which already show that
+  // figure — pick it up without anyone re-typing it.
+  const handleSaveCourseSetup = async (next, { all18 }) => {
+    setCourseSetup(next);
+    const gs = all18
+      ? { ...greenSpeed, avgFeet: all18.ft, avgInches: all18.in }
+      : greenSpeed;
+    const pg = next?.practiceGreen;
+    const gs2 = pg ? { ...gs, ptFeet: pg.ft, ptInches: pg.in } : gs;
+    setGreenSpeed(gs2);
+    const saved = await saveAppState({
+      groups, pars, parTimes, baseSchedules, schedules, suspensions, isSuspended,
+      pendingStopTime, refereeCalls, greenSpeed: gs2, preferredLies,
+      playersPerGroup, turnTime, turnTimeBack,
+      courseSetup: next, roundId: currentRound?.id,
+    });
+    if (saved && saved.ok === false) {
+      window.alert(`The course setup could not be saved.\n\n${saved.error}`);
+    } else if (saved && saved.degraded) {
+      window.alert("Saved, but this database is missing the course_setup column — run the migration or the form will not persist.");
+    }
+  };
+
   // Clear the entire session (admin only)
   const handleClearSession = async () => {
     const roundId = currentRound?.id;
@@ -10859,6 +11248,7 @@ function AppShell() {
     setBaseSchedules({});
     setSchedules({});
     setGroupData({});
+    setCourseSetup({});
     setActiveGroup(null);
     setSuspensions([]);
     setIsSuspended(false);
@@ -10943,6 +11333,33 @@ function AppShell() {
     </>
   );
 
+  if (screen === "courseSetup") return (
+    <>
+    {accountModal}
+    {passwordModal}
+    <CourseSetupScreen
+      courseSetup={courseSetup}
+      onSave={handleSaveCourseSetup}
+      pars={pars}
+      roundLabel={currentRound?.label}
+      tournamentName={currentTournament?.name}
+      hostVenue={currentTournament?.host_venue}
+      tournamentId={currentTournament?.id}
+      availableRoundLabels={ROUND_LABELS}
+      currentUser={currentUser}
+      isAdmin={isAdmin}
+      position={positionOf(rolesMap, currentTournament?.id, currentUser)}
+      onAccount={() => setShowAccount(true)}
+      onChangePassword={() => setShowChangePassword(true)}
+      onManageUsers={isAdmin ? () => { setUsersReturnTo("courseSetup"); setScreen("users"); } : null}
+      onManageTournaments={isAdmin ? () => setScreen("tournament") : null}
+      onGoToDashboard={groups.length > 0 ? () => setScreen("dashboard") : null}
+      onGoToSetup={canEditSetup(rolesMap, currentTournament?.id, currentUser, isAdmin) ? () => setScreen("setup") : null}
+      onLogout={handleLogout}
+    />
+    </>
+  );
+
   if (screen === "setup") return (
     <>
     {accountModal}
@@ -10962,6 +11379,7 @@ function AppShell() {
       onAccount={() => setShowAccount(true)}
       onChangePassword={() => setShowChangePassword(true)}
       onClearSession={handleClearSession}
+      onGoToCourseSetup={() => setScreen("courseSetup")}
       clearSignal={clearTick}
       hasLiveSession={groups.length > 0}
       onGoToDashboard={() => setScreen("dashboard")}
@@ -10996,6 +11414,7 @@ function AppShell() {
     {accountModal}
     {passwordModal}
     <Dashboard
+      onGoToCourseSetup={() => setScreen("courseSetup")}
       groups={groups}
       groupData={groupData}
       pars={pars}
