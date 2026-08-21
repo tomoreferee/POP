@@ -5809,13 +5809,8 @@ function CourseSetupScreen({
       return h;
     });
   });
-  // Not a choice: the flags cut today are for whatever is played tomorrow.
-  const positionsFor = nextRoundOf(roundLabel, availableRoundLabels);
-  // ...and if tomorrow inherits its positions from a day already played, there
-  // is nothing to walk out and measure. Practice is played to the Qualifying
-  // positions, so on Qualifying day these two columns stay empty.
-  const inheritsFrom = positionsFor ? SHARES_POSITIONS_WITH[positionsFor] : null;
-  const positionsNeeded = !!positionsFor && !inheritsFrom;
+  const nextLabel = nextRoundOf(roundLabel, availableRoundLabels);
+  const nextInherits = nextLabel ? SHARES_POSITIONS_WITH[nextLabel] : null;
   const [practiceGreen, setPracticeGreen] = useState(courseSetup?.practiceGreen ?? null);
   // Yardage-book distance, back of tee to front of green. A property of the
   // hole rather than of the day, so it carries across rounds.
@@ -5828,18 +5823,38 @@ function CourseSetupScreen({
   const [saved, setSaved] = useState(false);
   // The positions in play today, read back from whichever round recorded them.
   const [todayPositions, setTodayPositions] = useState(null);
+  const [positionsLoaded, setPositionsLoaded] = useState(false);
   useEffect(() => {
     let dead = false;
+    setPositionsLoaded(false);
     fetchHolePositionsFor(tournamentId, roundLabel).then(r => {
-      if (dead || !r) return;
-      setTodayPositions(r);
+      if (dead) return;
+      setTodayPositions(r?.holes?.length ? r : null);
       // Only seed; never overwrite what this round already holds.
-      if (r.par3Base) {
+      if (r?.par3Base) {
         setPar3Base(prev => (prev && Object.keys(prev).length ? prev : r.par3Base));
       }
+      setPositionsLoaded(true);
     });
     return () => { dead = true; };
   }, [tournamentId, roundLabel]);
+
+  // Which round the Front/Side columns are being filled in for.
+  //
+  // The normal case is tomorrow: positions are cut a day ahead. But two ends of
+  // the schedule break that. The first round of a competition has nobody before
+  // it to cut its positions, and a one-round event has nobody after it either —
+  // in both, the round has to record its own. So: if this round's positions
+  // haven't been written down anywhere yet, that is the job in front of you;
+  // once they have, the columns move on to the next round that needs its own.
+  const ownPositionsRecorded = !!todayPositions;
+  const positionsFor = !positionsLoaded
+    ? null
+    : !ownPositionsRecorded
+      ? roundLabel
+      : (nextLabel && !nextInherits ? nextLabel : null);
+  const positionsNeeded = !!positionsFor;
+  const positionsAreForToday = positionsNeeded && positionsFor === roundLabel;
 
   const editableHoles = holes.map((_, i) => canEditHoleSetup({ isAdmin, position, holeIdx: i }));
   const mayEditAnything = editableHoles.some(Boolean) || canEditPracticeGreen({ isAdmin, position });
@@ -6075,6 +6090,18 @@ function CourseSetupScreen({
           </div>
         )}
 
+        <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
+          {!positionsLoaded
+            ? "Checking which round the hole positions belong to…"
+            : positionsAreForToday
+              ? `Front and Side are the positions ${roundFull(roundLabel)} is played to — nothing earlier has recorded them.`
+              : positionsNeeded
+                ? `Front and Side are cut today for ${roundFull(positionsFor)}.`
+                : nextInherits
+                  ? `${roundFull(nextLabel)} is played to the ${roundFull(nextInherits)} positions, so Front and Side are not recorded today.`
+                  : `${roundFull(roundLabel)} is the last round, so there are no positions to cut.`}
+        </div>
+
         {todayPositions && (
           <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
             Today’s positions (shown under each hole number) were recorded on{" "}
@@ -6091,7 +6118,7 @@ function CourseSetupScreen({
                 <th rowSpan={2} style={{ ...th, width: 30 }}>HOLE</th>
                 <th colSpan={2} style={groupTh("this")}>{roundFull(roundLabel)}</th>
                 <th colSpan={2} style={{
-                  ...groupTh("next"),
+                  ...groupTh(positionsAreForToday ? "this" : "next"),
                   ...(positionsNeeded ? {} : { background: "#f6f8fa", color: "#8c959f" }),
                 }}>
                   HOLE POSITIONS · {positionsFor ? roundFull(positionsFor) : "—"}
