@@ -1649,22 +1649,31 @@ function useVersionWatch() {
 
 function UpdateBanner({ show }) {
   if (!show) return null;
+  // Dressed like the rest of the app: white card, hairline border, 6px corners,
+  // and the same tinted-chip idiom used for badges elsewhere. The solid blue
+  // slab it replaced was the only element on screen shouting, which made a
+  // routine notice look like an error.
   return (
     <div
-      onClick={() => window.location.reload()}
-      role="button"
       style={{
-        position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 4000,
-        background: "#0969da", color: "#ffffff", borderRadius: 8,
-        padding: "10px 14px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", gap: 12, cursor: "pointer",
-        boxShadow: "0 4px 16px rgba(31,35,40,0.25)",
+        position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 4000,
+        background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6,
+        padding: "10px 12px", display: "flex", alignItems: "center",
+        justifyContent: "space-between", gap: 12,
+        boxShadow: "0 2px 10px rgba(31,35,40,0.12)",
       }}>
-      <span style={{ fontSize: 13, fontWeight: 600 }}>A new version is available</span>
-      <span style={{
-        fontSize: 12, fontWeight: 700, background: "#ffffff", color: "#0969da",
-        borderRadius: 6, padding: "4px 10px", whiteSpace: "nowrap",
-      }}>Update</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#0969da", flexShrink: 0 }} />
+        <span style={{ fontSize: 13, color: "#1f2328", fontWeight: 600 }}>New version available</span>
+      </span>
+      <button
+        onClick={() => window.location.reload()}
+        style={{
+          fontSize: 12, fontWeight: 700, fontFamily: "inherit",
+          color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44",
+          borderRadius: 6, padding: "5px 12px", cursor: "pointer",
+          whiteSpace: "nowrap", flexShrink: 0,
+        }}>Update</button>
     </div>
   );
 }
