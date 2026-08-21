@@ -5918,97 +5918,118 @@ function CourseSetupScreen({
     </div>
   );
 
-  const miniLabel = { fontSize: 9, fontWeight: 700, letterSpacing: 0.6, color: "#818b98", marginBottom: 3, display: "block" };
-
-  // Every row holds readings from two different rounds: what was measured today
-  // (distance from the tee, par-3 length, stimp) and the hole positions cut for
-  // the next one. Mixing them without saying so is how a referee ends up
-  // reading tomorrow's flag position as today's.
+  // Two rounds share every row: what is measured today (tee position, par-3
+  // length, stimp) and the hole positions being cut for the next round. The
+  // paper form separates them with a heading across each pair of columns, and
+  // that grouping is doing real work — without it a referee can read tomorrow's
+  // flag position as today's — so it is reproduced here.
   const thisTag = roundShort(roundLabel);
   const nextTag = positionsFor ? roundShort(positionsFor) : "—";
-  const tagChip = (text, tone) => (
-    <span style={{
-      fontSize: 8, fontWeight: 700, letterSpacing: 0.5, marginLeft: 4,
-      color: tone === "next" ? "#8250df" : "#0969da",
-      background: tone === "next" ? "#faf2ff" : "#ddf4ff",
-      border: `1px solid ${tone === "next" ? "#8250df44" : "#0969da44"}`,
-      borderRadius: 3, padding: "0 3px", verticalAlign: "middle",
-    }}>{text}</span>
+
+  const cell = { border: "1px solid #d1d9e0", padding: 0 };
+  const th = {
+    border: "1px solid #d1d9e0", background: "#f6f8fa", padding: "6px 3px",
+    fontSize: 10, fontWeight: 700, color: "#59636e", textAlign: "center",
+  };
+  const groupTh = (tone) => ({
+    ...th,
+    background: tone === "next" ? "#faf2ff" : "#ddf4ff",
+    color: tone === "next" ? "#8250df" : "#0969da",
+    letterSpacing: 0.5,
+  });
+
+  const numInput = (value, onChange, disabled, placeholder) => (
+    <input
+      value={value ?? ""}
+      onChange={e => onChange(e.target.value)}
+      disabled={disabled}
+      placeholder={placeholder || ""}
+      inputMode="numeric"
+      style={{
+        width: "100%", minWidth: 0, boxSizing: "border-box", border: "none", outline: "none",
+        background: disabled ? "#f6f8fa" : "#ffffff",
+        color: disabled ? "#8c959f" : "#1f2328",
+        fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+        textAlign: "center", padding: "9px 2px",
+      }}
+    />
+  );
+  const selStyle = (disabled) => ({
+    flex: 1, minWidth: 0, border: "1px solid #d1d9e0", borderRadius: 4, height: 28,
+    background: disabled ? "#f6f8fa" : "#ffffff",
+    fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+    textAlign: "center", textAlignLast: "center",
+    color: disabled ? "#8c959f" : "#1f2328",
+  });
+  const stimpPicker = (value, onChange, disabled) => (
+    <div style={{ display: "flex", gap: 2, padding: 3 }}>
+      <select
+        value={value?.ft ?? ""}
+        disabled={disabled}
+        onChange={e => onChange(e.target.value === "" ? null : { ft: Number(e.target.value), in: value?.in ?? 0 })}
+        style={selStyle(disabled)}>
+        <option value="">ft</option>
+        {Array.from({ length: 10 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
+      </select>
+      <select
+        value={value?.in ?? ""}
+        disabled={disabled || value?.ft == null}
+        onChange={e => onChange({ ft: value?.ft ?? 10, in: e.target.value === "" ? 0 : Number(e.target.value) })}
+        style={selStyle(disabled || value?.ft == null)}>
+        <option value="">in</option>
+        {Array.from({ length: 12 }, (_, i) => i).map(n => <option key={n} value={n}>{n}″</option>)}
+      </select>
+    </div>
   );
 
-  const holeCard = (i) => {
+  const holeRows = (from, to) => Array.from({ length: to - from + 1 }, (_, k) => {
+    const i = from + k;
     const h = holes[i];
     const locked = !editableHoles[i];
     const isPar3 = pars?.[i] === 3;
     const today = todayPositions?.holes?.[i];
+    const hasToday = today && (today.front != null || today.side != null);
     return (
-      <div key={i} style={{
-        display: "grid", gridTemplateColumns: "32px 1fr", gap: 10,
-        padding: "10px 12px", borderBottom: "1px solid #f0f3f6",
-        background: locked ? "#fbfcfd" : "#ffffff",
-      }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: locked ? "#8c959f" : "#1f2328", paddingTop: 16 }}>
-          {i + 1}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
-            <div style={{ minWidth: 0 }}>
-              <span style={miniLabel}>FROM BOT{tagChip(thisTag, "this")}</span>
-              <div style={fieldBox(locked)}>{numInput(h.bot, v => setHole(i, { bot: v }), locked)}</div>
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <span style={miniLabel}>STIMP{tagChip(thisTag, "this")}</span>
-              {stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}
-            </div>
-          </div>
-          {/* What the flags are actually on today, carried over from the day
-              they were cut. Read-only: this form is where tomorrow's positions
-              are written, not where today's are changed. */}
-          {today && (today.front != null || today.side != null) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#59636e" }}>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.6, color: "#818b98" }}>TODAY</span>
-              {tagChip(thisTag, "this")}
-              <span style={{ fontWeight: 700, color: "#1f2328" }}>
-                F {today.front ?? "–"} · S {today.side ?? "–"}
-              </span>
+      <tr key={i}>
+        <td style={{ ...cell, textAlign: "center", padding: "4px 2px", background: locked ? "#f6f8fa" : "#ffffff" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
+          {/* The positions actually in play today, carried over from the day
+              they were cut. Tucked under the hole number so it travels with the
+              row without costing a column the screen doesn't have. */}
+          {hasToday && (
+            <div style={{ fontSize: 9, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap" }}>
+              {today.front ?? "–"}/{today.side ?? "–"}
             </div>
           )}
-          <div style={{ display: "grid", gridTemplateColumns: isPar3 ? "1fr 1fr 1.4fr" : "1fr 1fr", gap: 8 }}>
-            <div style={{ minWidth: 0 }}>
-              <span style={miniLabel}>FRONT{tagChip(nextTag, "next")}</span>
-              <div style={fieldBox(locked)}>{numInput(h.front, v => setHole(i, { front: v }), locked)}</div>
+        </td>
+        <td style={cell}>{numInput(h.bot, v => setHole(i, { bot: v }), locked)}</td>
+        <td style={cell}>
+          {isPar3 ? (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {numInput(h.par3y, v => setPar3(i, "y", v), locked, "y")}
+              <span style={{ fontSize: 10, color: "#8c959f" }}>/</span>
+              {numInput(h.par3m, v => setPar3(i, "m", v), locked, "m")}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <span style={miniLabel}>SIDE{tagChip(nextTag, "next")}</span>
-              <div style={fieldBox(locked)}>{numInput(h.side, v => setHole(i, { side: v }), locked)}</div>
-            </div>
-            {/* Only par 3s carry a measured length on this form. */}
-            {isPar3 && (
-              <div style={{ minWidth: 0 }}>
-                <span style={miniLabel}>PAR 3 Y/M{tagChip(thisTag, "this")}</span>
-                <div style={fieldBox(locked)}>
-                  {numInput(h.par3y, v => setPar3(i, "y", v), locked, "y")}
-                  <span style={{ width: 1, height: "60%", background: "#d1d9e0", flexShrink: 0 }} />
-                  {numInput(h.par3m, v => setPar3(i, "m", v), locked, "m")}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+          ) : (
+            <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "9px 0" }}>–</div>
+          )}
+        </td>
+        <td style={cell}>{numInput(h.front, v => setHole(i, { front: v }), locked)}</td>
+        <td style={cell}>{numInput(h.side, v => setHole(i, { side: v }), locked)}</td>
+        <td style={cell}>{stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}</td>
+      </tr>
     );
-  };
+  });
 
-  const avgBand = (label, value) => (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "9px 12px", background: "#f6f8fa", borderBottom: "1px solid #e3e8ee",
-    }}>
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#59636e" }}>
-        {label}{tagChip(thisTag, "this")}
-      </span>
-      <span style={{ fontSize: 14, fontWeight: 700, color: value ? "#1f2328" : "#8c959f" }}>{fmtStimp(value)}</span>
-    </div>
+  const avgRow = (label, value) => (
+    <tr style={{ background: "#f6f8fa" }}>
+      <td colSpan={5} style={{ ...cell, padding: "8px 8px", fontSize: 10, fontWeight: 700, color: "#59636e", letterSpacing: 0.5, textAlign: "right" }}>
+        {label}
+      </td>
+      <td style={{ ...cell, padding: "8px 4px", textAlign: "center", fontSize: 13, fontWeight: 700, color: value ? "#1f2328" : "#8c959f" }}>
+        {fmtStimp(value)}
+      </td>
+    </tr>
   );
 
   return (
@@ -6082,31 +6103,50 @@ function CourseSetupScreen({
           </div>
         </div>
 
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflow: "hidden" }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 12px", borderBottom: "1px solid #d1d9e0", background: "#f6f8fa" }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 4, padding: "2px 7px" }}>
-              {roundFull(roundLabel)} — measured today
-            </span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#8250df", background: "#faf2ff", border: "1px solid #8250df44", borderRadius: 4, padding: "2px 7px" }}>
-              {positionsFor ? roundFull(positionsFor) : "No round chosen"} — hole positions
-            </span>
-            {todayPositions && (
-              <span style={{ fontSize: 10, color: "#59636e", width: "100%" }}>
-                Today's positions were recorded on {todayPositions.fromLabel ? roundFull(todayPositions.fromLabel) : "an earlier day"}.
-              </span>
-            )}
+        {todayPositions && (
+          <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
+            Today’s positions (shown under each hole number) were recorded on{" "}
+            {todayPositions.fromLabel ? roundFull(todayPositions.fromLabel) : "an earlier day"}.
           </div>
-          {Array.from({ length: 9 }, (_, i) => holeCard(i))}
-          {avgBand("FRONT NINE AVERAGE", front)}
-          {Array.from({ length: 9 }, (_, i) => holeCard(i + 9))}
-          {avgBand("BACK NINE AVERAGE", back)}
-          {avgBand("ALL 18 AVERAGE", all18)}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 12px" }}>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#59636e" }}>PRACTICE GREEN</span>
-            <div style={{ width: 130, flexShrink: 0 }}>
-              {stimpPicker(practiceGreen, v => { setPracticeGreen(v); setSaved(false); }, !mayEditPG)}
-            </div>
-          </div>
+        )}
+
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 430 }}>
+            <thead>
+              {/* Grouped exactly as the paper form groups them, so which round a
+                  column belongs to is answered before it is asked. */}
+              <tr>
+                <th rowSpan={2} style={{ ...th, width: 30 }}>HOLE</th>
+                <th colSpan={2} style={groupTh("this")}>{roundFull(roundLabel)}</th>
+                <th colSpan={2} style={groupTh("next")}>
+                  HOLE POSITIONS · {positionsFor ? roundFull(positionsFor) : "—"}
+                </th>
+                <th style={groupTh("this")}>{roundFull(roundLabel)}</th>
+              </tr>
+              <tr>
+                <th style={th}>From<br />BOT</th>
+                <th style={th}>Par 3<br />y / m</th>
+                <th style={th}>Front</th>
+                <th style={th}>Side</th>
+                <th style={{ ...th, minWidth: 104 }}>Stimp</th>
+              </tr>
+            </thead>
+            <tbody>
+              {holeRows(0, 8)}
+              {avgRow("FRONT NINE GREEN SPEED AVERAGE", front)}
+              {holeRows(9, 17)}
+              {avgRow("BACK NINE GREEN SPEED AVERAGE", back)}
+              {avgRow("ALL 18 HOLES GREEN SPEED AVERAGE", all18)}
+              <tr>
+                <td colSpan={5} style={{ ...cell, padding: "8px 8px", fontSize: 10, fontWeight: 700, color: "#59636e", letterSpacing: 0.5, textAlign: "right" }}>
+                  PRACTICE GREEN SPEED
+                </td>
+                <td style={cell}>
+                  {stimpPicker(practiceGreen, v => { setPracticeGreen(v); setSaved(false); }, !mayEditPG)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         {courseSetup?.updatedBy && (
