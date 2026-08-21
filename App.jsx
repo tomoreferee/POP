@@ -6861,25 +6861,30 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
         </div>
         {/* Right side: clock sits beside the account menu. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, justifyContent: "flex-end" }}>
-          {/* Online indicator hidden for now — re-enable by restoring this line:
-              <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
+        {/* Clock and account on the top line, sync badge tucked underneath —
+            the header row is tight on a phone, and the badge is the one thing
+            here that is glanced at rather than tapped. */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Online indicator hidden for now — re-enable by restoring this line:
+                <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <AnalogClock minutes={now} size={30} />
+              <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
+            </span>
+            {currentUser && (
+              <UserMenu
+                currentUser={currentUser}
+                onAccount={onAccount}
+                onChangePassword={onChangePassword}
+                onLogout={onLogout}
+                onManageUsers={isTrueAdmin ? onManageUsers : null}
+                onManageTournaments={isTrueAdmin ? onManageTournaments : null}
+                onGoToSetup={canEditSetup_ ? onBack : null}
+              />
+            )}
+          </div>
           <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} syncing={syncing} onSync={onSync} />
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <AnalogClock minutes={now} size={30} />
-            <span style={{ fontSize: 13, color: "#59636e" }}>{minToTime(now)}</span>
-          </span>
-          {currentUser && (
-            <UserMenu
-              currentUser={currentUser}
-              onAccount={onAccount}
-              onChangePassword={onChangePassword}
-              onLogout={onLogout}
-              onManageUsers={isTrueAdmin ? onManageUsers : null}
-              onManageTournaments={isTrueAdmin ? onManageTournaments : null}
-              onGoToSetup={canEditSetup_ ? onBack : null}
-            />
-          )}
         </div>
       </div>
 
