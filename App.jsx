@@ -5866,58 +5866,6 @@ function CourseSetupScreen({
     setSaved(true);
   };
 
-  // Laid out as one block per hole rather than a six-column table. The table
-  // matched the paper form, but six inputs across will not fit a phone — it ran
-  // off the edge and had to be scrolled sideways to reach the stimp reading,
-  // which is the column most likely to be filled in while standing on the green.
-  const fieldBox = (disabled) => ({
-    border: "1px solid #d1d9e0", borderRadius: 6,
-    background: disabled ? "#f6f8fa" : "#ffffff",
-    display: "flex", alignItems: "center", overflow: "hidden", height: 34,
-  });
-  const numInput = (value, onChange, disabled, placeholder) => (
-    <input
-      value={value ?? ""}
-      onChange={e => onChange(e.target.value)}
-      disabled={disabled}
-      placeholder={placeholder || ""}
-      inputMode="numeric"
-      style={{
-        width: "100%", minWidth: 0, boxSizing: "border-box", border: "none", outline: "none",
-        background: "transparent", color: disabled ? "#8c959f" : "#1f2328",
-        fontFamily: "inherit", fontSize: 14, fontWeight: 600,
-        textAlign: "center", padding: "0 4px", height: "100%",
-      }}
-    />
-  );
-  const selStyle = (disabled) => ({
-    flex: 1, minWidth: 0, border: "none", outline: "none", height: "100%",
-    background: "transparent", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-    textAlign: "center", textAlignLast: "center",
-    color: disabled ? "#8c959f" : "#1f2328",
-  });
-  const stimpPicker = (value, onChange, disabled) => (
-    <div style={fieldBox(disabled)}>
-      <select
-        value={value?.ft ?? ""}
-        disabled={disabled}
-        onChange={e => onChange(e.target.value === "" ? null : { ft: Number(e.target.value), in: value?.in ?? 0 })}
-        style={selStyle(disabled)}>
-        <option value="">ft</option>
-        {Array.from({ length: 10 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
-      </select>
-      <span style={{ width: 1, height: "60%", background: "#d1d9e0", flexShrink: 0 }} />
-      <select
-        value={value?.in ?? ""}
-        disabled={disabled || value?.ft == null}
-        onChange={e => onChange({ ft: value?.ft ?? 10, in: e.target.value === "" ? 0 : Number(e.target.value) })}
-        style={selStyle(disabled || value?.ft == null)}>
-        <option value="">in</option>
-        {Array.from({ length: 12 }, (_, i) => i).map(n => <option key={n} value={n}>{n}″</option>)}
-      </select>
-    </div>
-  );
-
   // Two rounds share every row: what is measured today (tee position, par-3
   // length, stimp) and the hole positions being cut for the next round. The
   // paper form separates them with a heading across each pair of columns, and
