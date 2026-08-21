@@ -5997,14 +5997,12 @@ function CourseSetupScreen({
     />
   );
 
-  // Every editable cell is the same height, so rows line up whether they hold
-  // one control or two.
-  const inputBox = (disabled, children) => (
+  // A plain cell, the grid line around it doing the separating. Height comes
+  // from here so every row lines up whether the cell holds one control or two.
+  const plainCell = (disabled, children) => (
     <div style={{
-      border: "1px solid #d1d9e0", borderRadius: 4, height: 28,
-      background: disabled ? "#f6f8fa" : "#ffffff",
+      height: 34, background: disabled ? "#f6f8fa" : "#ffffff",
       display: "flex", alignItems: "center", overflow: "hidden",
-      margin: 3,
     }}>{children}</div>
   );
   const selStyle = (disabled) => ({
@@ -6067,7 +6065,7 @@ function CourseSetupScreen({
             </div>
           )}
         </td>
-        <td style={cell}>{inputBox(locked, numInput(h.bot, v => setBot(i, v), locked))}</td>
+        <td style={cell}>{plainCell(locked, numInput(h.bot, v => setBot(i, v), locked))}</td>
         <td style={cell}>
           {isPar3 ? (() => {
             const y = par3PlayingYards(i);
@@ -6082,36 +6080,34 @@ function CourseSetupScreen({
             <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "9px 0" }}>–</div>
           )}
         </td>
-        <td style={cell}>{inputBox(locked || !positionsNeeded, numInput(h.front, v => setHole(i, { front: v }), locked || !positionsNeeded))}</td>
+        <td style={cell}>{plainCell(locked || !positionsNeeded, numInput(h.front, v => setHole(i, { front: v }), locked || !positionsNeeded))}</td>
+        {/* Distance and direction read as one value — "6R" — so they sit side by
+            side on one line rather than stacked. The letter still cycles on tap
+            (— → L → R → —) so only the answer is ever on screen. */}
         <td style={cell}>
-          <div style={{ padding: 3, display: "flex", flexDirection: "column", gap: 3 }}>
-            <div style={{ border: "1px solid #d1d9e0", borderRadius: 4, background: (locked || !positionsNeeded) ? "#f6f8fa" : "#ffffff", height: 28, display: "flex", alignItems: "center", overflow: "hidden" }}>
-              {numInput(h.side, v => setHole(i, { side: v }), locked || !positionsNeeded)}
-            </div>
-            {/* One field, not two buttons: a pair of buttons shows both letters
-                at once, so the eye has to work out which is selected on every
-                row. This shows the answer and nothing else. Tap cycles
-                — → L → R → —. */}
-            {(() => {
-              const v = h.sideLR || "";
-              const off = locked || !positionsNeeded;
-              const clash = sideClashes.has(i);
-              return (
-                <button
-                  disabled={off}
-                  onClick={() => cycleSide(i)}
-                  title={clash ? "Another hole of the same par on this nine is on the same side" : "Tap to change side"}
+          {(() => {
+            const v = h.sideLR || "";
+            const off = locked || !positionsNeeded;
+            const clash = sideClashes.has(i);
+            return plainCell(off, (
+              <>
+                {numInput(h.side, val => setHole(i, { side: val }), off)}
+                <span
+                  onClick={off ? undefined : () => cycleSide(i)}
+                  role={off ? undefined : "button"}
+                  title={clash ? "Another hole of the same par on this nine is on the same side" : (off ? undefined : "Tap to change side")}
                   style={{
-                    height: 24, borderRadius: 4, width: "100%", padding: 0,
+                    width: 26, flexShrink: 0, alignSelf: "stretch",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    borderLeft: "1px solid #d1d9e0",
                     cursor: off ? "default" : "pointer",
                     fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                    background: clash ? "#ffebe9" : v ? "#ddf4ff" : "#f6f8fa",
-                    border: `1px solid ${clash ? "#cf222e" : v ? "#0969da" : "#d1d9e0"}`,
-                    color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#0969da" : "#8c959f",
-                  }}>{v || "–"}</button>
-              );
-            })()}
-          </div>
+                    background: clash ? "#ffebe9" : v ? "#ddf4ff" : "transparent",
+                    color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#0969da" : "#c2c8cf",
+                  }}>{v || "–"}</span>
+              </>
+            ));
+          })()}
         </td>
         <td style={cell}>{stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}</td>
       </tr>
@@ -6231,8 +6227,8 @@ function CourseSetupScreen({
               <tr>
                 <th style={{ ...th, width: "14%" }}>From<br />BOT</th>
                 <th style={{ ...th, width: "19%" }}>Par 3<br />y / m</th>
-                <th style={{ ...th, width: "13%" }}>Front</th>
-                <th style={{ ...th, width: "16%" }}>Side</th>
+                <th style={{ ...th, width: "12%" }}>Front</th>
+                <th style={{ ...th, width: "17%" }}>Side</th>
                 <th style={{ ...th, width: "29%" }}>Stimp</th>
               </tr>
             </thead>
