@@ -5796,7 +5796,7 @@ function CourseSetupScreen({
   onAccount, onChangePassword, onManageUsers, onManageTournaments,
   onGoToDashboard, onGoToSetup, onLogout,
 }) {
-  const blankHole = () => ({ bot: "", par3y: "", par3m: "", front: "", side: "", stimp: null });
+  const blankHole = () => ({ bot: "", front: "", side: "", stimp: null });
   const [holes, setHoles] = useState(() => {
     const saved = courseSetup?.holes;
     return Array.from({ length: 18 }, (_, i) => ({ ...blankHole(), ...(saved?.[i] || {}) }));
@@ -5809,12 +5809,27 @@ function CourseSetupScreen({
   const inheritsFrom = positionsFor ? SHARES_POSITIONS_WITH[positionsFor] : null;
   const positionsNeeded = !!positionsFor && !inheritsFrom;
   const [practiceGreen, setPracticeGreen] = useState(courseSetup?.practiceGreen ?? null);
+  // Yardage-book distance, back of tee to front of green. A property of the
+  // hole rather than of the day, so it carries across rounds.
+  const [par3Base, setPar3Base] = useState(() => courseSetup?.par3Base ?? {});
+  const par3Holes = (pars || []).map((p, i) => (p === 3 ? i : null)).filter(i => i !== null);
+  const setBase = (i, raw) => {
+    setSaved(false);
+    setPar3Base(b => ({ ...b, [i]: raw }));
+  };
   const [saved, setSaved] = useState(false);
   // The positions in play today, read back from whichever round recorded them.
   const [todayPositions, setTodayPositions] = useState(null);
   useEffect(() => {
     let dead = false;
-    fetchHolePositionsFor(tournamentId, roundLabel).then(r => { if (!dead) setTodayPositions(r); });
+    fetchHolePositionsFor(tournamentId, roundLabel).then(r => {
+      if (dead || !r) return;
+      setTodayPositions(r);
+      // Only seed; never overwrite what this round already holds.
+      if (r.par3Base) {
+        setPar3Base(prev => (prev && Object.keys(prev).length ? prev : r.par3Base));
+      }
+    });
     return () => { dead = true; };
   }, [tournamentId, roundLabel]);
 
@@ -5827,19 +5842,6 @@ function CourseSetupScreen({
     setHoles(hs => hs.map((h, idx) => (idx === i ? { ...h, ...patch } : h)));
   };
 
-  // Yards and metres are two views of one measurement, so typing either fills
-  // the other. Both stay editable: the card the referee copies from sometimes
-  // rounds them independently, and overwriting what they typed would be wrong.
-  const setPar3 = (i, which, raw) => {
-    const n = raw === "" ? "" : Number(raw);
-    if (raw !== "" && !Number.isFinite(n)) return;
-    if (which === "y") {
-      setHole(i, { par3y: raw, par3m: raw === "" ? "" : String(Math.round(n * YARDS_TO_M)) });
-    } else {
-      setHole(i, { par3m: raw, par3y: raw === "" ? "" : String(Math.round(n / YARDS_TO_M)) });
-    }
-  };
-
   const front = averageStimp(holes, 0, 8);
   const back = averageStimp(holes, 9, 17);
   const all18 = averageStimp(holes, 0, 17);
@@ -5848,13 +5850,12 @@ function CourseSetupScreen({
     onSave({
       holes: holes.map(h => ({
         bot: h.bot === "" ? null : Number(h.bot),
-        par3y: h.par3y === "" ? null : Number(h.par3y),
-        par3m: h.par3m === "" ? null : Number(h.par3m),
         front: h.front === "" ? null : Number(h.front),
         side: h.side === "" ? null : Number(h.side),
         stimp: h.stimp ?? null,
       })),
       positionsFor: positionsNeeded ? positionsFor : null,
+      par3Base,
       practiceGreen: practiceGreen ?? null,
       // Averages are deliberately not stored. They are one edit away from
       // disagreeing with the readings above them, and a stale average on a
@@ -5928,6 +5929,17 @@ function CourseSetupScreen({
     </div>
   );
 
+  // base + how far forward the tee is + how far on the green the flag is.
+  // "From BOT" is recorded as a negative number when the tee is moved forward,
+  // so it adds in directly.
+  const par3PlayingYards = (i) => {
+    const base = Number(par3Base?.[i]);
+    if (!Number.isFinite(base) || par3Base?.[i] === "" || par3Base?.[i] == null) return null;
+    const tee = Number(holes[i]?.bot);
+    const flag = Number(todayPositions?.holes?.[i]?.front);
+    return Math.round(base + (Number.isFinite(tee) ? tee : 0) + (Number.isFinite(flag) ? flag : 0));
+  };
+
   const holeRows = (from, to) => Array.from({ length: to - from + 1 }, (_, k) => {
     const i = from + k;
     const h = holes[i];
@@ -5950,13 +5962,16 @@ function CourseSetupScreen({
         </td>
         <td style={cell}>{numInput(h.bot, v => setHole(i, { bot: v }), locked)}</td>
         <td style={cell}>
-          {isPar3 ? (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {numInput(h.par3y, v => setPar3(i, "y", v), locked, "y")}
-              <span style={{ fontSize: 10, color: "#8c959f" }}>/</span>
-              {numInput(h.par3m, v => setPar3(i, "m", v), locked, "m")}
-            </div>
-          ) : (
+          {isPar3 ? (() => {
+            const y = par3PlayingYards(i);
+            return (
+              <div style={{ textAlign: "center", padding: "6px 2px", fontSize: 12, fontWeight: 700, color: y == null ? "#8c959f" : "#1f2328", whiteSpace: "nowrap" }}>
+                {y == null
+                  ? <span style={{ fontWeight: 400 }}>set BOT→FOG</span>
+                  : <>{y}y / {Math.round(y * YARDS_TO_M)}m</>}
+              </div>
+            );
+          })() : (
             <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "9px 0" }}>–</div>
           )}
         </td>
@@ -6013,39 +6028,33 @@ function CourseSetupScreen({
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "16px 12px 40px" }}>
 
-        {/* Who may edit what. Said plainly and up front, because a referee who
-            finds half the form greyed out should know why without asking. */}
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#59636e" }}>
-          {isAdmin || COURSE_SETUP_EDIT_ALL.includes(position)
-            ? "You can edit every hole."
-            : position === "R2" ? "You can edit the front nine (H1–H9) and the practice green."
-            : position === "R1" ? "You can edit the back nine (H10–H18)."
-            : "You have view-only access to this form."}
-        </div>
-
-        {/* Stated rather than chosen. Which day a set of flags belongs to comes
-            from the schedule, and offering it as a dropdown invited exactly the
-            mistake the paper form avoids by printing the round at the top. */}
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>HOLE POSITIONS FOR</span>
-            <span style={{
-              fontSize: 13, fontWeight: 700, borderRadius: 6, padding: "3px 10px",
-              color: positionsNeeded ? "#8250df" : "#59636e",
-              background: positionsNeeded ? "#faf2ff" : "#f6f8fa",
-              border: `1px solid ${positionsNeeded ? "#8250df44" : "#d1d9e0"}`,
-            }}>
-              {positionsFor ? roundFull(positionsFor) : "No round follows this one"}
-            </span>
+        {/* Par 3 lengths are not written down, they are worked out: the yardage
+            book gives the fixed distance from the back of the tee to the front
+            of the green, and the day's playing length is that, plus however far
+            forward the tee was set, plus how far on the green the flag is cut.
+            Entering the total by hand invited it to disagree with the numbers it
+            is made of. The book figure is a property of the hole, so it is asked
+            for once here rather than on every row. */}
+        {par3Holes.length > 0 && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 2 }}>
+              PAR 3 · BACK OF TEE → FRONT OF GREEN
+            </div>
+            <div style={{ fontSize: 11, color: "#818b98", marginBottom: 10 }}>
+              From the yardage book, in yards. Fixed for the hole — the Par 3 column works itself out from this.
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {par3Holes.map(i => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1f2328", minWidth: 24 }}>H{i + 1}</span>
+                  <div style={{ width: 76, border: "1px solid #d1d9e0", borderRadius: 6, background: editableHoles[i] ? "#ffffff" : "#f6f8fa", height: 32, display: "flex", alignItems: "center" }}>
+                    {numInput(par3Base[i] ?? "", v => setBase(i, v), !editableHoles[i], "y")}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: "#818b98", marginTop: 6 }}>
-            {!positionsFor
-              ? `${roundFull(roundLabel)} is the last round, so there are no positions to cut.`
-              : inheritsFrom
-                ? `${roundFull(positionsFor)} is played to the ${roundFull(inheritsFrom)} positions, so Front and Side are not recorded today.`
-                : `Measured today, played tomorrow on ${roundFull(positionsFor)}.`}
-          </div>
-        </div>
+        )}
 
         {todayPositions && (
           <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
@@ -10140,9 +10149,14 @@ async function fetchHolePositionsFor(tournamentId, label) {
       .in("round_id", rounds.map(r => r.id));
     if (error || !data) return null;
     const match = data.find(d => d.course_setup?.positionsFor === label);
-    if (!match) return null;
+    // The yardage-book distances belong to the holes, not to a day, so they are
+    // picked up from whichever round last recorded them rather than being
+    // typed in again every round.
+    const withBase = data.find(d => d.course_setup?.par3Base && Object.keys(d.course_setup.par3Base).length);
+    const par3Base = withBase?.course_setup?.par3Base ?? null;
+    if (!match) return par3Base ? { holes: [], fromLabel: null, par3Base } : null;
     const from = rounds.find(r => r.id === match.round_id);
-    return { holes: match.course_setup.holes || [], fromLabel: from?.label ?? null };
+    return { holes: match.course_setup.holes || [], fromLabel: from?.label ?? null, par3Base };
   } catch {
     return null;
   }
