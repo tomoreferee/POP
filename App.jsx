@@ -7520,6 +7520,19 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
     return () => { cancelled = true; };
   }, [tid]);
 
+  const selectedTournament = tournaments.find(t => t.id === tid);
+  const roundChoices = (() => {
+    const allowed = roundLabelsFor(selectedTournament);
+    const existing = rounds.map(r => r.label);
+    // Anything already created stays on the list even if the configuration has
+    // since changed, so an open round can never become unreachable.
+    const merged = [...new Set([...allowed, ...existing])];
+    return merged.sort(byRoundOrder).map(l => ({
+      label: l,
+      exists: existing.includes(l),
+    }));
+  })();
+
   const years = (() => {
     const ys = new Set(tournaments.map(yearOf));
     if (year) ys.add(year);
@@ -7529,11 +7542,13 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 
   const go = async () => {
     const t = tournaments.find(x => x.id === tid);
-    const r = rounds.find(x => x.label === label);
-    if (!t || !r || busy) return;
-    if (t.id === tournamentId && r.label === roundLabel) return; // already here
+    if (!t || !label || busy) return;
+    if (t.id === tournamentId && label === roundLabel) return; // already here
     setBusy(true);
-    await onOpen(t, r);
+    const r = rounds.find(x => x.label === label);
+    // A slot that has never been opened has no row yet; create it on the way in
+    // rather than making the user go elsewhere to do it first.
+    await onOpen(t, r || { label, tournament_id: t.id, status: "live", isNew: true });
     setBusy(false);
   };
 
@@ -7567,9 +7582,9 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
       <select value={label} onChange={e => setLabel(e.target.value)} disabled={!tid || loadingRounds}
         style={{ ...sel, width: 52, flexShrink: 0, opacity: tid ? 1 : 0.5, textAlign: "center", textAlignLast: "center" }}>
         {(!label || loadingRounds) && <option value="">{loadingRounds ? "…" : "—"}</option>}
-        {rounds.map(r => (
-          <option key={r.id} value={r.label}>
-            {roundShort(r.label)}
+        {roundChoices.map(r => (
+          <option key={r.label} value={r.label}>
+            {roundShort(r.label)}{r.exists ? "" : " +"}
           </option>
         ))}
       </select>
@@ -11639,6 +11654,23 @@ function AppShell() {
     }
   };
 
+  // The round selector can hand back a slot that has no row yet — a Practice or
+  // Pro-Am day nobody has opened before. Create it here so opening one is the
+  // same single action as opening any other round.
+  const openRoundOrCreate = async (t, r, preferScreen) => {
+    let round = r;
+    if (!round?.id) {
+      const existing = await fetchRounds(t.id);
+      round = existing.find(x => x.label === r.label)
+        || await createRound({ tournamentId: t.id, label: r.label, isQualifying: r.label === "Q" });
+      if (!round) {
+        window.alert("That round could not be opened.");
+        return;
+      }
+    }
+    await loadRound(t, round, round.status === "finished" ? "reopen" : "resume", null, preferScreen);
+  };
+
   // Clear the entire session (admin only)
   const handleClearSession = async () => {
     const roundId = currentRound?.id;
@@ -11808,7 +11840,7 @@ function AppShell() {
       liveGroups={groups}
       onApplyLiveEdits={handleApplyLiveEdits}
       onSwitchTournament={() => setScreen("tournament")}
-      onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume", null, "setup")}
+      onOpenRound={(t, r) => openRoundOrCreate(t, r, "setup")}
       tournamentId={currentTournament?.id || null}
       onPickRound={handlePickRoundFromSetup}
       onPickTournament={handlePickTournamentFromSetup}
@@ -11848,7 +11880,7 @@ function AppShell() {
       onMovePlayer={handleMovePlayer}
       onManageUsers={() => { setUsersReturnTo("dashboard"); setScreen("users"); }}
       onClearRefereeCall={handleClearRefereeCall}
-      onOpenRound={(t, r) => loadRound(t, r, r.status === "finished" ? "reopen" : "resume")}
+      onOpenRound={(t, r) => openRoundOrCreate(t, r, null)}
       onSelectGroup={handleSelectGroup}
       onBack={() => setScreen("setup")}
       currentUser={currentUser}
