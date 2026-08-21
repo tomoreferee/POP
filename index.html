@@ -12,6 +12,11 @@
            a dark strip behind the app when it bounces at the top/bottom. */
         background: #f6f8fa;
         color: #1f2328;
+        /* Each screen sets this on its own root, but anything mounted outside
+           those roots (fixed-position notices and the like) was inheriting the
+           browser's serif default. Setting it here catches every such case. */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
         overscroll-behavior-y: none;
         overscroll-behavior-x: none;
         height: 100%;

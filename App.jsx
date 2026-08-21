@@ -244,6 +244,11 @@ function parTimeTable(playersPerGroup) {
 // the Setup page so you can confirm at a glance whether the browser is running
 // the newest deploy. The dev fallback covers `vite dev`, where the define is
 // still applied but a stale bundle can't happen anyway.
+// The app's type stack. Every screen root sets this, but anything mounted
+// outside those roots — a fixed-position notice, for instance — inherits from
+// <body> instead and lands on the browser's serif default.
+const APP_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'";
+
 const APP_BUILD = typeof __APP_BUILD__ !== "undefined" ? `${__APP_BUILD__} (beta)` : "dev";
 
 // Selectable minutes per hole — dropdown beats a free number field on a phone.
@@ -1661,6 +1666,7 @@ function UpdateBanner({ show }) {
         padding: "10px 12px", display: "flex", alignItems: "center",
         justifyContent: "space-between", gap: 12,
         boxShadow: "0 2px 10px rgba(31,35,40,0.12)",
+        fontFamily: APP_FONT,
       }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#0969da", flexShrink: 0 }} />
