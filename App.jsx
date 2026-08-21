@@ -1731,7 +1731,22 @@ function UpdateBanner({ show }) {
 // (Q, 1, 2, 3, 4) within it. Each round keeps its own data, so switching between
 // them just loads that round — nothing is archived or cleared, and each device
 // chooses its own round independently.
-const ROUND_LABELS = ["Q", "1", "2", "3", "4"];
+// Every round slot a competition can hold, in the order they are played.
+// Q/PT/PA are named slots; the rest are the numbered competition rounds.
+const NUMBERED_ROUND_LABELS = ["1", "2", "3", "4"];
+const NAMED_ROUND_LABELS = ["Q", "PT", "PA"];
+const ROUND_LABELS = [...NAMED_ROUND_LABELS, ...NUMBERED_ROUND_LABELS];
+
+// One place that knows what a round label is called, so a new slot doesn't have
+// to be taught to seventeen separate ternaries scattered through the file.
+const ROUND_NAMES = {
+  Q:  { short: "Q",  long: "Round Q",  full: "Qualifying" },
+  PT: { short: "PT", long: "Practice", full: "Practice" },
+  PA: { short: "PA", long: "Pro-Am",   full: "Pro-Am" },
+};
+const roundShort = (l) => ROUND_NAMES[l]?.short ?? `R${l}`;
+const roundLong  = (l) => ROUND_NAMES[l]?.long  ?? `Round ${l}`;
+const roundFull  = (l) => ROUND_NAMES[l]?.full  ?? `Round ${l}`;
 
 // Competitions are created on one device and picked on others, so the list has
 // to be live. It was only ever read once per screen, which meant a referee
@@ -1825,7 +1840,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
       return;
     }
     const rounds = payload.rounds || [];
-    const labels = rounds.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ");
+    const labels = rounds.map(r => roundShort(r.label)).join(", ");
     const baseName = payload?.tournament?.name || "Imported competition";
     const newName = tournaments.some(t => t.name === baseName) ? `${baseName} (imported)` : baseName;
     if (!window.confirm(`Create "${newName}" with ${rounds.length} round${rounds.length === 1 ? "" : "s"} (${labels})?`)) return;
@@ -1924,7 +1939,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
     if (configured) {
       const list = [
         ...(selectedTournament.has_qualifying !== false ? ["Q"] : []),
-        ...ROUND_LABELS.filter(l => l !== "Q").slice(0, selectedTournament.num_rounds ?? 4),
+        "PT", "PA",
+        ...NUMBERED_ROUND_LABELS.slice(0, selectedTournament.num_rounds ?? 4),
       ];
       // Never hide a round that already holds data
       existing.forEach(l => { if (!list.includes(l)) list.push(l); });
@@ -1933,7 +1949,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
 
     // Unconfigured: show what exists (plus the next round so it can be started)
     if (existing.length === 0) return ROUND_LABELS;
-    const numbered = existing.filter(l => l !== "Q").map(Number).filter(n => !isNaN(n));
+    const numbered = existing.filter(l => !NAMED_ROUND_LABELS.includes(l)).map(Number).filter(n => !isNaN(n));
     const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
     const list = [...existing];
     if (nextNum <= 4 && !list.includes(String(nextNum))) list.push(String(nextNum));
@@ -2344,7 +2360,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}>
                     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 26, fontWeight: 600, letterSpacing: 0, color: isOpenHere ? "#0969da" : isQ ? "#8250df" : "#1f2328" }}>
-                      {label === "Q" ? "Q" : `R${label}`}
+                      {roundShort(label)}
                     </div>
                     <div style={{ fontSize: 9, letterSpacing: 1, color: isOpenHere ? "#0969da" : hasData ? "#0969da" : "#59636e" }}>
                       {isOpenHere ? "OPEN HERE" : hasData ? "HAS DATA" : r ? "SET UP" : "NOT STARTED"}
@@ -2368,7 +2384,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
           <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#f6f8fa", overflowY: "auto" }}>
             <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#ffffffee", backdropFilter: "blur(6px)", borderBottom: "1px solid #d1d9e0", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <span style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 18, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>
-                {viewingRound.label === "Q" ? "Round Q" : `Round ${viewingRound.label}`} <span style={{ fontSize: 12, color: "#818b98", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED{viewingRound.finished_at ? ` ${new Date(viewingRound.finished_at).toLocaleDateString("th-TH")}` : ""}</span>
+                {roundLong(viewingRound.label)} <span style={{ fontSize: 12, color: "#818b98", fontFamily: "inherit", letterSpacing: 0 }}>· FINISHED{viewingRound.finished_at ? ` ${new Date(viewingRound.finished_at).toLocaleDateString("th-TH")}` : ""}</span>
               </span>
               {isAdmin && (
                 <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
@@ -2735,7 +2751,7 @@ function SetupScreen({ onStart, currentUser, isAdmin, isTrueAdmin, onAccount, on
             <div style={{ padding: "14px 20px" }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2328" }}>
                 {tournamentName || "(untitled tournament)"}
-                {roundLabel && <span style={{ color: "#59636e" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
+                {roundLabel && <span style={{ color: "#59636e" }}> — {roundLong(roundLabel)}</span>}
               </div>
               {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
               {playersPerGroup ? (
@@ -5720,7 +5736,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
         label: roundLabel, groups, groupData, parTimes, playersPerGroup,
         suspensions: suspensions || [], greenSpeed, preferredLies,
       }]);
-  const roundTag = (l) => (l === "Q" ? "Q" : `R${l}`);
+  const roundTag = roundShort;
 
   const scopeToggle = (key) => (tournamentId ? (
     <button onClick={() => setScope(v => ({ ...v, [key]: !v[key] }))}
@@ -5961,7 +5977,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
     });
     return {
       groupId: `${round ?? ""}-${g.id}`,
-      groupName: round ? `${round === "Q" ? "Q" : `R${round}`} · ${g.name}` : g.name,
+      groupName: round ? `${roundShort(round)} · ${g.name}` : g.name,
       players,
       totalBadTime: players.reduce((s, p) => s + p.badTimeCount, 0),
       totalEst: players.reduce((s, p) => s + p.estHoles.length, 0),
@@ -6431,7 +6447,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   <tbody>
                     {rows.map(({ round, g, l }, i) => (
                       <tr key={i}>
-                        <td style={tdS}>{round === "Q" ? "Q" : `R${round}`}</td>
+                        <td style={tdS}>{roundShort(round)}</td>
                         <td style={tdS}>{g.name}</td>
                         <td style={tdS}>{l.start || g.startTime || "—"}</td>
                         <td style={{ ...tdS, color: "#8250df", fontWeight: 700 }}>
@@ -6525,7 +6541,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   {[["Name", tournamentName || "—"],
                     ["Venue", [hostVenue, venueLocation].filter(Boolean).join(", ") || "—"],
                     ["Date", formatDateRange(startDate, endDate)],
-                    ["Rounds", report.map(r => (r.label === "Q" ? "Q" : `R${r.label}`)).join(", ") || "—"],
+                    ["Rounds", report.map(r => roundShort(r.label)).join(", ") || "—"],
                     ["Chief referee", chiefReferee || "—"]].map(([k, v]) => (
                     <tr key={k}>
                       <td style={{ ...tdS, textAlign: "left", width: 130, color: "#59636e" }}>{k}</td>
@@ -6551,7 +6567,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 <tbody>
                   {report.map(r => (
                     <tr key={r.label}>
-                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{roundFull(r.label)}</td>
                       <td style={tdS}>{r.groupCount}</td>
                       <td style={tdS}>{r.players}</td>
                       <td style={{ ...tdS, color: r.withdrawn ? "#cf222e" : "#59636e", fontWeight: r.withdrawn ? 700 : 400 }}>{r.withdrawn || "–"}</td>
@@ -6576,7 +6592,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 <tbody>
                   {report.map(r => (
                     <tr key={r.label}>
-                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                      <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{roundFull(r.label)}</td>
                       <td style={tdS}>{r.teeStarts.join(" & ") || "—"}</td>
                       <td style={tdS}>{r.firstTee}</td>
                       <td style={tdS}>{r.lastTee}</td>
@@ -6593,7 +6609,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 <thead>
                   <tr>
                     <th style={{ ...thS, textAlign: "left" }} />
-                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
+                    {report.map(r => <th key={r.label} style={thS}>{roundShort(r.label)}</th>)}
                     <th style={{ ...thS, color: "#1f2328" }}>Total</th>
                   </tr>
                 </thead>
@@ -6618,7 +6634,7 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                 <thead>
                   <tr>
                     <th style={{ ...thS, textAlign: "left" }} />
-                    {report.map(r => <th key={r.label} style={thS}>{r.label === "Q" ? "Q" : `R${r.label}`}</th>)}
+                    {report.map(r => <th key={r.label} style={thS}>{roundShort(r.label)}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -6661,13 +6677,13 @@ function SummaryScreen({ groups, groupData, pars, parTimes, playersPerGroup, sus
                   {report.map(r => (
                     r.suspensions.length === 0 ? (
                       <tr key={r.label}>
-                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{r.label === "Q" ? "Qualifying" : `Round ${r.label}`}</td>
+                        <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>{roundFull(r.label)}</td>
                         <td style={tdS}>–</td><td style={tdS}>–</td><td style={tdS}>–</td>
                       </tr>
                     ) : r.suspensions.map((sp, i) => (
                       <tr key={`${r.label}-${i}`}>
                         <td style={{ ...tdS, textAlign: "left", fontWeight: 700 }}>
-                          {i === 0 ? (r.label === "Q" ? "Qualifying" : `Round ${r.label}`) : ""}
+                          {i === 0 ? roundFull(r.label) : ""}
                         </td>
                         <td style={tdS}>{sp.stopTime || "—"}</td>
                         <td style={tdS}>{sp.resumeTime || <span style={{ color: "#cf222e" }}>ongoing</span>}</td>
@@ -6793,7 +6809,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
         {(!label || loadingRounds) && <option value="">{loadingRounds ? "…" : "—"}</option>}
         {rounds.map(r => (
           <option key={r.id} value={r.label}>
-            {r.label === "Q" ? "Q" : `R${r.label}`}
+            {roundShort(r.label)}
           </option>
         ))}
       </select>
@@ -7063,7 +7079,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
               {tournamentName || "(untitled tournament)"}
-              {roundLabel && <span style={{ color: "#59636e" }}> — {roundLabel === "Q" ? "Round Q" : `Round ${roundLabel}`}</span>}
+              {roundLabel && <span style={{ color: "#59636e" }}> — {roundLong(roundLabel)}</span>}
             </div>
             {hostVenue && <div style={{ fontSize: 12, color: "#59636e", marginTop: 2 }}>{hostVenue}</div>}
             {/* Conditions the referees need at a glance: field size, green speed
@@ -8823,7 +8839,7 @@ function LoginScreen({ onLogin, users }) {
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a7f37", boxShadow: "0 0 6px #1a7f37", flexShrink: 0 }} />
               <span style={{ fontSize: 12, color: "#1a7f37", fontWeight: 700, textAlign: "left", lineHeight: 1.4 }}>
                 {active.length === 1
-                  ? <>Now playing<br />{active[0].name}{active[0].label ? ` — ${active[0].label === "Q" ? "Round Q" : `Round ${active[0].label}`}` : ""}</>
+                  ? <>Now playing<br />{active[0].name}{active[0].label ? ` — ${roundLong(active[0].label)}` : ""}</>
                   : `${active.length} competitions now playing`}
               </span>
             </div>
@@ -9630,7 +9646,9 @@ async function saveTournamentCourseSetup(id, { pars, parTimes, turnTime, turnTim
 // added after R1 has already been set up.
 function roundSortKey(label) {
   const s = String(label ?? "");
-  if (s === "Q") return -1;
+  // Named slots come first, in the order they are played.
+  const named = NAMED_ROUND_LABELS.indexOf(s);
+  if (named >= 0) return named - NAMED_ROUND_LABELS.length;
   const n = Number(s);
   return Number.isFinite(n) ? n : 999;
 }
