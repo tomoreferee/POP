@@ -5796,7 +5796,9 @@ function CourseSetupScreen({
   onAccount, onChangePassword, onManageUsers, onManageTournaments,
   onGoToDashboard, onGoToSetup, onLogout,
 }) {
-  const blankHole = () => ({ bot: "", front: "", side: "", stimp: null });
+  // Side is a distance and a direction — "6R" is six yards right of centre.
+  // Kept as two fields rather than one string so the number stays a number.
+  const blankHole = () => ({ bot: "", front: "", side: "", sideLR: "", stimp: null });
   const [holes, setHoles] = useState(() => {
     const saved = courseSetup?.holes;
     return Array.from({ length: 18 }, (_, i) => {
@@ -5886,6 +5888,7 @@ function CourseSetupScreen({
         bot: h.bot === "" ? null : Number(h.bot),
         front: h.front === "" ? null : Number(h.front),
         side: h.side === "" ? null : Number(h.side),
+        sideLR: h.sideLR || null,
         stimp: h.stimp ?? null,
       })),
       positionsFor: positionsNeeded ? positionsFor : null,
@@ -5991,7 +5994,7 @@ function CourseSetupScreen({
               row without costing a column the screen doesn't have. */}
           {hasToday && (
             <div style={{ fontSize: 9, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap" }}>
-              {today.front ?? "–"}/{today.side ?? "–"}
+              {today.front ?? "–"}/{today.side ?? "–"}{today.sideLR || ""}
             </div>
           )}
         </td>
@@ -6011,7 +6014,36 @@ function CourseSetupScreen({
           )}
         </td>
         <td style={cell}>{numInput(h.front, v => setHole(i, { front: v }), locked || !positionsNeeded)}</td>
-        <td style={cell}>{numInput(h.side, v => setHole(i, { side: v }), locked || !positionsNeeded)}</td>
+        <td style={cell}>
+          <div style={{ padding: "3px 2px", display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ border: "1px solid #d1d9e0", borderRadius: 4, background: (locked || !positionsNeeded) ? "#f6f8fa" : "#ffffff", height: 28, display: "flex", alignItems: "center" }}>
+              {numInput(h.side, v => setHole(i, { side: v }), locked || !positionsNeeded)}
+            </div>
+            {/* One tap each, and the answer is readable without opening
+                anything — which a dropdown can't manage. Tapping the letter
+                that is already set clears it, so a mistake is undoable. */}
+            <div style={{ display: "flex", gap: 2 }}>
+              {["L", "R"].map(d => {
+                const on = h.sideLR === d;
+                const off = locked || !positionsNeeded;
+                return (
+                  <button
+                    key={d}
+                    disabled={off}
+                    onClick={() => setHole(i, { sideLR: on ? "" : d })}
+                    style={{
+                      flex: 1, minWidth: 0, height: 22, borderRadius: 4,
+                      cursor: off ? "default" : "pointer",
+                      fontFamily: "inherit", fontSize: 11, fontWeight: 700, padding: 0,
+                      background: on ? "#ddf4ff" : "#f6f8fa",
+                      border: `1px solid ${on ? "#0969da" : "#d1d9e0"}`,
+                      color: off ? "#8c959f" : (on ? "#0969da" : "#59636e"),
+                    }}>{d}</button>
+                );
+              })}
+            </div>
+          </div>
+        </td>
         <td style={cell}>{stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}</td>
       </tr>
     );
@@ -6129,10 +6161,10 @@ function CourseSetupScreen({
               </tr>
               <tr>
                 <th style={{ ...th, width: "14%" }}>From<br />BOT</th>
-                <th style={{ ...th, width: "21%" }}>Par 3<br />y / m</th>
+                <th style={{ ...th, width: "19%" }}>Par 3<br />y / m</th>
                 <th style={{ ...th, width: "13%" }}>Front</th>
-                <th style={{ ...th, width: "13%" }}>Side</th>
-                <th style={{ ...th, width: "30%" }}>Stimp</th>
+                <th style={{ ...th, width: "16%" }}>Side</th>
+                <th style={{ ...th, width: "29%" }}>Stimp</th>
               </tr>
             </thead>
             <tbody>
