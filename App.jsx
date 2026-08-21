@@ -8976,12 +8976,17 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", color: "#1f2328" }}>
 
-      {/* Header */}
-      <div style={{ background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "16px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", color: "#0969da", cursor: "pointer", fontSize: 18 }}>←</button>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 24, fontWeight: 600, letterSpacing: 0, color: "#1f2328" }}>Manage users</div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: "#9a6700", fontWeight: 700 }}>ADMIN</span>
+      {/* Header — same shape as every other screen: sticky, grid so the left
+          cell can shrink, 20px title that stays on one line on a phone. It was
+          24px and non-sticky here, which wrapped to "Manage / users". */}
+      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 20px", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: 10 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: "#0969da", cursor: "pointer", fontSize: 18, padding: 0, lineHeight: 1 }}>←</button>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>MANAGE USERS</div>
+          <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Accounts &amp; access</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px" }}>ADMIN</span>
           <span style={{ fontSize: 13, color: "#59636e", fontWeight: 700 }}>{currentUser}</span>
           <LogoutButton onLogout={onLogout} />
         </div>
@@ -8990,8 +8995,8 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "28px 20px" }}>
 
         {/* Add User Card */}
-        <div style={{ background: "#ffffff", border: "1px solid #0969da33", borderRadius: 6, padding: 24, marginBottom: 24 }}>
-          <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 0, fontWeight: 700, marginBottom: 18 }}>➕ Add new user</div>
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 20, marginBottom: 24 }}>
+          <div style={{ fontSize: 12, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 16 }}>ADD NEW USER</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 10 }}>
             {/* Username with autocomplete */}
             <div style={{ position: "relative" }}>
@@ -9008,8 +9013,8 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
               {showSuggestions && suggestions.length > 0 && (
                 <div style={{
                   position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                  background: "#f6f8fa", border: "1px solid #0969da55", borderRadius: 6,
-                  marginTop: 4, boxShadow: "0 8px 24px #000a",
+                  background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6,
+                  marginTop: 4, boxShadow: "0 4px 14px rgba(31,35,40,0.14)",
                   display: "flex", flexWrap: "wrap", gap: 6, padding: 10,
                 }}>
                   {suggestions.map(s => (
@@ -9046,7 +9051,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
               </div>
               <button
                 onClick={handleAdd}
-                style={{ background: "#1f883d", border: "none", color: "#ffffff", borderRadius: 6, padding: "9px 18px", cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 16, fontWeight: 600, letterSpacing: 0, whiteSpace: "nowrap" }}
+                style={{ background: "#1f883d", border: "1px solid #1a7f37", color: "#ffffff", borderRadius: 6, padding: "9px 18px", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}
               >Add</button>
             </div>
           </div>
@@ -9057,7 +9062,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
               style={{
                 flex: 1, padding: "8px 0", borderRadius: 6, cursor: "pointer",
                 fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                background: !newIsAdmin ? "#001020" : "#f6f8fa",
+                background: !newIsAdmin ? "#ddf4ff" : "#f6f8fa",
                 border: `1px solid ${!newIsAdmin ? "#0969da" : "#d1d9e0"}`,
                 color: !newIsAdmin ? "#0969da" : "#818b98",
                 transition: "all 0.15s",
@@ -9087,8 +9092,8 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
 
         {/* User List */}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #d1d9e0", fontSize: 12, color: "#59636e", letterSpacing: 0, fontWeight: 700 }}>
-            All users ({users.length} total)
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #d1d9e0", fontSize: 12, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>
+            ALL USERS ({users.length})
           </div>
           {users.map((u, idx) => {
             const isCurrentUser = u.username === currentUser;
@@ -9151,7 +9156,7 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
                       onClick={() => handleToggleRole(u)}
                       disabled={u.isAdmin && adminCount <= 1}
                       style={{
-                        background: u.isAdmin ? "#fff8c5" : "#001020",
+                        background: u.isAdmin ? "#fff8c5" : "#ddf4ff",
                         border: `1px solid ${u.isAdmin ? "#9a670044" : "#0969da44"}`,
                         color: u.isAdmin && adminCount <= 1 ? "#818b98" : (u.isAdmin ? "#9a6700" : "#0969da"),
                         borderRadius: 6, padding: "5px 10px",
