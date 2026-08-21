@@ -5867,6 +5867,64 @@ function CourseSetupScreen({
     setHoles(hs => hs.map((h, idx) => (idx === i ? { ...h, ...patch } : h)));
   };
 
+  const OPP = { L: "R", R: "L" };
+  const nineOf = (i) => (i < 9 ? 0 : 1);
+
+  // Setting a side is rarely an isolated decision. Flags are alternated across
+  // the course so players aren't asked for the same shot shape all day, and the
+  // same-par holes within a nine in particular are deliberately split. So a tap
+  // here proposes the consequences — the following hole, and the other par 3s
+  // or par 5s on the same nine — filling in only what is still blank. Anything
+  // already decided is left exactly as it was.
+  const cycleSide = (i) => {
+    if (!editableHoles[i] || !positionsNeeded) return;
+    setSaved(false);
+    setHoles(hs => {
+      const cur = hs[i]?.sideLR || "";
+      const next = cur === "" ? "L" : cur === "L" ? "R" : "";
+      const out = hs.map((h, idx) => (idx === i ? { ...h, sideLR: next } : { ...h }));
+      if (!next) return out;
+
+      const propose = (idx, value) => {
+        if (idx < 0 || idx > 17) return;
+        if (out[idx].sideLR) return;              // already decided
+        if (!editableHoles[idx]) return;          // not this referee's nine
+        out[idx] = { ...out[idx], sideLR: value };
+      };
+
+      propose(i + 1, OPP[next]);
+
+      const par = pars?.[i];
+      if (par === 3 || par === 5) {
+        out.forEach((_, idx) => {
+          if (idx === i) return;
+          if (pars?.[idx] !== par) return;
+          if (nineOf(idx) !== nineOf(i)) return;
+          propose(idx, OPP[next]);
+        });
+      }
+      return out;
+    });
+  };
+
+  // Two par 3s on the same nine sharing a side is a set-up mistake rather than
+  // an impossibility, so it is flagged rather than prevented.
+  const sideClashes = (() => {
+    const bad = new Set();
+    [3, 5].forEach(par => {
+      [0, 1].forEach(nine => {
+        const group = holes
+          .map((h, i) => ({ h, i }))
+          .filter(({ i }) => pars?.[i] === par && nineOf(i) === nine && holes[i]?.sideLR);
+        ["L", "R"].forEach(dir => {
+          const same = group.filter(({ h }) => h.sideLR === dir);
+          if (same.length > 1) same.forEach(({ i }) => bad.add(i));
+        });
+      });
+    });
+    return bad;
+  })();
+
   // The tee is only ever set forward of the back of the tee, so this figure is
   // always negative — and it feeds straight into the par-3 arithmetic, where a
   // missing minus quietly lengthens the hole instead of shortening it. Rather
@@ -5934,9 +5992,20 @@ function CourseSetupScreen({
         background: disabled ? "#f6f8fa" : "#ffffff",
         color: disabled ? "#8c959f" : "#1f2328",
         fontFamily: "inherit", fontSize: 13, fontWeight: 600,
-        textAlign: "center", padding: "9px 2px",
+        textAlign: "center", padding: "0 2px", height: "100%",
       }}
     />
+  );
+
+  // Every editable cell is the same height, so rows line up whether they hold
+  // one control or two.
+  const inputBox = (disabled, children) => (
+    <div style={{
+      border: "1px solid #d1d9e0", borderRadius: 4, height: 28,
+      background: disabled ? "#f6f8fa" : "#ffffff",
+      display: "flex", alignItems: "center", overflow: "hidden",
+      margin: 3,
+    }}>{children}</div>
   );
   const selStyle = (disabled) => ({
     flex: 1, minWidth: 0, width: "100%", boxSizing: "border-box",
@@ -5998,7 +6067,7 @@ function CourseSetupScreen({
             </div>
           )}
         </td>
-        <td style={cell}>{numInput(h.bot, v => setBot(i, v), locked)}</td>
+        <td style={cell}>{inputBox(locked, numInput(h.bot, v => setBot(i, v), locked))}</td>
         <td style={cell}>
           {isPar3 ? (() => {
             const y = par3PlayingYards(i);
@@ -6013,35 +6082,35 @@ function CourseSetupScreen({
             <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "9px 0" }}>–</div>
           )}
         </td>
-        <td style={cell}>{numInput(h.front, v => setHole(i, { front: v }), locked || !positionsNeeded)}</td>
+        <td style={cell}>{inputBox(locked || !positionsNeeded, numInput(h.front, v => setHole(i, { front: v }), locked || !positionsNeeded))}</td>
         <td style={cell}>
-          <div style={{ padding: "3px 2px", display: "flex", flexDirection: "column", gap: 3 }}>
-            <div style={{ border: "1px solid #d1d9e0", borderRadius: 4, background: (locked || !positionsNeeded) ? "#f6f8fa" : "#ffffff", height: 28, display: "flex", alignItems: "center" }}>
+          <div style={{ padding: 3, display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ border: "1px solid #d1d9e0", borderRadius: 4, background: (locked || !positionsNeeded) ? "#f6f8fa" : "#ffffff", height: 28, display: "flex", alignItems: "center", overflow: "hidden" }}>
               {numInput(h.side, v => setHole(i, { side: v }), locked || !positionsNeeded)}
             </div>
-            {/* One tap each, and the answer is readable without opening
-                anything — which a dropdown can't manage. Tapping the letter
-                that is already set clears it, so a mistake is undoable. */}
-            <div style={{ display: "flex", gap: 2 }}>
-              {["L", "R"].map(d => {
-                const on = h.sideLR === d;
-                const off = locked || !positionsNeeded;
-                return (
-                  <button
-                    key={d}
-                    disabled={off}
-                    onClick={() => setHole(i, { sideLR: on ? "" : d })}
-                    style={{
-                      flex: 1, minWidth: 0, height: 22, borderRadius: 4,
-                      cursor: off ? "default" : "pointer",
-                      fontFamily: "inherit", fontSize: 11, fontWeight: 700, padding: 0,
-                      background: on ? "#ddf4ff" : "#f6f8fa",
-                      border: `1px solid ${on ? "#0969da" : "#d1d9e0"}`,
-                      color: off ? "#8c959f" : (on ? "#0969da" : "#59636e"),
-                    }}>{d}</button>
-                );
-              })}
-            </div>
+            {/* One field, not two buttons: a pair of buttons shows both letters
+                at once, so the eye has to work out which is selected on every
+                row. This shows the answer and nothing else. Tap cycles
+                — → L → R → —. */}
+            {(() => {
+              const v = h.sideLR || "";
+              const off = locked || !positionsNeeded;
+              const clash = sideClashes.has(i);
+              return (
+                <button
+                  disabled={off}
+                  onClick={() => cycleSide(i)}
+                  title={clash ? "Another hole of the same par on this nine is on the same side" : "Tap to change side"}
+                  style={{
+                    height: 24, borderRadius: 4, width: "100%", padding: 0,
+                    cursor: off ? "default" : "pointer",
+                    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    background: clash ? "#ffebe9" : v ? "#ddf4ff" : "#f6f8fa",
+                    border: `1px solid ${clash ? "#cf222e" : v ? "#0969da" : "#d1d9e0"}`,
+                    color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#0969da" : "#8c959f",
+                  }}>{v || "–"}</button>
+              );
+            })()}
           </div>
         </td>
         <td style={cell}>{stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}</td>
@@ -6114,7 +6183,7 @@ function CourseSetupScreen({
               {par3Holes.map(i => (
                 <div key={i} style={{ flex: "1 1 0", minWidth: 60 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#59636e", textAlign: "center", marginBottom: 3 }}>H{i + 1}</div>
-                  <div style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: editableHoles[i] ? "#ffffff" : "#f6f8fa", height: 32, display: "flex", alignItems: "center" }}>
+                  <div style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: editableHoles[i] ? "#ffffff" : "#f6f8fa", height: 32, display: "flex", alignItems: "center", overflow: "hidden" }}>
                     {numInput(par3Base[i] ?? "", v => setBase(i, v), !editableHoles[i], "y")}
                   </div>
                 </div>
