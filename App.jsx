@@ -1769,18 +1769,14 @@ const isPaceRound = (l) => !PACELESS_ROUND_LABELS.includes(l);
 // its own. Keeping that here means the Course Setup form can work out what the
 // referee is actually walking the course to record.
 const SHARES_POSITIONS_WITH = { PT: "Q" };
-const needsOwnPositions = (l) => !(l in SHARES_POSITIONS_WITH);
 
-// Which round's positions are being prepared while this round is the one in
-// hand — the next one along that isn't inheriting somebody else's.
-function nextRoundNeedingPositions(currentLabel, availableLabels) {
-  const order = (availableLabels || ROUND_LABELS).filter(needsOwnPositions);
+// The round played the day after this one. Positions cut today are for it —
+// this follows the schedule rather than being chosen, because "which day do
+// these flags belong to" is a fact about the calendar, not a preference.
+function nextRoundOf(currentLabel, availableLabels) {
+  const order = availableLabels || ROUND_LABELS;
   const i = order.indexOf(currentLabel);
-  if (i >= 0) return order[i + 1] ?? null;
-  // Practice isn't in the list, so step off it via the round it inherits from.
-  const inherited = SHARES_POSITIONS_WITH[currentLabel];
-  const j = inherited ? order.indexOf(inherited) : -1;
-  return j >= 0 ? (order[j + 1] ?? null) : (order[0] ?? null);
+  return i >= 0 ? (order[i + 1] ?? null) : null;
 }
 
 const roundShort = (l) => ROUND_NAMES[l]?.short ?? `R${l}`;
@@ -5805,10 +5801,13 @@ function CourseSetupScreen({
     const saved = courseSetup?.holes;
     return Array.from({ length: 18 }, (_, i) => ({ ...blankHole(), ...(saved?.[i] || {}) }));
   });
-  const suggestedFor = nextRoundNeedingPositions(roundLabel, availableRoundLabels);
-  const [positionsFor, setPositionsFor] = useState(
-    courseSetup?.positionsFor ?? suggestedFor ?? ""
-  );
+  // Not a choice: the flags cut today are for whatever is played tomorrow.
+  const positionsFor = nextRoundOf(roundLabel, availableRoundLabels);
+  // ...and if tomorrow inherits its positions from a day already played, there
+  // is nothing to walk out and measure. Practice is played to the Qualifying
+  // positions, so on Qualifying day these two columns stay empty.
+  const inheritsFrom = positionsFor ? SHARES_POSITIONS_WITH[positionsFor] : null;
+  const positionsNeeded = !!positionsFor && !inheritsFrom;
   const [practiceGreen, setPracticeGreen] = useState(courseSetup?.practiceGreen ?? null);
   const [saved, setSaved] = useState(false);
   // The positions in play today, read back from whichever round recorded them.
@@ -5855,7 +5854,7 @@ function CourseSetupScreen({
         side: h.side === "" ? null : Number(h.side),
         stimp: h.stimp ?? null,
       })),
-      positionsFor: positionsFor || null,
+      positionsFor: positionsNeeded ? positionsFor : null,
       practiceGreen: practiceGreen ?? null,
       // Averages are deliberately not stored. They are one edit away from
       // disagreeing with the readings above them, and a stale average on a
@@ -5872,7 +5871,6 @@ function CourseSetupScreen({
   // that grouping is doing real work — without it a referee can read tomorrow's
   // flag position as today's — so it is reproduced here.
   const thisTag = roundShort(roundLabel);
-  const nextTag = positionsFor ? roundShort(positionsFor) : "—";
 
   const cell = { border: "1px solid #d1d9e0", padding: 0 };
   const th = {
@@ -5962,8 +5960,8 @@ function CourseSetupScreen({
             <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "9px 0" }}>–</div>
           )}
         </td>
-        <td style={cell}>{numInput(h.front, v => setHole(i, { front: v }), locked)}</td>
-        <td style={cell}>{numInput(h.side, v => setHole(i, { side: v }), locked)}</td>
+        <td style={cell}>{numInput(h.front, v => setHole(i, { front: v }), locked || !positionsNeeded)}</td>
+        <td style={cell}>{numInput(h.side, v => setHole(i, { side: v }), locked || !positionsNeeded)}</td>
         <td style={cell}>{stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}</td>
       </tr>
     );
@@ -6025,29 +6023,27 @@ function CourseSetupScreen({
             : "You have view-only access to this form."}
         </div>
 
-        {/* Hole positions belong to the round being prepared, not the one being
-            played — the paper form has a separate "Hole Positions Round" box for
-            exactly this reason. */}
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>HOLE POSITIONS FOR</span>
-          <select
-            value={positionsFor}
-            disabled={!mayEditAnything}
-            onChange={e => { setPositionsFor(e.target.value); setSaved(false); }}
-            style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: mayEditAnything ? "#ffffff" : "#f6f8fa", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
-            <option value="">— round —</option>
-            {(availableRoundLabels || []).filter(needsOwnPositions).map(l => (
-              <option key={l} value={l}>{roundFull(l)}</option>
-            ))}
-          </select>
-          {/* Said out loud, because "why is there no Practice option?" is the
-              first thing anyone will wonder looking at this list. */}
-          <div style={{ fontSize: 11, color: "#818b98", width: "100%" }}>
-            {positionsFor && Object.entries(SHARES_POSITIONS_WITH)
-              .filter(([, src]) => src === positionsFor)
-              .map(([l]) => roundFull(l)).length > 0
-              ? `${Object.entries(SHARES_POSITIONS_WITH).filter(([, src]) => src === positionsFor).map(([l]) => roundFull(l)).join(", ")} plays to these same positions.`
-              : "Practice is played to the Qualifying positions, so it isn't cut separately."}
+        {/* Stated rather than chosen. Which day a set of flags belongs to comes
+            from the schedule, and offering it as a dropdown invited exactly the
+            mistake the paper form avoids by printing the round at the top. */}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>HOLE POSITIONS FOR</span>
+            <span style={{
+              fontSize: 13, fontWeight: 700, borderRadius: 6, padding: "3px 10px",
+              color: positionsNeeded ? "#8250df" : "#59636e",
+              background: positionsNeeded ? "#faf2ff" : "#f6f8fa",
+              border: `1px solid ${positionsNeeded ? "#8250df44" : "#d1d9e0"}`,
+            }}>
+              {positionsFor ? roundFull(positionsFor) : "No round follows this one"}
+            </span>
+          </div>
+          <div style={{ fontSize: 11, color: "#818b98", marginTop: 6 }}>
+            {!positionsFor
+              ? `${roundFull(roundLabel)} is the last round, so there are no positions to cut.`
+              : inheritsFrom
+                ? `${roundFull(positionsFor)} is played to the ${roundFull(inheritsFrom)} positions, so Front and Side are not recorded today.`
+                : `Measured today, played tomorrow on ${roundFull(positionsFor)}.`}
           </div>
         </div>
 
@@ -6066,8 +6062,12 @@ function CourseSetupScreen({
               <tr>
                 <th rowSpan={2} style={{ ...th, width: 30 }}>HOLE</th>
                 <th colSpan={2} style={groupTh("this")}>{roundFull(roundLabel)}</th>
-                <th colSpan={2} style={groupTh("next")}>
+                <th colSpan={2} style={{
+                  ...groupTh("next"),
+                  ...(positionsNeeded ? {} : { background: "#f6f8fa", color: "#8c959f" }),
+                }}>
                   HOLE POSITIONS · {positionsFor ? roundFull(positionsFor) : "—"}
+                  {!positionsNeeded && <><br /><span style={{ fontWeight: 600 }}>not recorded today</span></>}
                 </th>
                 <th style={groupTh("this")}>{roundFull(roundLabel)}</th>
               </tr>
