@@ -6101,7 +6101,7 @@ function CourseSetupScreen({
                     border: "none", outline: "none", background: "transparent",
                     color: off ? "#8c959f" : "#1f2328",
                     fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                    textAlign: "right", padding: "0 1px", height: "100%",
+                    textAlign: "right", paddingRight: 2, height: "100%",
                   }}
                 />
                 <span
@@ -6111,8 +6111,10 @@ function CourseSetupScreen({
                   style={{
                     flex: 1, minWidth: 0, width: "50%", alignSelf: "stretch",
                     display: "flex", alignItems: "center", justifyContent: "flex-start",
-                    paddingLeft: 1,
+                    paddingLeft: 2,
                     cursor: off ? "default" : "pointer",
+                    // Same size and weight as the number: together they are one
+                    // reading, not a figure with a label attached.
                     fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                     color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#1f2328" : "#c2c8cf",
                     textDecoration: clash ? "underline" : "none",
