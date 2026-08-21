@@ -8909,7 +8909,7 @@ function LoginScreen({ onLogin, users }) {
 }
 
 // ─── User Management Screen ───────────────────────────────────────────────────
-function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLogout }) {
+function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLogout, onAccount, onChangePassword, onManageTournaments, onGoToDashboard, onGoToSetup }) {
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newIsAdmin, setNewIsAdmin] = useState(false);
@@ -8979,16 +8979,33 @@ function UserManagementScreen({ users, onUpdateUsers, onBack, currentUser, onLog
       {/* Header — same shape as every other screen: sticky, grid so the left
           cell can shrink, 20px title that stays on one line on a phone. It was
           24px and non-sticky here, which wrapped to "Manage / users". */}
-      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 20px", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: 10 }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", color: "#0969da", cursor: "pointer", fontSize: 18, padding: 0, lineHeight: 1 }}>←</button>
+      <div style={{ position: "sticky", top: 0, zIndex: 800, background: "#ffffff", borderBottom: "1px solid #d1d9e0", padding: "10px 20px", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
+        {/* No back arrow: the account menu already carries every route out of
+            here, and two ways back is one more than the other screens offer. */}
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, color: "#1f2328", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>MANAGE USERS</div>
-          <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Accounts &amp; access</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, color: "#1f2328" }}>MANAGE USERS</div>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
+          </div>
+          <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px" }}>ADMIN</span>
-          <span style={{ fontSize: 13, color: "#59636e", fontWeight: 700 }}>{currentUser}</span>
-          <LogoutButton onLogout={onLogout} />
+        <div style={{ display: "flex", justifyContent: "flex-end", minWidth: 0 }}>
+          {currentUser && (
+            <UserMenu
+              currentUser={currentUser}
+              onAccount={onAccount}
+              onChangePassword={onChangePassword}
+              onLogout={onLogout}
+              onManageTournaments={onManageTournaments}
+              onGoToDashboard={onGoToDashboard}
+              onGoToSetup={onGoToSetup}
+              badges={
+                <span style={{ fontSize: 9, fontWeight: 700, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 4, padding: "0 6px", height: 18, display: "inline-flex", alignItems: "center", lineHeight: 1, letterSpacing: 1 }}>
+                  ADMIN
+                </span>
+              }
+            />
+          )}
         </div>
       </div>
 
@@ -10856,13 +10873,22 @@ function AppShell() {
   );
 
   if (screen === "users" && isAdmin) return (
+    <>
+    {accountModal}
+    {passwordModal}
     <UserManagementScreen
       users={users}
       onUpdateUsers={handleUpdateUsers}
       onBack={() => setScreen(usersReturnTo)}
       currentUser={currentUser}
       onLogout={handleLogout}
+      onAccount={() => setShowAccount(true)}
+      onChangePassword={() => setShowChangePassword(true)}
+      onManageTournaments={() => setScreen("tournament")}
+      onGoToDashboard={groups.length > 0 ? () => setScreen("dashboard") : null}
+      onGoToSetup={() => setScreen(usersReturnTo === "dashboard" ? "setup" : usersReturnTo)}
     />
+    </>
   );
 
   if (screen === "setup") return (
