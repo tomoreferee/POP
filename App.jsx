@@ -5799,6 +5799,15 @@ function CourseSetupScreen({
   // Side is a distance and a direction — "6R" is six yards right of centre.
   // Kept as two fields rather than one string so the number stays a number.
   const blankHole = () => ({ bot: "", front: "", side: "", sideLR: "", stimp: null });
+  // Anything entered before the sign was applied automatically comes back
+  // positive; left as-is it would lengthen the par-3 calculation instead of
+  // shortening it, so it is corrected on the way in.
+  const normaliseHole = (h) => {
+    const n = Number(h.bot);
+    if (h.bot !== "" && h.bot != null && Number.isFinite(n) && n > 0) return { ...h, bot: String(-n) };
+    return h;
+  };
+
   const [holes, setHoles] = useState(() => {
     const saved = courseSetup?.holes;
     return Array.from({ length: 18 }, (_, i) => {
@@ -5823,6 +5832,28 @@ function CourseSetupScreen({
     setPar3Base(b => ({ ...b, [i]: raw }));
   };
   const [saved, setSaved] = useState(false);
+
+  const savedStamp = courseSetup?.updatedAt ?? null;
+  const lastStamp = useRef(savedStamp);
+  useEffect(() => {
+    if (lastStamp.current === savedStamp) return;
+    lastStamp.current = savedStamp;
+    const src = courseSetup?.holes;
+    setHoles(Array.from({ length: 18 }, (_, i) => normaliseHole({ ...blankHole(), ...(src?.[i] || {}) })));
+    setPar3Base(courseSetup?.par3Base ?? {});
+    setPracticeGreen(courseSetup?.practiceGreen ?? null);
+    setSaved(false);
+  }, [savedStamp]);
+
+  // Wipes only what this referee is allowed to wipe, so clearing the front nine
+  // can't take somebody else's back nine with it.
+  const clearForm = () => {
+    if (!window.confirm("Clear the entries you can edit on this form?\n\nThis does not save — press Save afterwards to make it stick.")) return;
+    setSaved(false);
+    setHoles(hs => hs.map((h, i) => (canEditHoleSetup({ isAdmin, position, holeIdx: i }) ? blankHole() : h)));
+    if (canEditPracticeGreen({ isAdmin, position })) setPracticeGreen(null);
+  };
+
   // The positions in play today, read back from whichever round recorded them.
   const [todayPositions, setTodayPositions] = useState(null);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
@@ -5907,10 +5938,15 @@ function CourseSetupScreen({
     });
   };
 
-  // Two par 3s on the same nine sharing a side is a set-up mistake rather than
-  // an impossibility, so it is flagged rather than prevented.
+  // Set-up guidelines, not rules. A course can force any of these — a green
+  // may only take a flag on one side — so they are shown as warnings and never
+  // block a save. All of them are about spreading the round out: not repeating
+  // a side, and not stacking the short pins together.
+  const SINGLE_DIGIT_MAX_PER_NINE = 3;
+
   const sideClashes = (() => {
     const bad = new Set();
+    // Same par, same nine, same side.
     [3, 5].forEach(par => {
       [0, 1].forEach(nine => {
         const group = holes
@@ -5922,6 +5958,42 @@ function CourseSetupScreen({
         });
       });
     });
+    // Three or more in a row on the same side. Runs are counted across the
+    // whole 18: holes 9 and 10 are consecutive on the course even though they
+    // belong to different nines.
+    let run = [];
+    for (let i = 0; i <= 18; i++) {
+      const d = i < 18 ? (holes[i]?.sideLR || "") : "";
+      if (d && run.length && holes[run[0]].sideLR === d) run.push(i);
+      else {
+        if (run.length >= 3) run.forEach(j => bad.add(j));
+        run = d ? [i] : [];
+      }
+    }
+    return bad;
+  })();
+
+  // A "short" pin — the flag cut close to the front of the green.
+  const isShortFront = (i) => {
+    const n = Number(holes[i]?.front);
+    return holes[i]?.front !== "" && holes[i]?.front != null && Number.isFinite(n) && n > 0 && n < 10;
+  };
+  const frontFlags = (() => {
+    const bad = new Set();
+    // No more than three on a nine.
+    [0, 1].forEach(nine => {
+      const shorts = holes.map((_, i) => i).filter(i => nineOf(i) === nine && isShortFront(i));
+      if (shorts.length > SINGLE_DIGIT_MAX_PER_NINE) shorts.forEach(i => bad.add(i));
+    });
+    // And not three in a row.
+    let run = [];
+    for (let i = 0; i <= 18; i++) {
+      if (i < 18 && isShortFront(i)) run.push(i);
+      else {
+        if (run.length >= 3) run.forEach(j => bad.add(j));
+        run = [];
+      }
+    }
     return bad;
   })();
 
@@ -6080,7 +6152,25 @@ function CourseSetupScreen({
             <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "9px 0" }}>–</div>
           )}
         </td>
-        <td style={cell}>{plainCell(locked || !positionsNeeded, numInput(h.front, v => setHole(i, { front: v }), locked || !positionsNeeded))}</td>
+        <td style={cell}>
+          {plainCell(locked || !positionsNeeded, (
+            <input
+              value={h.front ?? ""}
+              onChange={e => setHole(i, { front: e.target.value })}
+              disabled={locked || !positionsNeeded}
+              inputMode="numeric"
+              title={frontFlags.has(i) ? "Too many short pins together — see the note above the table" : undefined}
+              style={{
+                width: "100%", minWidth: 0, boxSizing: "border-box", border: "none", outline: "none",
+                background: "transparent",
+                color: (locked || !positionsNeeded) ? "#8c959f" : frontFlags.has(i) ? "#cf222e" : "#1f2328",
+                textDecoration: frontFlags.has(i) ? "underline" : "none",
+                fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+                textAlign: "center", padding: "0 2px", height: "100%",
+              }}
+            />
+          ))}
+        </td>
         {/* Distance and direction read as one value — "6R" — so they sit side by
             side on one line rather than stacked. The letter still cycles on tap
             (— → L → R → —) so only the answer is ever on screen. */}
@@ -6221,6 +6311,15 @@ function CourseSetupScreen({
           </div>
         )}
 
+        {(sideClashes.size > 0 || frontFlags.size > 0) && (
+          <div style={{ background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 6, padding: "10px 12px", marginBottom: 8, fontSize: 11, color: "#7d4e00" }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>Set-up guidelines — underlined in red below</div>
+            {sideClashes.size > 0 && <div>· Sides: avoid three holes running on the same side, and split the par 3s and par 5s of a nine between left and right.</div>}
+            {frontFlags.size > 0 && <div>· Front: avoid more than {SINGLE_DIGIT_MAX_PER_NINE} single-figure pins on a nine, and three of them in a row.</div>}
+            <div style={{ marginTop: 4, color: "#9a6700" }}>These are guidelines only — the course may leave you no choice, and saving is not blocked.</div>
+          </div>
+        )}
+
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
@@ -6272,17 +6371,31 @@ function CourseSetupScreen({
         )}
 
         {mayEditAnything && (
-          <button
-            onClick={handleSave}
-            style={{
-              width: "100%", marginTop: 16, padding: "12px 0", borderRadius: 6, cursor: "pointer",
-              fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-              background: saved ? "#dafbe1" : "#1f883d",
-              border: `1px solid ${saved ? "#1a7f37" : "#1a7f37"}`,
-              color: saved ? "#1a7f37" : "#ffffff",
-            }}>
-            {saved ? "✓ Saved" : "Save course setup"}
-          </button>
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button
+              onClick={handleSave}
+              style={{
+                flex: 1, padding: "12px 0", borderRadius: 6, cursor: "pointer",
+                fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                background: saved ? "#dafbe1" : "#1f883d",
+                border: "1px solid #1a7f37",
+                color: saved ? "#1a7f37" : "#ffffff",
+              }}>
+              {saved ? "✓ Saved" : "Save course setup"}
+            </button>
+            {/* Kept narrow and beside Save rather than under it: it is the
+                destructive one, and it should not be the button a thumb finds
+                by accident at the bottom of a long form. */}
+            <button
+              onClick={clearForm}
+              style={{
+                flexShrink: 0, padding: "12px 16px", borderRadius: 6, cursor: "pointer",
+                fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                background: "#ffffff", border: "1px solid #cf222e55", color: "#cf222e",
+              }}>
+              Clear
+            </button>
+          </div>
         )}
       </div>
     </div>
