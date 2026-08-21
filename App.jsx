@@ -5902,15 +5902,25 @@ function CourseSetupScreen({
   // form is still where they are edited, and locking the columns the moment
   // they were first saved — which is what used to happen — left no way to
   // correct a reading.
+  // A round that plays to somebody else's positions never records its own, even
+  // when nothing has been written down yet — Practice is played to the
+  // Qualifying flags, so on a Practice day the job is the round after it. The
+  // fallback below is for rounds that genuinely have nobody to inherit from.
+  const inheritsSource = SHARES_POSITIONS_WITH[roundLabel];
+  const inheritsOwn = !!inheritsSource && (availableRoundLabels || ROUND_LABELS).includes(inheritsSource);
+
   const recordedHere = positionsLoaded
     ? todayPositions?.fromLabel === roundLabel
     : courseSetup?.positionsFor === roundLabel;
   const positionsFor = positionsLoaded
-    ? ((!todayPositions || recordedHere) ? roundLabel : (nextLabel && !nextInherits ? nextLabel : null))
+    ? (inheritsOwn
+        ? (nextLabel && !nextInherits ? nextLabel : null)
+        : ((!todayPositions || recordedHere) ? roundLabel : (nextLabel && !nextInherits ? nextLabel : null)))
     // Before the lookup returns: this round's own saved sheet already records
     // which round it was filled in for, and that is the answer in every case
     // except one this form can't create.
-    : (courseSetup?.positionsFor ?? ((nextLabel && !nextInherits) ? nextLabel : roundLabel));
+    : (courseSetup?.positionsFor
+        ?? ((nextLabel && !nextInherits) ? nextLabel : (inheritsOwn ? null : roundLabel)));
   const positionsNeeded = !!positionsFor;
   const positionsAreForToday = positionsNeeded && positionsFor === roundLabel;
 
@@ -6327,7 +6337,9 @@ function CourseSetupScreen({
                 ? `Front and Side are cut today for ${roundFull(positionsFor)}.`
                 : nextInherits
                   ? `${roundFull(nextLabel)} is played to the ${roundFull(nextInherits)} positions, so Front and Side are not recorded today.`
-                  : `${roundFull(roundLabel)} is the last round, so there are no positions to cut.`}
+                  : inheritsOwn
+                    ? `${roundFull(roundLabel)} is played to the ${roundFull(inheritsSource)} positions, and nothing follows it, so there is nothing to cut today.`
+                    : `${roundFull(roundLabel)} is the last round, so there are no positions to cut.`}
         </div>
 
         {todayPositions && !recordedHere && (
