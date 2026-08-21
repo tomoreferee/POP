@@ -5799,7 +5799,15 @@ function CourseSetupScreen({
   const blankHole = () => ({ bot: "", front: "", side: "", stimp: null });
   const [holes, setHoles] = useState(() => {
     const saved = courseSetup?.holes;
-    return Array.from({ length: 18 }, (_, i) => ({ ...blankHole(), ...(saved?.[i] || {}) }));
+    return Array.from({ length: 18 }, (_, i) => {
+      const h = { ...blankHole(), ...(saved?.[i] || {}) };
+      // Anything entered before the sign was applied automatically comes back
+      // positive; left as-is it would lengthen the par-3 calculation instead of
+      // shortening it, so it is corrected on the way in.
+      const n = Number(h.bot);
+      if (h.bot !== "" && h.bot != null && Number.isFinite(n) && n > 0) h.bot = String(-n);
+      return h;
+    });
   });
   // Not a choice: the flags cut today are for whatever is played tomorrow.
   const positionsFor = nextRoundOf(roundLabel, availableRoundLabels);
@@ -5840,6 +5848,17 @@ function CourseSetupScreen({
   const setHole = (i, patch) => {
     setSaved(false);
     setHoles(hs => hs.map((h, idx) => (idx === i ? { ...h, ...patch } : h)));
+  };
+
+  // The tee is only ever set forward of the back of the tee, so this figure is
+  // always negative — and it feeds straight into the par-3 arithmetic, where a
+  // missing minus quietly lengthens the hole instead of shortening it. Rather
+  // than rely on everyone remembering to type it, the sign is applied here.
+  const setBot = (i, raw) => {
+    const digits = String(raw).replace(/[^0-9]/g, "");
+    if (digits === "") return setHole(i, { bot: "" });
+    const n = Number(digits);
+    setHole(i, { bot: n === 0 ? "0" : String(-n) });
   };
 
   const front = averageStimp(holes, 0, 8);
@@ -5960,7 +5979,7 @@ function CourseSetupScreen({
             </div>
           )}
         </td>
-        <td style={cell}>{numInput(h.bot, v => setHole(i, { bot: v }), locked)}</td>
+        <td style={cell}>{numInput(h.bot, v => setBot(i, v), locked)}</td>
         <td style={cell}>
           {isPar3 ? (() => {
             const y = par3PlayingYards(i);
