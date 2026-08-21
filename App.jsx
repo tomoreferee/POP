@@ -5885,12 +5885,15 @@ function CourseSetupScreen({
   // form is still where they are edited, and locking the columns the moment
   // they were first saved — which is what used to happen — left no way to
   // correct a reading.
-  const recordedHere = todayPositions?.fromLabel === roundLabel;
-  const positionsFor = !positionsLoaded
-    ? null
-    : (!todayPositions || recordedHere)
-      ? roundLabel
-      : (nextLabel && !nextInherits ? nextLabel : null);
+  const recordedHere = positionsLoaded
+    ? todayPositions?.fromLabel === roundLabel
+    : courseSetup?.positionsFor === roundLabel;
+  const positionsFor = positionsLoaded
+    ? ((!todayPositions || recordedHere) ? roundLabel : (nextLabel && !nextInherits ? nextLabel : null))
+    // Before the lookup returns: this round's own saved sheet already records
+    // which round it was filled in for, and that is the answer in every case
+    // except one this form can't create.
+    : (courseSetup?.positionsFor ?? ((nextLabel && !nextInherits) ? nextLabel : roundLabel));
   const positionsNeeded = !!positionsFor;
   const positionsAreForToday = positionsNeeded && positionsFor === roundLabel;
 
@@ -6301,10 +6304,8 @@ function CourseSetupScreen({
         )}
 
         <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
-          {!positionsLoaded
-            ? "Checking which round the hole positions belong to…"
-            : positionsAreForToday
-              ? `Front and Side are the positions ${roundFull(roundLabel)} is played to — nothing earlier has recorded them.`
+          {positionsAreForToday
+              ? `Front and Side are the positions ${roundFull(roundLabel)} itself is played to.`
               : positionsNeeded
                 ? `Front and Side are cut today for ${roundFull(positionsFor)}.`
                 : nextInherits
@@ -10420,12 +10421,10 @@ async function fetchRounds(tournamentId) {
 async function fetchHolePositionsFor(tournamentId, label) {
   if (!tournamentId || !label) return null;
   try {
-    const rounds = await fetchRounds(tournamentId);
-    if (!rounds.length) return null;
     const { data, error } = await supabase
       .from("round_state")
-      .select("round_id, course_setup")
-      .in("round_id", rounds.map(r => r.id));
+      .select("round_id, course_setup, tournament_rounds!inner(label, tournament_id)")
+      .eq("tournament_rounds.tournament_id", tournamentId);
     if (error || !data) return null;
     const match = data.find(d => d.course_setup?.positionsFor === label);
     // The yardage-book distances belong to the holes, not to a day, so they are
@@ -10434,8 +10433,11 @@ async function fetchHolePositionsFor(tournamentId, label) {
     const withBase = data.find(d => d.course_setup?.par3Base && Object.keys(d.course_setup.par3Base).length);
     const par3Base = withBase?.course_setup?.par3Base ?? null;
     if (!match) return par3Base ? { holes: [], fromLabel: null, par3Base } : null;
-    const from = rounds.find(r => r.id === match.round_id);
-    return { holes: match.course_setup.holes || [], fromLabel: from?.label ?? null, par3Base };
+    return {
+      holes: match.course_setup.holes || [],
+      fromLabel: match.tournament_rounds?.label ?? null,
+      par3Base,
+    };
   } catch {
     return null;
   }
