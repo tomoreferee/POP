@@ -9734,6 +9734,12 @@ function AppShell() {
   const lastLocalWriteAt = useRef({});
   const [clearTick, setClearTick] = useState(0);
   const [liveStatus, setLiveStatus] = useState("connecting"); // connecting | live | down
+  // Bumping this tears the realtime channels down and builds them again, which
+  // is what "tap to retry" has to do — re-reading the data once left the feed
+  // itself still broken, so the warning stayed up even though the screen had
+  // just filled with current data.
+  const [retryNonce, setRetryNonce] = useState(0);
+  const liveStatusRef = useRef("connecting");
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const syncingRef = useRef(false);
   const syncNowRef = useRef(null);
@@ -10016,6 +10022,25 @@ function AppShell() {
     const roundId = currentRound?.id;
     if (!roundId) return;
 
+    // Both channels report into one badge, so their statuses are tracked apart
+    // and combined — otherwise one channel connecting would immediately paint
+    // over the other one having failed, and vice versa.
+    //
+    // Only a real failure counts as down. CLOSED arrives during ordinary
+    // teardown (changing round, unmounting), and treating that as a fault was
+    // one of the ways the badge got stuck saying Offline while data flowed in
+    // perfectly well.
+    let torn = false;
+    const chanStatus = { state: null, group: null };
+    const report = (which, status) => {
+      if (torn) return;
+      chanStatus[which] = status;
+      const values = Object.values(chanStatus);
+      if (values.some(v => v === "CHANNEL_ERROR" || v === "TIMED_OUT")) setLiveStatus("down");
+      else if (values.every(v => v === "SUBSCRIBED")) setLiveStatus("live");
+      else setLiveStatus("connecting");
+    };
+
     const stateChannel = supabase
       .channel(`round_state_sync_${roundId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "round_state", filter: `round_id=eq.${roundId}` }, (payload) => {
@@ -10042,7 +10067,7 @@ function AppShell() {
         if (row.green_speed != null) setGreenSpeed(row.green_speed);
         if (row.preferred_lies != null) setPreferredLies(row.preferred_lies);
       })
-      .subscribe(status => setLiveStatus(status === "SUBSCRIBED" ? "live" : "down"));
+      .subscribe(status => report("state", status));
 
     const groupChannel = supabase
       .channel(`round_group_data_sync_${roundId}`)
@@ -10059,14 +10084,15 @@ function AppShell() {
         }
         setGroupData(prev => ({ ...prev, [row.group_id]: row.data }));
       })
-      .subscribe(status => setLiveStatus(status === "SUBSCRIBED" ? "live" : "down"));
+      .subscribe(status => report("group", status));
 
     return () => {
+      torn = true;
       supabase.removeChannel(stateChannel);
       supabase.removeChannel(groupChannel);
       setLiveStatus("connecting");
     };
-  }, [currentRound?.id]);
+  }, [currentRound?.id, retryNonce]);
 
   // ─── Staying in sync when the connection doesn't ────────────────────────────
   // Realtime is a push feed, which is quicker and lighter than polling — but a
@@ -10110,6 +10136,9 @@ function AppShell() {
       });
       setLastSyncAt(new Date());
       await flushPendingGroupWrites();
+      // The read worked, so the network is fine; if the live feed is still
+      // reporting a fault, rebuild it rather than leaving a stale warning up.
+      if (liveStatusRef.current === "down") setRetryNonce(n => n + 1);
     } catch {
       // Leave what's on screen alone — a failed refresh shouldn't blank the round.
     } finally {
@@ -10365,6 +10394,7 @@ function AppShell() {
   useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
   useEffect(() => { isAdminRef.current = isAdmin; }, [isAdmin]);
   useEffect(() => { currentRoundRef.current = currentRound; }, [currentRound]);
+  useEffect(() => { liveStatusRef.current = liveStatus; }, [liveStatus]);
 
   const handleLogout = () => {
     sessionPasswordRef.current = null;
