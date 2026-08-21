@@ -5880,10 +5880,15 @@ function CourseSetupScreen({
   // in both, the round has to record its own. So: if this round's positions
   // haven't been written down anywhere yet, that is the job in front of you;
   // once they have, the columns move on to the next round that needs its own.
-  const ownPositionsRecorded = !!todayPositions;
+  // Whether the positions on record for this round were written down here or on
+  // an earlier day. It matters: if they are this form's own entries then this
+  // form is still where they are edited, and locking the columns the moment
+  // they were first saved — which is what used to happen — left no way to
+  // correct a reading.
+  const recordedHere = todayPositions?.fromLabel === roundLabel;
   const positionsFor = !positionsLoaded
     ? null
-    : !ownPositionsRecorded
+    : (!todayPositions || recordedHere)
       ? roundLabel
       : (nextLabel && !nextInherits ? nextLabel : null);
   const positionsNeeded = !!positionsFor;
@@ -6123,7 +6128,10 @@ function CourseSetupScreen({
     const locked = !editableHoles[i];
     const isPar3 = pars?.[i] === 3;
     const today = todayPositions?.holes?.[i];
-    const hasToday = today && (today.front != null || today.side != null);
+    // Only worth echoing when it came from somewhere else. When this form is
+    // itself where today's positions live, repeating them under the hole number
+    // just prints the same row twice.
+    const hasToday = !recordedHere && today && (today.front != null || today.side != null);
     return (
       <tr key={i}>
         <td style={{ ...cell, textAlign: "center", padding: "4px 2px", background: locked ? "#f6f8fa" : "#ffffff" }}>
@@ -6304,7 +6312,7 @@ function CourseSetupScreen({
                   : `${roundFull(roundLabel)} is the last round, so there are no positions to cut.`}
         </div>
 
-        {todayPositions && (
+        {todayPositions && !recordedHere && (
           <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
             Today’s positions (shown under each hole number) were recorded on{" "}
             {todayPositions.fromLabel ? roundFull(todayPositions.fromLabel) : "an earlier day"}.
