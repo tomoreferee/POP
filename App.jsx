@@ -1558,43 +1558,61 @@ function saveSetup(data) {
   try { memoryStorage.setItem(STORAGE_KEY_SETUP, JSON.stringify(data)); } catch {}
 }
 
+// How often the app quietly re-reads the round behind the live feed.
+const SYNC_PERIOD_MS = 30000;
+
 // ─── Live-sync indicator ────────────────────────────────────────────────────
 // Two jobs in one small control: say honestly whether the live feed is up, and
 // let anyone force a read when they don't trust what they're looking at. The
 // time of the last successful read is the part that matters — "connected" alone
 // tells a referee nothing about how old the numbers on screen are.
-function SyncIndicator({ status, lastSyncAt, syncing, onSync }) {
+function SyncIndicator({ status, lastSyncAt, nextSyncAt, syncing, onSync }) {
+  // Ticks every second so the countdown moves. Cheap: one small element.
   const [, tick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => tick(n => n + 1), 15000);
+    const id = setInterval(() => tick(n => n + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
+  const secsLeft = nextSyncAt
+    ? Math.max(0, Math.ceil((nextSyncAt - Date.now()) / 1000))
+    : null;
   const ageSec = lastSyncAt ? Math.floor((Date.now() - lastSyncAt.getTime()) / 1000) : null;
-  const stale = ageSec != null && ageSec > 180;
+
+  // The countdown is the reassuring part, so it's what shows normally. But a
+  // countdown ticking away on a dead connection would be a lie — if the feed is
+  // down or the data has gone properly stale, say that instead.
   const down = status === "down";
-  const colour = down || stale ? "#cf222e" : status === "live" ? "#1a7f37" : "#9a6700";
-  const label = ageSec == null ? "—"
-    : ageSec < 60 ? `${ageSec}s`
-    : ageSec < 3600 ? `${Math.floor(ageSec / 60)}m`
-    : `${Math.floor(ageSec / 3600)}h`;
+  const stale = ageSec != null && ageSec > 180;
+  const alarm = down || stale;
+  const colour = alarm ? "#cf222e" : status === "live" ? "#1a7f37" : "#9a6700";
+
+  const text = syncing ? "Syncing…"
+    : down ? "Offline"
+    : stale ? `Stale ${ageSec < 3600 ? `${Math.floor(ageSec / 60)}m` : `${Math.floor(ageSec / 3600)}h`}`
+    : secsLeft == null ? "—"
+    : `${secsLeft}s`;
 
   return (
     <button
       onClick={onSync}
       disabled={syncing}
-      title={down ? "Live connection lost — tap to refresh" : `Last updated ${label} ago`}
+      title={alarm ? "Tap to refresh now" : `Next refresh in ${secsLeft}s — tap to refresh now`}
       style={{
         display: "inline-flex", alignItems: "center", gap: 5,
-        background: down || stale ? "#ffebe9" : "#ffffff",
-        border: `1px solid ${down || stale ? "#cf222e55" : "#d1d9e0"}`,
+        background: alarm ? "#ffebe9" : "#ffffff",
+        border: `1px solid ${alarm ? "#cf222e55" : "#d1d9e0"}`,
         borderRadius: 20, padding: "3px 9px", cursor: syncing ? "default" : "pointer",
         opacity: syncing ? 0.6 : 1, flexShrink: 0,
       }}>
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: colour, flexShrink: 0 }} />
-      <span style={{ fontSize: 11, color: "#59636e", fontWeight: 600, whiteSpace: "nowrap" }}>
-        {syncing ? "Syncing…" : down ? "Offline" : label}
-      </span>
+      <span style={{
+        fontSize: 11, color: alarm ? "#cf222e" : "#59636e", fontWeight: 600,
+        whiteSpace: "nowrap",
+        // Fixed width so the row doesn't jitter as the digits change.
+        minWidth: 30, textAlign: "left",
+        fontVariantNumeric: "tabular-nums",
+      }}>{text}</span>
     </button>
   );
 }
@@ -6642,7 +6660,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 }
 
 function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, venueLocation, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
-  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, syncing, onSync }) {
+  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, nextSyncAt, syncing, onSync }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
@@ -6884,7 +6902,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               />
             )}
           </div>
-          <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} syncing={syncing} onSync={onSync} />
+          <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} nextSyncAt={nextSyncAt} syncing={syncing} onSync={onSync} />
         </div>
       </div>
 
@@ -9602,6 +9620,7 @@ export default function App() {
   const [clearTick, setClearTick] = useState(0);
   const [liveStatus, setLiveStatus] = useState("connecting"); // connecting | live | down
   const [lastSyncAt, setLastSyncAt] = useState(null);
+  const [nextSyncAt, setNextSyncAt] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const syncingRef = useRef(false);
   const syncNowRef = useRef(null);
@@ -9984,6 +10003,7 @@ export default function App() {
     } finally {
       syncingRef.current = false;
       setSyncing(false);
+      setNextSyncAt(Date.now() + SYNC_PERIOD_MS);
     }
   }, []);
 
@@ -9998,12 +10018,14 @@ export default function App() {
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("focus", onWake);
     window.addEventListener("online", onOnline);
-    // A slow safety net for the case where the socket dies without ever telling
-    // us. Rare, but the cost of being wrong here is a referee acting on stale
-    // pace data, so it's worth one quiet read a minute.
+    // A safety net for the case where the socket dies without ever telling us.
+    // Rare, but the cost of being wrong here is a referee acting on stale pace
+    // data, so it's worth one quiet read every half minute.
+    setNextSyncAt(Date.now() + SYNC_PERIOD_MS);
     const id = setInterval(() => {
       if (document.visibilityState === "visible") syncNowRef.current?.();
-    }, 60000);
+      else setNextSyncAt(Date.now() + SYNC_PERIOD_MS);
+    }, SYNC_PERIOD_MS);
     return () => {
       document.removeEventListener("visibilitychange", onWake);
       window.removeEventListener("focus", onWake);
@@ -10716,6 +10738,7 @@ export default function App() {
     <Dashboard
       liveStatus={liveStatus}
       lastSyncAt={lastSyncAt}
+      nextSyncAt={nextSyncAt}
       syncing={syncing}
       onSync={syncNow}
       groups={groups}
