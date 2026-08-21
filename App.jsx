@@ -5875,7 +5875,7 @@ function CourseSetupScreen({
     setHoles(Array.from({ length: 18 }, (_, i) => normaliseHole({ ...blankHole(), ...(src?.[i] || {}) })));
     setPar3Base(courseSetup?.par3Base ?? {});
     setPracticeGreen(courseSetup?.practiceGreen ?? null);
-    if (courseSetup?.positionsFor) setPreTarget(courseSetup.positionsFor);
+    setTargetOverride(courseSetup?.positionsFor ?? null);
     setSaved(false);
   }, [savedStamp]);
 
@@ -5941,20 +5941,21 @@ function CourseSetupScreen({
   const isFirstRound = schedule[0] === roundLabel;
   const recordsOwn = !inheritsOwn && isFirstRound && !isPreDay;
 
-  // On a Pre day the target is the first round actually played, but which round
-  // that is can vary with how the week is arranged, so it stays a choice.
+  // What the schedule says these flags are for. A set-up day prepares the first
+  // round actually played; every other day prepares the one after it.
   const firstPlayed = schedule.find(l => l !== "PRE") ?? null;
-  const [preTarget, setPreTarget] = useState(
-    () => courseSetup?.positionsFor ?? firstPlayed ?? null
-  );
+  const suggestedTarget = isPreDay
+    ? firstPlayed
+    : (recordsOwn ? roundLabel : nextTarget);
 
-  const positionsFor = isPreDay
-    ? preTarget
-    : positionsLoaded
-      ? (recordsOwn ? roundLabel : nextTarget)
-      // Before the lookup returns, the round's own saved sheet already says
-      // which round it was filled in for.
-      : (courseSetup?.positionsFor ?? (recordsOwn ? roundLabel : nextTarget));
+  // …and the referee can say otherwise. The schedule in the app is a plan, and
+  // weeks get rearranged — a round cancelled to weather, a Pro-Am moved — so
+  // the suggestion is a starting point rather than a verdict. What was saved
+  // last wins over the suggestion, because it was a deliberate choice.
+  const [targetOverride, setTargetOverride] = useState(
+    () => courseSetup?.positionsFor ?? null
+  );
+  const positionsFor = targetOverride ?? suggestedTarget;
   const positionsNeeded = !!positionsFor;
   const positionsAreForToday = positionsNeeded && positionsFor === roundLabel;
 
@@ -6364,24 +6365,30 @@ function CourseSetupScreen({
           </div>
         )}
 
-        {/* The one day where the target is a decision rather than a fact: a
-            set-up day can precede a Qualifying, a Practice or a Round 1
-            depending on how the week is arranged. */}
-        {isPreDay && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>CUTTING FLAGS FOR</span>
-            <select
-              value={preTarget || ""}
-              disabled={!mayEditAnything}
-              onChange={e => { setPreTarget(e.target.value || null); setSaved(false); }}
-              style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: mayEditAnything ? "#ffffff" : "#f6f8fa", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
-              <option value="">— round —</option>
-              {schedule.filter(l => l !== "PRE").map(l => (
-                <option key={l} value={l}>{roundFull(l)}</option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Which round these flags are for. Filled in from the schedule, but
+            left open: a week gets rearranged more often than the app is told
+            about it, and a locked field just means the sheet is filed under the
+            wrong day. */}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>HOLE POSITIONS FOR</span>
+          <select
+            value={positionsFor || ""}
+            disabled={!mayEditAnything}
+            onChange={e => { setTargetOverride(e.target.value || null); setSaved(false); }}
+            style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: mayEditAnything ? "#ffffff" : "#f6f8fa", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+            <option value="">— not recorded today —</option>
+            {schedule.filter(l => l !== "PRE").map(l => (
+              <option key={l} value={l}>{roundFull(l)}</option>
+            ))}
+          </select>
+          {positionsFor !== suggestedTarget && (
+            <button
+              onClick={() => { setTargetOverride(null); setSaved(false); }}
+              style={{ fontSize: 11, fontWeight: 700, fontFamily: "inherit", color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 6, padding: "5px 10px", cursor: "pointer" }}>
+              Use {suggestedTarget ? roundFull(suggestedTarget) : "none"}
+            </button>
+          )}
+        </div>
 
         <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
           {isPreDay
