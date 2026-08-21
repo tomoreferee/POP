@@ -10781,13 +10781,16 @@ function AppShell() {
             setIsSuspended(state.isSuspended);
             setPendingStopTime(state.pendingStopTime);
             setRefereeCalls(state.refereeCalls ?? []);
-        setGreenSpeed(state.greenSpeed ?? {});
-        setPreferredLies(!!state.preferredLies);
             setGreenSpeed(state.greenSpeed ?? {});
             setPreferredLies(!!state.preferredLies);
             setPlayersPerGroup(state.playersPerGroup ?? 3);
             setTurnTime(state.turnTime ?? 1);
             setTurnTimeBack(state.turnTimeBack ?? state.turnTime ?? 1);
+            // Missing here, so after a page reload the course setup form opened
+            // empty and only filled in when a background sync happened to run —
+            // which looked like the form taking ten seconds to load data it
+            // had already been given.
+            setCourseSetup(state.courseSetup ?? {});
           }
         }
       } catch {}
