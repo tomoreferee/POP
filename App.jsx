@@ -1736,6 +1736,8 @@ function UpdateBanner({ show }) {
 const NUMBERED_ROUND_LABELS = ["1", "2", "3", "4"];
 const NAMED_ROUND_LABELS = ["Q", "PT", "PA"];
 const ROUND_LABELS = [...NAMED_ROUND_LABELS, ...NUMBERED_ROUND_LABELS];
+// What a tournament gets when nobody has said otherwise: no practice or pro-am.
+const DEFAULT_ROUND_LABELS = ROUND_LABELS.filter(l => l !== "PT" && l !== "PA");
 
 // One place that knows what a round label is called, so a new slot doesn't have
 // to be taught to seventeen separate ternaries scattered through the file.
@@ -1744,6 +1746,12 @@ const ROUND_NAMES = {
   PT: { short: "PT", long: "Practice", full: "Practice" },
   PA: { short: "PA", long: "Pro-Am",   full: "Pro-Am" },
 };
+// A Pro-Am is played to a tee sheet the host club runs, not to a pace benchmark
+// set by the referees — there is nothing to measure a group against, so pace of
+// play does not apply to it.
+const PACELESS_ROUND_LABELS = ["PA"];
+const isPaceRound = (l) => !PACELESS_ROUND_LABELS.includes(l);
+
 const roundShort = (l) => ROUND_NAMES[l]?.short ?? `R${l}`;
 const roundLong  = (l) => ROUND_NAMES[l]?.long  ?? `Round ${l}`;
 const roundFull  = (l) => ROUND_NAMES[l]?.full  ?? `Round ${l}`;
@@ -1796,6 +1804,10 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   const [newLocation, setNewLocation] = useState("");
   const [newFormat, setNewFormat] = useState("stroke");
   const [newHasQualifying, setNewHasQualifying] = useState(true);
+  // Practice and Pro-Am days are the exception rather than the rule, so they
+  // are off unless someone asks for them.
+  const [newHasPractice, setNewHasPractice] = useState(false);
+  const [newHasProAm, setNewHasProAm] = useState(false);
   const [newNumRounds, setNewNumRounds] = useState(4);
   const [newYear, setNewYear] = useState(String(new Date().getFullYear()));
   const [newStartDate, setNewStartDate] = useState("");
@@ -1932,14 +1944,15 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
   // tournaments created before that setting existed have it blank — for those,
   // infer the list from the rounds that actually exist instead of assuming Q+4.
   const availableRoundLabels = (() => {
-    if (!selectedTournament) return ROUND_LABELS;
+    if (!selectedTournament) return DEFAULT_ROUND_LABELS;
     const existing = rounds.map(r => r.label);
     const configured = selectedTournament.num_rounds != null || selectedTournament.has_qualifying != null;
 
     if (configured) {
       const list = [
         ...(selectedTournament.has_qualifying !== false ? ["Q"] : []),
-        "PT", "PA",
+        ...(selectedTournament.has_practice === true ? ["PT"] : []),
+        ...(selectedTournament.has_proam === true ? ["PA"] : []),
         ...NUMBERED_ROUND_LABELS.slice(0, selectedTournament.num_rounds ?? 4),
       ];
       // Never hide a round that already holds data
@@ -1948,7 +1961,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
     }
 
     // Unconfigured: show what exists (plus the next round so it can be started)
-    if (existing.length === 0) return ROUND_LABELS;
+    if (existing.length === 0) return DEFAULT_ROUND_LABELS;
     const numbered = existing.filter(l => !NAMED_ROUND_LABELS.includes(l)).map(Number).filter(n => !isNaN(n));
     const nextNum = numbered.length ? Math.max(...numbered) + 1 : 1;
     const list = [...existing];
@@ -1958,6 +1971,7 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
 
   const resetForm = () => {
     setNewName(""); setNewVenue(""); setNewLocation(""); setNewFormat("stroke"); setNewHasQualifying(true); setNewNumRounds(4);
+    setNewHasPractice(false); setNewHasProAm(false);
     setNewYear(String(new Date().getFullYear()));
     setNewStartDate(""); setNewEndDate(""); setNewRoles({});
     setEditingTournamentId(null);
@@ -1969,6 +1983,8 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
     setNewLocation(t.location || "");
     setNewFormat(t.format || "stroke");
     setNewHasQualifying(t.has_qualifying !== false);
+    setNewHasPractice(t.has_practice === true);
+    setNewHasProAm(t.has_proam === true);
     setNewNumRounds(t.num_rounds ?? 4);
     setNewYear(String(t.year || (t.name || "").match(/(20\d{2})/)?.[1] || new Date().getFullYear()));
     setNewStartDate(t.start_date || "");
@@ -1982,17 +1998,17 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
     if (!newName.trim() || busy) return;
     setBusy(true);
     if (editingTournamentId) {
-      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      await updateTournament(editingTournamentId, { name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, hasPractice: newHasPractice, hasProAm: newHasProAm, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       await setTournamentRoles(editingTournamentId, newRoles);
       setRolesMap(r => ({ ...r, [editingTournamentId]: newRoles }));
       setTournaments(prev => prev.map(t => t.id === editingTournamentId
-        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), location: newLocation.trim() || null, format: newFormat, has_qualifying: newHasQualifying, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
+        ? { ...t, name: newName.trim(), host_venue: newVenue.trim(), location: newLocation.trim() || null, format: newFormat, has_qualifying: newHasQualifying, has_practice: newHasPractice, has_proam: newHasProAm, num_rounds: newNumRounds, year: Number(newYear) || null, start_date: newStartDate || null, end_date: newEndDate || null }
         : t));
       setBusy(false);
       setShowCreate(false);
       resetForm();
     } else {
-      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
+      const t = await createTournament({ name: newName.trim(), hostVenue: newVenue.trim(), location: newLocation.trim(), format: newFormat, hasQualifying: newHasQualifying, hasPractice: newHasPractice, hasProAm: newHasProAm, numRounds: newNumRounds, year: Number(newYear) || null, startDate: newStartDate, endDate: newEndDate });
       if (t?.id) {
         await setTournamentRoles(t.id, newRoles);
         setRolesMap(r => ({ ...r, [t.id]: newRoles }));
@@ -2306,6 +2322,24 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
                       border: `1px solid ${newHasQualifying ? "#8250df" : "#d1d9e0"}`,
                       color: newHasQualifying ? "#8250df" : "#59636e",
                     }}>Q{newHasQualifying ? " ✓" : ""}</button>
+                  {/* Practice and Pro-Am are optional days that many events
+                      simply don't hold, so they are opt-in per tournament. */}
+                  <button onClick={() => setNewHasPractice(v => !v)}
+                    title="Practice day"
+                    style={{
+                      padding: "8px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                      background: newHasPractice ? "#faf2ff" : "#f6f8fa",
+                      border: `1px solid ${newHasPractice ? "#8250df" : "#d1d9e0"}`,
+                      color: newHasPractice ? "#8250df" : "#59636e",
+                    }}>PT{newHasPractice ? " ✓" : ""}</button>
+                  <button onClick={() => setNewHasProAm(v => !v)}
+                    title="Pro-Am day"
+                    style={{
+                      padding: "8px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                      background: newHasProAm ? "#faf2ff" : "#f6f8fa",
+                      border: `1px solid ${newHasProAm ? "#8250df" : "#d1d9e0"}`,
+                      color: newHasProAm ? "#8250df" : "#59636e",
+                    }}>PA{newHasProAm ? " ✓" : ""}</button>
                   <span style={{ fontSize: 12, color: "#818b98" }}>+</span>
                   {[1, 2, 3, 4].map(n => (
                     <button key={n} onClick={() => setNewNumRounds(n)}
@@ -9612,20 +9646,20 @@ async function fetchRoundById(id) {
   if (error) return null;
   return data;
 }
-async function createTournament({ name, hostVenue, location, format, hasQualifying, numRounds, year, startDate, endDate }) {
+async function createTournament({ name, hostVenue, location, format, hasQualifying, hasPractice, hasProAm, numRounds, year, startDate, endDate }) {
   try {
     const { data, error } = await supabase.from("tournaments")
       // Dates are optional: a competition is often created before the schedule
       // is confirmed, and an empty date must stay null rather than become "".
-      .insert({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null })
+      .insert({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, has_practice: hasPractice === true, has_proam: hasProAm === true, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null })
       .select().maybeSingle();
     if (error) return null;
     return data;
   } catch { return null; }
 }
-async function updateTournament(id, { name, hostVenue, location, format, hasQualifying, numRounds, year, startDate, endDate }) {
+async function updateTournament(id, { name, hostVenue, location, format, hasQualifying, hasPractice, hasProAm, numRounds, year, startDate, endDate }) {
   try {
-    await supabase.from("tournaments").update({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null }).eq("id", id);
+    await supabase.from("tournaments").update({ name, host_venue: hostVenue, location: location || null, format: format || "stroke", has_qualifying: hasQualifying !== false, has_practice: hasPractice === true, has_proam: hasProAm === true, num_rounds: numRounds || 4, year: year || new Date().getFullYear(), start_date: startDate || null, end_date: endDate || null }).eq("id", id);
   } catch {}
 }
 async function deleteTournament(id) {
