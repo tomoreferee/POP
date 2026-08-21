@@ -5811,6 +5811,13 @@ function CourseSetupScreen({
   );
   const [practiceGreen, setPracticeGreen] = useState(courseSetup?.practiceGreen ?? null);
   const [saved, setSaved] = useState(false);
+  // The positions in play today, read back from whichever round recorded them.
+  const [todayPositions, setTodayPositions] = useState(null);
+  useEffect(() => {
+    let dead = false;
+    fetchHolePositionsFor(tournamentId, roundLabel).then(r => { if (!dead) setTodayPositions(r); });
+    return () => { dead = true; };
+  }, [tournamentId, roundLabel]);
 
   const editableHoles = holes.map((_, i) => canEditHoleSetup({ isAdmin, position, holeIdx: i }));
   const mayEditAnything = editableHoles.some(Boolean) || canEditPracticeGreen({ isAdmin, position });
@@ -5933,6 +5940,7 @@ function CourseSetupScreen({
     const h = holes[i];
     const locked = !editableHoles[i];
     const isPar3 = pars?.[i] === 3;
+    const today = todayPositions?.holes?.[i];
     return (
       <div key={i} style={{
         display: "grid", gridTemplateColumns: "32px 1fr", gap: 10,
@@ -5953,6 +5961,18 @@ function CourseSetupScreen({
               {stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}
             </div>
           </div>
+          {/* What the flags are actually on today, carried over from the day
+              they were cut. Read-only: this form is where tomorrow's positions
+              are written, not where today's are changed. */}
+          {today && (today.front != null || today.side != null) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#59636e" }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.6, color: "#818b98" }}>TODAY</span>
+              {tagChip(thisTag, "this")}
+              <span style={{ fontWeight: 700, color: "#1f2328" }}>
+                F {today.front ?? "–"} · S {today.side ?? "–"}
+              </span>
+            </div>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: isPar3 ? "1fr 1fr 1.4fr" : "1fr 1fr", gap: 8 }}>
             <div style={{ minWidth: 0 }}>
               <span style={miniLabel}>FRONT{tagChip(nextTag, "next")}</span>
@@ -6070,6 +6090,11 @@ function CourseSetupScreen({
             <span style={{ fontSize: 10, fontWeight: 700, color: "#8250df", background: "#faf2ff", border: "1px solid #8250df44", borderRadius: 4, padding: "2px 7px" }}>
               {positionsFor ? roundFull(positionsFor) : "No round chosen"} — hole positions
             </span>
+            {todayPositions && (
+              <span style={{ fontSize: 10, color: "#59636e", width: "100%" }}>
+                Today's positions were recorded on {todayPositions.fromLabel ? roundFull(todayPositions.fromLabel) : "an earlier day"}.
+              </span>
+            )}
           </div>
           {Array.from({ length: 9 }, (_, i) => holeCard(i))}
           {avgBand("FRONT NINE AVERAGE", front)}
@@ -10112,6 +10137,29 @@ async function fetchRounds(tournamentId) {
 // Which of these rounds actually hold data. The round's `status` column says
 // nothing useful about that — it only ever recorded which round was opened last
 // — so ask the state table itself.
+// Today's flag positions were cut and written down on an earlier day, filed
+// under the round they were cut *for*. So finding them means looking through the
+// other rounds of this competition for the record that points at this one —
+// not reading the Front/Side boxes on today's own form, which are tomorrow's.
+async function fetchHolePositionsFor(tournamentId, label) {
+  if (!tournamentId || !label) return null;
+  try {
+    const rounds = await fetchRounds(tournamentId);
+    if (!rounds.length) return null;
+    const { data, error } = await supabase
+      .from("round_state")
+      .select("round_id, course_setup")
+      .in("round_id", rounds.map(r => r.id));
+    if (error || !data) return null;
+    const match = data.find(d => d.course_setup?.positionsFor === label);
+    if (!match) return null;
+    const from = rounds.find(r => r.id === match.round_id);
+    return { holes: match.course_setup.holes || [], fromLabel: from?.label ?? null };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchRoundsWithData(roundIds) {
   if (!roundIds || roundIds.length === 0) return {};
   try {
