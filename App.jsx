@@ -1566,11 +1566,12 @@ const STALE_AFTER_SEC = 180;
 const VERSION_CHECK_MS = 120000;
 
 // ─── Live-sync indicator ────────────────────────────────────────────────────
-// Two jobs in one small control: say honestly whether the live feed is up, and
-// let anyone force a read when they don't trust what they're looking at. The
-// time of the last successful read is the part that matters — "connected" alone
-// tells a referee nothing about how old the numbers on screen are.
-function SyncIndicator({ status, lastSyncAt, syncing, onSync }) {
+// Silent while the feed is healthy. It deliberately says nothing during a normal
+// refresh: those happen every 30s, and a chip that appeared and vanished each
+// time made the whole header nudge up and down — motion that reads as a glitch
+// and tells the user nothing they can act on. What is worth showing is the state
+// they can act on, and that state persists rather than blinks.
+function SyncIndicator({ status, lastSyncAt, onSync }) {
   const [, tick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => tick(n => n + 1), 5000);
@@ -1580,29 +1581,22 @@ function SyncIndicator({ status, lastSyncAt, syncing, onSync }) {
   const ageSec = lastSyncAt ? Math.floor((Date.now() - lastSyncAt.getTime()) / 1000) : null;
   const down = status === "down";
   const stale = ageSec != null && ageSec > STALE_AFTER_SEC;
+  if (!down && !stale) return null;
 
-  // Nothing to say while the feed is healthy. A countdown ticking in the corner
-  // of a working system is noise; the moment worth interrupting for is the one
-  // where the screen has quietly stopped being true.
-  if (!down && !stale && !syncing) return null;
-
-  const text = syncing ? "Syncing…"
-    : down ? "Offline — tap to retry"
+  const text = down
+    ? "Offline — tap to retry"
     : `Last update ${ageSec < 3600 ? `${Math.floor(ageSec / 60)}m` : `${Math.floor(ageSec / 3600)}h`} ago — tap to refresh`;
 
   return (
     <button
       onClick={onSync}
-      disabled={syncing}
       style={{
         display: "inline-flex", alignItems: "center", gap: 5,
-        background: syncing ? "#ffffff" : "#ffebe9",
-        border: `1px solid ${syncing ? "#d1d9e0" : "#cf222e55"}`,
-        borderRadius: 20, padding: "3px 9px", cursor: syncing ? "default" : "pointer",
-        flexShrink: 0,
+        background: "#ffebe9", border: "1px solid #cf222e55",
+        borderRadius: 20, padding: "3px 9px", cursor: "pointer", flexShrink: 0,
       }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: syncing ? "#9a6700" : "#cf222e", flexShrink: 0 }} />
-      <span style={{ fontSize: 11, color: syncing ? "#59636e" : "#cf222e", fontWeight: 600, whiteSpace: "nowrap" }}>{text}</span>
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#cf222e", flexShrink: 0 }} />
+      <span style={{ fontSize: 11, color: "#cf222e", fontWeight: 600, whiteSpace: "nowrap" }}>{text}</span>
     </button>
   );
 }
@@ -6718,7 +6712,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 }
 
 function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, venueLocation, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
-  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, syncing, onSync }) {
+  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, onSync }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
@@ -6937,10 +6931,11 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
           <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
         </div>
         {/* Right side: clock sits beside the account menu. */}
-        {/* Clock and account on the top line, sync badge tucked underneath —
-            the header row is tight on a phone, and the badge is the one thing
-            here that is glanced at rather than tapped. */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
+        {/* Clock and account on the top line. The warning below them is absolutely
+            positioned so that its appearing can't change the header's height —
+            the table underneath is being read while play is going on, and having
+            it jump down a row is worse than the warning is useful. */}
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {/* Online indicator hidden for now — re-enable by restoring this line:
                 <OnlineUsers users={onlineUsers} currentUser={currentUser} /> */}
@@ -6960,7 +6955,9 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               />
             )}
           </div>
-          <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} syncing={syncing} onSync={onSync} />
+          <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4 }}>
+            <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} onSync={onSync} />
+          </div>
         </div>
       </div>
 
@@ -9678,7 +9675,6 @@ function AppShell() {
   const [clearTick, setClearTick] = useState(0);
   const [liveStatus, setLiveStatus] = useState("connecting"); // connecting | live | down
   const [lastSyncAt, setLastSyncAt] = useState(null);
-  const [syncing, setSyncing] = useState(false);
   const syncingRef = useRef(false);
   const syncNowRef = useRef(null);
   const currentRoundRef = useRef(null);
@@ -10022,7 +10018,6 @@ function AppShell() {
     const roundId = currentRoundRef.current?.id;
     if (!roundId || syncingRef.current) return;
     syncingRef.current = true;
-    setSyncing(true);
     try {
       const [state, gd] = await Promise.all([fetchAppState(roundId), fetchAllGroupData(roundId)]);
       // A round that was cleared elsewhere legitimately comes back empty; the
@@ -10059,7 +10054,6 @@ function AppShell() {
       // Leave what's on screen alone — a failed refresh shouldn't blank the round.
     } finally {
       syncingRef.current = false;
-      setSyncing(false);
     }
   }, []);
 
@@ -10792,7 +10786,6 @@ function AppShell() {
     <Dashboard
       liveStatus={liveStatus}
       lastSyncAt={lastSyncAt}
-      syncing={syncing}
       onSync={syncNow}
       groups={groups}
       groupData={groupData}
