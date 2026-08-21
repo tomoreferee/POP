@@ -1739,6 +1739,17 @@ const ROUND_LABELS = [...NAMED_ROUND_LABELS, ...NUMBERED_ROUND_LABELS];
 // What a tournament gets when nobody has said otherwise: no practice or pro-am.
 const DEFAULT_ROUND_LABELS = ROUND_LABELS.filter(l => l !== "PT" && l !== "PA");
 
+// The slots one particular competition holds, from its own configuration.
+function roundLabelsFor(tournament) {
+  if (!tournament) return DEFAULT_ROUND_LABELS;
+  return [
+    ...(tournament.has_qualifying !== false ? ["Q"] : []),
+    ...(tournament.has_practice === true ? ["PT"] : []),
+    ...(tournament.has_proam === true ? ["PA"] : []),
+    ...NUMBERED_ROUND_LABELS.slice(0, tournament.num_rounds ?? 4),
+  ];
+}
+
 // One place that knows what a round label is called, so a new slot doesn't have
 // to be taught to seventeen separate ternaries scattered through the file.
 const ROUND_NAMES = {
@@ -5848,7 +5859,15 @@ function CourseSetupScreen({
     setSaved(true);
   };
 
-  const cell = { border: "1px solid #d1d9e0", padding: 0 };
+  // Laid out as one block per hole rather than a six-column table. The table
+  // matched the paper form, but six inputs across will not fit a phone — it ran
+  // off the edge and had to be scrolled sideways to reach the stimp reading,
+  // which is the column most likely to be filled in while standing on the green.
+  const fieldBox = (disabled) => ({
+    border: "1px solid #d1d9e0", borderRadius: 6,
+    background: disabled ? "#f6f8fa" : "#ffffff",
+    display: "flex", alignItems: "center", overflow: "hidden", height: 34,
+  });
   const numInput = (value, onChange, disabled, placeholder) => (
     <input
       value={value ?? ""}
@@ -5857,75 +5876,120 @@ function CourseSetupScreen({
       placeholder={placeholder || ""}
       inputMode="numeric"
       style={{
-        width: "100%", boxSizing: "border-box", border: "none", outline: "none",
-        background: disabled ? "#f6f8fa" : "#ffffff",
-        color: disabled ? "#8c959f" : "#1f2328",
-        fontFamily: "inherit", fontSize: 13, fontWeight: 600,
-        textAlign: "center", padding: "8px 2px", minWidth: 0,
+        width: "100%", minWidth: 0, boxSizing: "border-box", border: "none", outline: "none",
+        background: "transparent", color: disabled ? "#8c959f" : "#1f2328",
+        fontFamily: "inherit", fontSize: 14, fontWeight: 600,
+        textAlign: "center", padding: "0 4px", height: "100%",
       }}
     />
   );
+  const selStyle = (disabled) => ({
+    flex: 1, minWidth: 0, border: "none", outline: "none", height: "100%",
+    background: "transparent", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+    textAlign: "center", textAlignLast: "center",
+    color: disabled ? "#8c959f" : "#1f2328",
+  });
   const stimpPicker = (value, onChange, disabled) => (
-    <div style={{ display: "flex", gap: 2, padding: 2 }}>
+    <div style={fieldBox(disabled)}>
       <select
         value={value?.ft ?? ""}
         disabled={disabled}
         onChange={e => onChange(e.target.value === "" ? null : { ft: Number(e.target.value), in: value?.in ?? 0 })}
-        style={{ flex: 1, minWidth: 0, border: "1px solid #d1d9e0", borderRadius: 4, background: disabled ? "#f6f8fa" : "#ffffff", fontFamily: "inherit", fontSize: 12, fontWeight: 700, textAlign: "center", textAlignLast: "center", padding: "5px 0", color: disabled ? "#8c959f" : "#1f2328" }}>
+        style={selStyle(disabled)}>
         <option value="">ft</option>
         {Array.from({ length: 10 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
       </select>
+      <span style={{ width: 1, height: "60%", background: "#d1d9e0", flexShrink: 0 }} />
       <select
         value={value?.in ?? ""}
         disabled={disabled || value?.ft == null}
         onChange={e => onChange({ ft: value?.ft ?? 10, in: e.target.value === "" ? 0 : Number(e.target.value) })}
-        style={{ flex: 1, minWidth: 0, border: "1px solid #d1d9e0", borderRadius: 4, background: (disabled || value?.ft == null) ? "#f6f8fa" : "#ffffff", fontFamily: "inherit", fontSize: 12, fontWeight: 700, textAlign: "center", textAlignLast: "center", padding: "5px 0", color: (disabled || value?.ft == null) ? "#8c959f" : "#1f2328" }}>
+        style={selStyle(disabled || value?.ft == null)}>
         <option value="">in</option>
         {Array.from({ length: 12 }, (_, i) => i).map(n => <option key={n} value={n}>{n}″</option>)}
       </select>
     </div>
   );
 
-  const avgRow = (label, value, span) => (
-    <tr style={{ background: "#f6f8fa" }}>
-      <td colSpan={span} style={{ ...cell, padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#59636e", letterSpacing: 1, textAlign: "right" }}>
-        {label}
-      </td>
-      <td style={{ ...cell, padding: "8px 4px", textAlign: "center", fontSize: 13, fontWeight: 700, color: value ? "#1f2328" : "#8c959f" }}>
-        {fmtStimp(value)}
-      </td>
-    </tr>
+  const miniLabel = { fontSize: 9, fontWeight: 700, letterSpacing: 0.6, color: "#818b98", marginBottom: 3, display: "block" };
+
+  // Every row holds readings from two different rounds: what was measured today
+  // (distance from the tee, par-3 length, stimp) and the hole positions cut for
+  // the next one. Mixing them without saying so is how a referee ends up
+  // reading tomorrow's flag position as today's.
+  const thisTag = roundShort(roundLabel);
+  const nextTag = positionsFor ? roundShort(positionsFor) : "—";
+  const tagChip = (text, tone) => (
+    <span style={{
+      fontSize: 8, fontWeight: 700, letterSpacing: 0.5, marginLeft: 4,
+      color: tone === "next" ? "#8250df" : "#0969da",
+      background: tone === "next" ? "#faf2ff" : "#ddf4ff",
+      border: `1px solid ${tone === "next" ? "#8250df44" : "#0969da44"}`,
+      borderRadius: 3, padding: "0 3px", verticalAlign: "middle",
+    }}>{text}</span>
   );
 
-  const holeRows = (from, to) => holes.slice(from, to + 1).map((h, k) => {
-    const i = from + k;
+  const holeCard = (i) => {
+    const h = holes[i];
     const locked = !editableHoles[i];
     const isPar3 = pars?.[i] === 3;
     return (
-      <tr key={i}>
-        <td style={{ ...cell, textAlign: "center", fontWeight: 700, fontSize: 13, padding: "8px 2px", background: locked ? "#f6f8fa" : "#ffffff", color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</td>
-        <td style={cell}>{numInput(h.bot, v => setHole(i, { bot: v }), locked)}</td>
-        <td style={cell}>
-          {/* Only par 3s carry a measured length on this form, so the other
-              holes show a dash rather than an input nobody should fill in. */}
-          {isPar3 ? (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {numInput(h.par3y, v => setPar3(i, "y", v), locked, "y")}
-              <span style={{ fontSize: 10, color: "#8c959f" }}>/</span>
-              {numInput(h.par3m, v => setPar3(i, "m", v), locked, "m")}
+      <div key={i} style={{
+        display: "grid", gridTemplateColumns: "32px 1fr", gap: 10,
+        padding: "10px 12px", borderBottom: "1px solid #f0f3f6",
+        background: locked ? "#fbfcfd" : "#ffffff",
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: locked ? "#8c959f" : "#1f2328", paddingTop: 16 }}>
+          {i + 1}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <span style={miniLabel}>FROM BOT{tagChip(thisTag, "this")}</span>
+              <div style={fieldBox(locked)}>{numInput(h.bot, v => setHole(i, { bot: v }), locked)}</div>
             </div>
-          ) : (
-            <div style={{ textAlign: "center", fontSize: 12, color: "#8c959f", padding: "8px 0" }}>–</div>
-          )}
-        </td>
-        <td style={cell}>{numInput(h.front, v => setHole(i, { front: v }), locked)}</td>
-        <td style={cell}>{numInput(h.side, v => setHole(i, { side: v }), locked)}</td>
-        <td style={cell}>{stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}</td>
-      </tr>
+            <div style={{ minWidth: 0 }}>
+              <span style={miniLabel}>STIMP{tagChip(thisTag, "this")}</span>
+              {stimpPicker(h.stimp, v => setHole(i, { stimp: v }), locked)}
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: isPar3 ? "1fr 1fr 1.4fr" : "1fr 1fr", gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <span style={miniLabel}>FRONT{tagChip(nextTag, "next")}</span>
+              <div style={fieldBox(locked)}>{numInput(h.front, v => setHole(i, { front: v }), locked)}</div>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <span style={miniLabel}>SIDE{tagChip(nextTag, "next")}</span>
+              <div style={fieldBox(locked)}>{numInput(h.side, v => setHole(i, { side: v }), locked)}</div>
+            </div>
+            {/* Only par 3s carry a measured length on this form. */}
+            {isPar3 && (
+              <div style={{ minWidth: 0 }}>
+                <span style={miniLabel}>PAR 3 Y/M{tagChip(thisTag, "this")}</span>
+                <div style={fieldBox(locked)}>
+                  {numInput(h.par3y, v => setPar3(i, "y", v), locked, "y")}
+                  <span style={{ width: 1, height: "60%", background: "#d1d9e0", flexShrink: 0 }} />
+                  {numInput(h.par3m, v => setPar3(i, "m", v), locked, "m")}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     );
-  });
+  };
 
-  const th = { border: "1px solid #d1d9e0", background: "#f6f8fa", padding: "8px 4px", fontSize: 10, fontWeight: 700, color: "#59636e", letterSpacing: 0.5, textAlign: "center" };
+  const avgBand = (label, value) => (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "9px 12px", background: "#f6f8fa", borderBottom: "1px solid #e3e8ee",
+    }}>
+      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#59636e" }}>
+        {label}{tagChip(thisTag, "this")}
+      </span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: value ? "#1f2328" : "#8c959f" }}>{fmtStimp(value)}</span>
+    </div>
+  );
 
   return (
     <div style={{ minHeight: "100vh", background: "#f6f8fa", fontFamily: APP_FONT, color: "#1f2328" }}>
@@ -5998,34 +6062,26 @@ function CourseSetupScreen({
           </div>
         </div>
 
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
-            <thead>
-              <tr>
-                <th style={{ ...th, width: 34 }}>HOLE</th>
-                <th style={th}>From<br />BOT</th>
-                <th style={th}>Par 3<br />y / m</th>
-                <th style={th}>Front</th>
-                <th style={th}>Side</th>
-                <th style={{ ...th, minWidth: 110 }}>Stimp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {holeRows(0, 8)}
-              {avgRow("FRONT NINE AVERAGE", front, 5)}
-              {holeRows(9, 17)}
-              {avgRow("BACK NINE AVERAGE", back, 5)}
-              {avgRow("ALL 18 AVERAGE", all18, 5)}
-              <tr>
-                <td colSpan={5} style={{ ...cell, padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#59636e", letterSpacing: 1, textAlign: "right" }}>
-                  PRACTICE GREEN
-                </td>
-                <td style={cell}>
-                  {stimpPicker(practiceGreen, v => { setPracticeGreen(v); setSaved(false); }, !mayEditPG)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflow: "hidden" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 12px", borderBottom: "1px solid #d1d9e0", background: "#f6f8fa" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#0969da", background: "#ddf4ff", border: "1px solid #0969da44", borderRadius: 4, padding: "2px 7px" }}>
+              {roundFull(roundLabel)} — measured today
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#8250df", background: "#faf2ff", border: "1px solid #8250df44", borderRadius: 4, padding: "2px 7px" }}>
+              {positionsFor ? roundFull(positionsFor) : "No round chosen"} — hole positions
+            </span>
+          </div>
+          {Array.from({ length: 9 }, (_, i) => holeCard(i))}
+          {avgBand("FRONT NINE AVERAGE", front)}
+          {Array.from({ length: 9 }, (_, i) => holeCard(i + 9))}
+          {avgBand("BACK NINE AVERAGE", back)}
+          {avgBand("ALL 18 AVERAGE", all18)}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 12px" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#59636e" }}>PRACTICE GREEN</span>
+            <div style={{ width: 130, flexShrink: 0 }}>
+              {stimpPicker(practiceGreen, v => { setPracticeGreen(v); setSaved(false); }, !mayEditPG)}
+            </div>
+          </div>
         </div>
 
         {courseSetup?.updatedBy && (
@@ -11345,7 +11401,7 @@ function AppShell() {
       tournamentName={currentTournament?.name}
       hostVenue={currentTournament?.host_venue}
       tournamentId={currentTournament?.id}
-      availableRoundLabels={ROUND_LABELS}
+      availableRoundLabels={roundLabelsFor(currentTournament)}
       currentUser={currentUser}
       isAdmin={isAdmin}
       position={positionOf(rolesMap, currentTournament?.id, currentUser)}
