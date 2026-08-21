@@ -1560,60 +1560,118 @@ function saveSetup(data) {
 
 // How often the app quietly re-reads the round behind the live feed.
 const SYNC_PERIOD_MS = 30000;
+// How long data may sit unrefreshed before the screen admits it may be stale.
+const STALE_AFTER_SEC = 180;
+// How often to look for a newer build on the server.
+const VERSION_CHECK_MS = 120000;
 
 // ─── Live-sync indicator ────────────────────────────────────────────────────
 // Two jobs in one small control: say honestly whether the live feed is up, and
 // let anyone force a read when they don't trust what they're looking at. The
 // time of the last successful read is the part that matters — "connected" alone
 // tells a referee nothing about how old the numbers on screen are.
-function SyncIndicator({ status, lastSyncAt, nextSyncAt, syncing, onSync }) {
-  // Ticks every second so the countdown moves. Cheap: one small element.
+function SyncIndicator({ status, lastSyncAt, syncing, onSync }) {
   const [, tick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => tick(n => n + 1), 1000);
+    const id = setInterval(() => tick(n => n + 1), 5000);
     return () => clearInterval(id);
   }, []);
 
-  const secsLeft = nextSyncAt
-    ? Math.max(0, Math.ceil((nextSyncAt - Date.now()) / 1000))
-    : null;
   const ageSec = lastSyncAt ? Math.floor((Date.now() - lastSyncAt.getTime()) / 1000) : null;
-
-  // The countdown is the reassuring part, so it's what shows normally. But a
-  // countdown ticking away on a dead connection would be a lie — if the feed is
-  // down or the data has gone properly stale, say that instead.
   const down = status === "down";
-  const stale = ageSec != null && ageSec > 180;
-  const alarm = down || stale;
-  const colour = alarm ? "#cf222e" : status === "live" ? "#1a7f37" : "#9a6700";
+  const stale = ageSec != null && ageSec > STALE_AFTER_SEC;
+
+  // Nothing to say while the feed is healthy. A countdown ticking in the corner
+  // of a working system is noise; the moment worth interrupting for is the one
+  // where the screen has quietly stopped being true.
+  if (!down && !stale && !syncing) return null;
 
   const text = syncing ? "Syncing…"
-    : down ? "Offline"
-    : stale ? `Stale ${ageSec < 3600 ? `${Math.floor(ageSec / 60)}m` : `${Math.floor(ageSec / 3600)}h`}`
-    : secsLeft == null ? "—"
-    : `${secsLeft}s`;
+    : down ? "Offline — tap to retry"
+    : `Last update ${ageSec < 3600 ? `${Math.floor(ageSec / 60)}m` : `${Math.floor(ageSec / 3600)}h`} ago — tap to refresh`;
 
   return (
     <button
       onClick={onSync}
       disabled={syncing}
-      title={alarm ? "Tap to refresh now" : `Next refresh in ${secsLeft}s — tap to refresh now`}
       style={{
         display: "inline-flex", alignItems: "center", gap: 5,
-        background: alarm ? "#ffebe9" : "#ffffff",
-        border: `1px solid ${alarm ? "#cf222e55" : "#d1d9e0"}`,
+        background: syncing ? "#ffffff" : "#ffebe9",
+        border: `1px solid ${syncing ? "#d1d9e0" : "#cf222e55"}`,
         borderRadius: 20, padding: "3px 9px", cursor: syncing ? "default" : "pointer",
-        opacity: syncing ? 0.6 : 1, flexShrink: 0,
+        flexShrink: 0,
       }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: colour, flexShrink: 0 }} />
-      <span style={{
-        fontSize: 11, color: alarm ? "#cf222e" : "#59636e", fontWeight: 600,
-        whiteSpace: "nowrap",
-        // Fixed width so the row doesn't jitter as the digits change.
-        minWidth: 30, textAlign: "left",
-        fontVariantNumeric: "tabular-nums",
-      }}>{text}</span>
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: syncing ? "#9a6700" : "#cf222e", flexShrink: 0 }} />
+      <span style={{ fontSize: 11, color: syncing ? "#59636e" : "#cf222e", fontWeight: 600, whiteSpace: "nowrap" }}>{text}</span>
     </button>
+  );
+}
+
+// ─── New version available ──────────────────────────────────────────────────
+// A deploy replaces the code on the server, but every phone already holding the
+// page keeps running the old one until it is reloaded — which is why a fix can
+// look like it "didn't work" on someone else's device. The built asset filename
+// is hashed per build, so comparing the one we loaded with the one the server
+// is serving now is enough to notice.
+function useVersionWatch() {
+  const [outdated, setOutdated] = useState(false);
+  const loadedRef = useRef(null);
+
+  useEffect(() => {
+    const currentAsset = () => {
+      const el = document.querySelector('script[type="module"][src]');
+      return el ? el.getAttribute("src") : null;
+    };
+    loadedRef.current = currentAsset();
+    // No hashed bundle means the dev server, where reloading is the developer's
+    // business and a nagging banner would only get in the way.
+    if (!loadedRef.current || !/assets\//.test(loadedRef.current)) return;
+
+    let dead = false;
+    const check = async () => {
+      if (dead || document.visibilityState !== "visible") return;
+      try {
+        const res = await fetch(`/?v=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const html = await res.text();
+        const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/);
+        if (m && m[1] && m[1] !== loadedRef.current) setOutdated(true);
+      } catch {
+        // Offline, or the check was blocked. Not knowing is not a new version.
+      }
+    };
+    const id = setInterval(check, VERSION_CHECK_MS);
+    document.addEventListener("visibilitychange", check);
+    check();
+    return () => {
+      dead = true;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, []);
+
+  return outdated;
+}
+
+function UpdateBanner({ show }) {
+  if (!show) return null;
+  return (
+    <div
+      onClick={() => window.location.reload()}
+      role="button"
+      style={{
+        position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 4000,
+        background: "#0969da", color: "#ffffff", borderRadius: 8,
+        padding: "10px 14px", display: "flex", alignItems: "center",
+        justifyContent: "space-between", gap: 12, cursor: "pointer",
+        boxShadow: "0 4px 16px rgba(31,35,40,0.25)",
+      }}>
+      <span style={{ fontSize: 13, fontWeight: 600 }}>A new version is available</span>
+      <span style={{
+        fontSize: 12, fontWeight: 700, background: "#ffffff", color: "#0969da",
+        borderRadius: 6, padding: "4px 10px", whiteSpace: "nowrap",
+      }}>Update</span>
+    </div>
   );
 }
 
@@ -6660,7 +6718,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
 }
 
 function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGroup, turnTime, turnTimeBack, canEditSetup_, onMovePlayer, onAccount, venueLocation, onChangePassword, onManageUsers, tournamentName, hostVenue, roundLabel, tournamentId, isTrueAdmin, greenSpeed, preferredLies, refereeCalls, onCallReferee, onClearRefereeCall, onManageTournaments, onOpenRound, onlineUsers, onSelectGroup, onBack, currentUser,
-  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, nextSyncAt, syncing, onSync }) {
+  suspensions, isSuspended, pendingStopTime, totalOffsetMin, onSuspendStop, onSuspendResume, onSuspendCancel, onSuspendEdit, onSuspendDelete, onLogout, onNavigateSummary, onUpdateGroupData, liveStatus, lastSyncAt, syncing, onSync }) {
   const [now, setNow] = useState(nowInMin());
   // Quick-record popup: clicking a hole cell opens the recording UI as a modal
   // instead of navigating to a new screen. Closes itself once a time is recorded.
@@ -6902,7 +6960,7 @@ function Dashboard({ groups, groupData, pars, parTimes, schedules, playersPerGro
               />
             )}
           </div>
-          <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} nextSyncAt={nextSyncAt} syncing={syncing} onSync={onSync} />
+          <SyncIndicator status={liveStatus} lastSyncAt={lastSyncAt} syncing={syncing} onSync={onSync} />
         </div>
       </div>
 
@@ -9612,7 +9670,7 @@ async function removeUsers(usernames) {
   try { await supabase.from("app_users").delete().in("username", usernames); } catch {}
 }
 
-export default function App() {
+function AppShell() {
   // Tracks the timestamp of this device's own last write per group, so a delayed
   // realtime echo of an OLDER write can't stomp a NEWER local write (race condition
   // that was silently dropping WN/MN/TM/Bad Time log entries recorded in quick succession).
@@ -9620,7 +9678,6 @@ export default function App() {
   const [clearTick, setClearTick] = useState(0);
   const [liveStatus, setLiveStatus] = useState("connecting"); // connecting | live | down
   const [lastSyncAt, setLastSyncAt] = useState(null);
-  const [nextSyncAt, setNextSyncAt] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const syncingRef = useRef(false);
   const syncNowRef = useRef(null);
@@ -10003,7 +10060,6 @@ export default function App() {
     } finally {
       syncingRef.current = false;
       setSyncing(false);
-      setNextSyncAt(Date.now() + SYNC_PERIOD_MS);
     }
   }, []);
 
@@ -10021,10 +10077,8 @@ export default function App() {
     // A safety net for the case where the socket dies without ever telling us.
     // Rare, but the cost of being wrong here is a referee acting on stale pace
     // data, so it's worth one quiet read every half minute.
-    setNextSyncAt(Date.now() + SYNC_PERIOD_MS);
     const id = setInterval(() => {
       if (document.visibilityState === "visible") syncNowRef.current?.();
-      else setNextSyncAt(Date.now() + SYNC_PERIOD_MS);
     }, SYNC_PERIOD_MS);
     return () => {
       document.removeEventListener("visibilitychange", onWake);
@@ -10738,7 +10792,6 @@ export default function App() {
     <Dashboard
       liveStatus={liveStatus}
       lastSyncAt={lastSyncAt}
-      nextSyncAt={nextSyncAt}
       syncing={syncing}
       onSync={syncNow}
       groups={groups}
@@ -10854,4 +10907,16 @@ export default function App() {
   }
 
   return null;
+}
+
+// Wraps the app so the update notice can sit above every screen without having
+// to be threaded through each of the branches AppShell returns from.
+export default function App() {
+  const updateAvailable = useVersionWatch();
+  return (
+    <>
+      <AppShell />
+      <UpdateBanner show={updateAvailable} />
+    </>
+  );
 }
