@@ -11733,12 +11733,18 @@ function AppShell() {
   // ever touching recorded times — used for live editing of group names/start
   // times/pars/par times/transit time.
   const handleApplyLiveEdits = async (grps, ps, pt, pxg, tt, ttb, gs, pl) => {
-    if (!grps || grps.length === 0) return;      // never wipe a live session
-    if (groups.length === 0) return;             // nothing live to update
+    // A round with no tee sheet still has course values worth keeping — par,
+    // green speed, preferred lies. Bailing out whenever there were no groups
+    // meant a par edited on a Practice or Pro-Am day never left the screen, so
+    // the Course Setup sheet went on showing the old pars. The guard that
+    // matters is narrower: don't let an empty list wipe a session that has one.
+    const noSheet = groups.length === 0;
+    if (!noSheet && (!grps || grps.length === 0)) return;   // never wipe a live session
     const sch = {};
-    grps.forEach(g => { sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1, ttb ?? tt ?? 1); });
+    (grps || []).forEach(g => { sch[g.id] = buildScheduleOrdered(g.startTime, pt, g.startHole || 1, tt ?? 1, ttb ?? tt ?? 1); });
 
-    setGroups(grps);
+    // Groups are only rewritten when there is a sheet to rewrite.
+    if (!noSheet) setGroups(grps);
     setPars(ps);
     setParTimes(pt);
     setPlayersPerGroup(pxg ?? 3);
@@ -11746,14 +11752,16 @@ function AppShell() {
     setTurnTimeBack(ttb ?? tt ?? 1);
     if (gs !== undefined) setGreenSpeed(gs);
     if (pl !== undefined) setPreferredLies(pl);
-    setBaseSchedules(sch);
-    setSchedules(sch);
+    if (!noSheet) { setBaseSchedules(sch); setSchedules(sch); }
     saveTournamentCourseSetup(currentTournament?.id, { pars: ps, parTimes: pt, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1 });
     setCurrentTournament(prev => prev ? { ...prev, pars: ps, par_times: pt, turn_time: tt ?? 1, turn_time_back: ttb ?? tt ?? 1 } : prev);
     // If the write fails, say so — a silent failure here looked like the edit
     // had been applied while the database still held the old values.
     const saved = await saveAppState({
-      groups: grps, pars: ps, parTimes: pt, baseSchedules: sch, schedules: sch,
+      groups: noSheet ? groups : grps,
+      pars: ps, parTimes: pt,
+      baseSchedules: noSheet ? baseSchedules : sch,
+      schedules: noSheet ? schedules : sch,
       suspensions, isSuspended, pendingStopTime, refereeCalls,
       greenSpeed: gs ?? greenSpeed, preferredLies: pl ?? preferredLies,
       roundId: currentRound?.id, playersPerGroup: pxg ?? 3, turnTime: tt ?? 1, turnTimeBack: ttb ?? tt ?? 1,
@@ -11762,7 +11770,7 @@ function AppShell() {
       window.alert(`The changes could not be saved.\n\n${saved.error}\n\nThey are showing on this device only — reload before recording any times.`);
     }
     // Give brand-new groups a blank scorecard; existing groups keep their data untouched.
-    const newOnes = grps.filter(g => !groupData[g.id]);
+    const newOnes = (grps || []).filter(g => !groupData[g.id]);
     if (newOnes.length) {
       const writtenAt = new Date().toISOString();
       setGroupData(prev => {
