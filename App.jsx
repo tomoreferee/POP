@@ -6275,7 +6275,8 @@ function CourseSetupScreen({
     const i = from + k;
     const h = holes[i];
     const locked = !editableHoles[i];
-    const isPar3 = pars?.[i] === 3;
+    const par = pars?.[i];
+    const isPar3 = par === 3;
     const today = todayPositions?.holes?.[i];
     // Only worth echoing when it came from somewhere else. When this form is
     // itself where today's positions live, repeating them under the hole number
@@ -6284,6 +6285,22 @@ function CourseSetupScreen({
     return (
       <tr key={i}>
         <td style={{ ...cell, textAlign: "center", padding: "4px 2px", background: locked ? "#f6f8fa" : "#ffffff" }}>
+          {/* Par above the hole number. The side-alternating and short-pin
+              guidelines are both worded per par, so knowing which holes are the
+              3s and 5s is part of reading the sheet — and the par 3 column only
+              opens on those holes, which otherwise looks arbitrary. Par 4s are
+              left unmarked: they are most of the card, and labelling them all
+              would bury the two that matter. */}
+          <div style={{ height: 11, marginBottom: 1 }}>
+            {(par === 3 || par === 5) && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, lineHeight: 1,
+                display: "inline-block", padding: "1px 4px", borderRadius: 3,
+                color: par === 3 ? "#0969da" : "#1a7f37",
+                background: par === 3 ? "#ddf4ff" : "#dafbe1",
+              }}>P{par}</span>
+            )}
+          </div>
           <div style={{ fontSize: 13, fontWeight: 700, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
           {/* The positions actually in play today, carried over from the day
               they were cut. Tucked under the hole number so it travels with the
