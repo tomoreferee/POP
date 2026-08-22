@@ -2018,8 +2018,14 @@ function TournamentRoundScreen({ currentUser, isAdmin, onLogout, onAccount, onCh
         ...(selectedTournament.has_proam === true ? ["PA"] : []),
         ...NUMBERED_ROUND_LABELS.slice(0, selectedTournament.num_rounds ?? 4),
       ];
-      // Never hide a round that already holds data
-      existing.forEach(l => { if (!list.includes(l)) list.push(l); });
+      // A round that has been switched off stays visible only if it actually
+      // holds groups — losing access to real data would be worse than a stale
+      // entry. Merely having a row is not enough: opening a round creates one,
+      // so an empty round that was later removed from the schedule would
+      // otherwise reappear in the list for ever.
+      rounds.forEach(r => {
+        if (!list.includes(r.label) && roundsWithData[r.id]) list.push(r.label);
+      });
       return playableRounds(ROUND_LABELS.filter(l => list.includes(l)));
     }
 
@@ -7828,6 +7834,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   const [year, setYear] = useState("");
   const [tid, setTid] = useState(tournamentId || "");
   const [rounds, setRounds] = useState([]);
+  const [roundsWithData, setRoundsWithData] = useState({});
   const [label, setLabel] = useState(roundLabel || "");
   const [loadingRounds, setLoadingRounds] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -7862,6 +7869,9 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
       const rs = await fetchRounds(tid);
       if (cancelled) return;
       setRounds(rs);
+      // Which of these actually hold groups, so a round dropped from the
+      // schedule can be hidden unless there is real work filed under it.
+      fetchRoundsWithData(rs.map(r => r.id)).then(w => { if (!cancelled) setRoundsWithData(w || {}); });
       const preferred = (tid === tournamentId && roundLabel && rs.find(r => r.label === roundLabel))
         || rs[rs.length - 1];
       setLabel(preferred?.label || "");
@@ -7874,9 +7884,12 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
   const roundChoices = (() => {
     const allowed = roundLabelsFor(selectedTournament);
     const existing = rounds.map(r => r.label);
-    // Anything already created stays on the list even if the configuration has
-    // since changed, so an open round can never become unreachable.
-    const merged = playableRounds([...new Set([...allowed, ...existing])]);
+    // A round taken off the schedule disappears from here — unless it holds
+    // groups, in which case hiding it would strand real data. Simply having a
+    // row doesn't count: opening a round creates one, so an empty round would
+    // otherwise linger in the list no matter how the schedule was changed.
+    const keptForData = rounds.filter(r => roundsWithData[r.id]).map(r => r.label);
+    const merged = playableRounds([...new Set([...allowed, ...keptForData])]);
     return merged.sort(byRoundOrder).map(l => ({
       label: l,
       exists: existing.includes(l),
