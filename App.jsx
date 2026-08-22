@@ -2758,6 +2758,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
 
   // merge for onStart
   const allGroups = [...groups1, ...groups10, ...groupsShotgun];
+  const paceRound = isPaceRound(roundLabel);
 
   // While a round is live, edits here apply straight to the running schedule — no
   // button press needed. Debounced so typing a time doesn't spam the server, and
@@ -2894,7 +2895,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
                 are set once per round, not per group. */}
             {roundLabel && (
               <div style={{ borderTop: "1px solid #d1d9e0", padding: "12px 20px 14px" }}>
-                <div style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 8 }}>SPEED GREEN</div>
+                <div style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 8 }}>GREEN SPEED</div>
                 {isAdmin ? (
                   <>
                     {[
@@ -2938,6 +2939,19 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
           </div>
         )}
 
+        {/* Everything from here down builds the pace-of-play sheet: how many
+            play together, the par times it is measured against, and the groups
+            themselves. A Practice or Pro-Am day is not measured, so none of it
+            applies — and a screenful of fields that do nothing is an invitation
+            to fill them in. Green speed above stays, because the greens are
+            still read on those days. */}
+        {!paceRound && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "16px 20px", marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
+            <b style={{ color: "#1f2328" }}>{roundFull(roundLabel)}</b> is not monitored for pace of play, so there are no groups or tee times to set up. Green speed above still applies.
+          </div>
+        )}
+
+        {paceRound && (<>
         {/* ─── Players per group ─────────────────────────────────────────────── */}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
           <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>PLAYERS PER GROUP</div>
@@ -3347,6 +3361,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
           {(!isAdmin && allGroups.length === 0) ? "Waiting for admin to setup groups" : "▶ Start tracking PACE OF PLAY"}
         </button>
         )}
+        </>)}
 
         {/* Before a round is set up there's nothing to come back to, and no other
             way off this screen — so offer the tournament list rather than making
