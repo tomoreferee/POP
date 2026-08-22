@@ -6291,17 +6291,16 @@ function CourseSetupScreen({
               opens on those holes, which otherwise looks arbitrary. Par 4s are
               left unmarked: they are most of the card, and labelling them all
               would bury the two that matter. */}
-          <div style={{ height: 11, marginBottom: 1 }}>
+          <div style={{ height: 10, lineHeight: "10px" }}>
             {(par === 3 || par === 5) && (
               <span style={{
-                fontSize: 9, fontWeight: 700, lineHeight: 1,
-                display: "inline-block", padding: "1px 4px", borderRadius: 3,
+                fontSize: 8, fontWeight: 700, letterSpacing: 0.3,
                 color: par === 3 ? "#0969da" : "#1a7f37",
-                background: par === 3 ? "#ddf4ff" : "#dafbe1",
-              }}>P{par}</span>
+                whiteSpace: "nowrap",
+              }}>Par {par}</span>
             )}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.1, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
           {/* The positions actually in play today, carried over from the day
               they were cut. Tucked under the hole number so it travels with the
               row without costing a column the screen doesn't have. Front and
