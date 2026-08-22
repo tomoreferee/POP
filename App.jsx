@@ -5974,6 +5974,34 @@ function CourseSetupScreen({
     if (canEditPracticeGreen({ isAdmin, position })) setPracticeGreen(null);
   };
 
+  // Clear empties the form and waits for Save; this throws the saved sheet away
+  // outright. They are different actions and are worth keeping apart — one is
+  // recoverable by walking away without saving, the other is not.
+  const canDeleteAll = isAdmin || COURSE_SETUP_EDIT_ALL.includes(position);
+  const deleteSaved = () => {
+    if (!window.confirm(
+      `Delete the saved course setup for ${roundFull(roundLabel)}?\n\n` +
+      "Every reading on this sheet — distances, hole positions and stimp — is removed for this day and cannot be undone."
+    )) return;
+    const blank = Array.from({ length: 18 }, () => blankHole());
+    setHoles(blank);
+    setPracticeGreen(null);
+    setSaved(false);
+    // Written straight away: a delete that needed a second press on Save would
+    // leave the sheet looking empty while the old readings were still stored.
+    onSave({
+      holes: blank.map(() => ({ bot: null, front: null, side: null, sideLR: null, stimp: null })),
+      positionsFor: null,
+      practiceGreen: null,
+      // The yardage-book figures belong to the holes rather than to this day,
+      // so they survive: deleting a day's readings shouldn't cost the course
+      // measurements that every other day is relying on.
+      par3Base,
+      updatedBy: currentUser || null,
+      updatedAt: new Date().toISOString(),
+    }, { all18: null });
+  };
+
   // The positions in play today, read back from whichever round recorded them.
   //
   // A round that plays to another round's flags has none filed under its own
@@ -6732,11 +6760,25 @@ function CourseSetupScreen({
               style={{
                 flexShrink: 0, padding: "12px 16px", borderRadius: 6, cursor: "pointer",
                 fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-                background: "#ffffff", border: "1px solid #cf222e55", color: "#cf222e",
+                background: "#ffffff", border: "1px solid #d1d9e0", color: "#59636e",
               }}>
               Clear
             </button>
           </div>
+        )}
+
+        {/* Set apart from Save and Clear, and phrased so there is no mistaking
+            it for either: this one reaches the stored record. */}
+        {canDeleteAll && (
+          <button
+            onClick={deleteSaved}
+            style={{
+              width: "100%", marginTop: 10, padding: "11px 0", borderRadius: 6, cursor: "pointer",
+              fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+              background: "#ffebe9", border: "1px solid #cf222e55", color: "#cf222e",
+            }}>
+            Delete saved data for {roundFull(roundLabel)}
+          </button>
         )}
       </div>
     </div>
