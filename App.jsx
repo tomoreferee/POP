@@ -6239,7 +6239,7 @@ function CourseSetupScreen({
     width: "100%", boxSizing: "border-box",
     WebkitAppearance: "none", MozAppearance: "none", appearance: "none",
     border: "none", outline: "none", borderRadius: 4, height: "100%",
-    padding: "0 13px 0 5px", margin: 0,
+    padding: "0 12px 0 6px", margin: 0,
     background: "transparent",
     fontFamily: "inherit", fontSize: 16, fontWeight: 700,
     textAlign: "center", textAlignLast: "center",
@@ -6267,7 +6267,7 @@ function CourseSetupScreen({
           disabled={disabled}
           onChange={e => onChange(e.target.value === "" ? null : { ft: Number(e.target.value), in: value?.in ?? 0 })}
           style={selStyle(disabled)}>
-          <option value="">ft</option>
+          <option value="">–</option>
           {Array.from({ length: 10 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
         </select>
       ))}
@@ -6277,7 +6277,7 @@ function CourseSetupScreen({
           disabled={disabled || value?.ft == null}
           onChange={e => onChange({ ft: value?.ft ?? 10, in: e.target.value === "" ? 0 : Number(e.target.value) })}
           style={selStyle(disabled || value?.ft == null)}>
-          <option value="">in</option>
+          <option value="">–</option>
           {Array.from({ length: 12 }, (_, i) => i).map(n => <option key={n} value={n}>{n}″</option>)}
         </select>
       ))}
@@ -6577,7 +6577,7 @@ function CourseSetupScreen({
                 <th style={{ ...th, width: "12%" }}>Par 3<br />y / m</th>
                 <th style={{ ...th, width: "8%" }}>Front</th>
                 <th style={{ ...th, width: "12%" }}>Side</th>
-                <th style={{ ...th, width: "47%" }}>Stimp</th>
+                <th style={{ ...th, width: "47%" }}>Stimp<br /><span style={{ fontWeight: 600, color: "#8c959f" }}>ft&nbsp;&nbsp;·&nbsp;&nbsp;in</span></th>
               </tr>
             </thead>
             <tbody>
