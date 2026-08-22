@@ -6231,32 +6231,56 @@ function CourseSetupScreen({
       display: "flex", alignItems: "center", overflow: "hidden",
     }}>{children}</div>
   );
+  // The native control reserves its own space for a chevron, and on iOS that
+  // space is wide enough to clip a two-letter label — "ft" came out as "f1".
+  // Turning the native appearance off and drawing the caret ourselves puts the
+  // width back under our control, so the text always shows in full.
   const selStyle = (disabled) => ({
-    flex: 1, minWidth: 0, width: "100%", boxSizing: "border-box",
-    border: "1px solid #d1d9e0", borderRadius: 4, height: 32, padding: 0,
-    background: disabled ? "#f6f8fa" : "#ffffff",
+    width: "100%", boxSizing: "border-box",
+    WebkitAppearance: "none", MozAppearance: "none", appearance: "none",
+    border: "none", outline: "none", borderRadius: 4, height: "100%",
+    padding: "0 12px 0 4px", margin: 0,
+    background: "transparent",
     fontFamily: "inherit", fontSize: 15, fontWeight: 700,
     textAlign: "center", textAlignLast: "center",
     color: disabled ? "#8c959f" : "#1f2328",
   });
+  const selectShell = (disabled, children) => (
+    <div style={{
+      position: "relative", flex: 1, minWidth: 0, height: 32,
+      border: "1px solid #d1d9e0", borderRadius: 4,
+      background: disabled ? "#f6f8fa" : "#ffffff",
+      display: "flex", alignItems: "center", overflow: "hidden",
+    }}>
+      {children}
+      <span aria-hidden style={{
+        position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
+        fontSize: 9, color: disabled ? "#c2c8cf" : "#8c959f", pointerEvents: "none",
+      }}>▾</span>
+    </div>
+  );
   const stimpPicker = (value, onChange, disabled) => (
-    <div style={{ display: "flex", gap: 4, padding: "3px 6px" }}>
-      <select
-        value={value?.ft ?? ""}
-        disabled={disabled}
-        onChange={e => onChange(e.target.value === "" ? null : { ft: Number(e.target.value), in: value?.in ?? 0 })}
-        style={selStyle(disabled)}>
-        <option value="">ft</option>
-        {Array.from({ length: 10 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
-      </select>
-      <select
-        value={value?.in ?? ""}
-        disabled={disabled || value?.ft == null}
-        onChange={e => onChange({ ft: value?.ft ?? 10, in: e.target.value === "" ? 0 : Number(e.target.value) })}
-        style={selStyle(disabled || value?.ft == null)}>
-        <option value="">in</option>
-        {Array.from({ length: 12 }, (_, i) => i).map(n => <option key={n} value={n}>{n}″</option>)}
-      </select>
+    <div style={{ display: "flex", gap: 5, padding: "3px 6px" }}>
+      {selectShell(disabled, (
+        <select
+          value={value?.ft ?? ""}
+          disabled={disabled}
+          onChange={e => onChange(e.target.value === "" ? null : { ft: Number(e.target.value), in: value?.in ?? 0 })}
+          style={selStyle(disabled)}>
+          <option value="">ft</option>
+          {Array.from({ length: 10 }, (_, i) => i + 6).map(ft => <option key={ft} value={ft}>{ft}′</option>)}
+        </select>
+      ))}
+      {selectShell(disabled || value?.ft == null, (
+        <select
+          value={value?.in ?? ""}
+          disabled={disabled || value?.ft == null}
+          onChange={e => onChange({ ft: value?.ft ?? 10, in: e.target.value === "" ? 0 : Number(e.target.value) })}
+          style={selStyle(disabled || value?.ft == null)}>
+          <option value="">in</option>
+          {Array.from({ length: 12 }, (_, i) => i).map(n => <option key={n} value={n}>{n}″</option>)}
+        </select>
+      ))}
     </div>
   );
 
