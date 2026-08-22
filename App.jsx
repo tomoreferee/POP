@@ -11804,8 +11804,14 @@ function AppShell() {
 
       if (state) {
         setGroups(state.groups);
-        setPars(state.pars);
-        setParTimes(state.parTimes);
+        // Par belongs to the course, not to the day. A round whose own copy was
+        // never filled in — a Practice or Pro-Am day, which has no pace set-up
+        // screen to fill it in on — falls back to the competition's, so the
+        // Course Setup sheet knows which holes are the par 3s on every day.
+        const roundPars = state.pars?.length === 18 ? state.pars : (tournament?.pars?.length === 18 ? tournament.pars : state.pars);
+        const roundParTimes = state.parTimes?.length === 18 ? state.parTimes : (tournament?.par_times?.length === 18 ? tournament.par_times : state.parTimes);
+        setPars(roundPars);
+        setParTimes(roundParTimes);
         setBaseSchedules(state.baseSchedules);
         setSchedules(state.schedules);
         setSuspensions(state.suspensions);
@@ -12126,7 +12132,10 @@ function AppShell() {
     <CourseSetupScreen
       courseSetup={courseSetup}
       onSave={handleSaveCourseSetup}
-      pars={pars}
+      // Par is a property of the course. If this round never had its own copy
+      // written — Practice and Pro-Am days have no pace set-up screen to write
+      // it on — take the competition's, so the par 3 holes are still known.
+      pars={pars?.length === 18 ? pars : (currentTournament?.pars?.length === 18 ? currentTournament.pars : pars)}
       roundLabel={currentRound?.label}
       tournamentName={currentTournament?.name}
       hostVenue={currentTournament?.host_venue}
