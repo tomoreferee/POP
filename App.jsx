@@ -6240,7 +6240,7 @@ function CourseSetupScreen({
     color: disabled ? "#8c959f" : "#1f2328",
   });
   const stimpPicker = (value, onChange, disabled) => (
-    <div style={{ display: "flex", gap: 3, padding: 3 }}>
+    <div style={{ display: "flex", gap: 4, padding: "3px 6px" }}>
       <select
         value={value?.ft ?? ""}
         disabled={disabled}
@@ -6294,7 +6294,7 @@ function CourseSetupScreen({
           {/* The 3px above comes from the cell's own padding, so the same 3px
               is set below: the label then sits centred in the gap between the
               grid line and the hole number rather than crowding one of them. */}
-          <div style={{ height: 10, lineHeight: "10px", marginBottom: 3 }}>
+          <div style={{ height: 10, lineHeight: "10px", marginBottom: 5 }}>
             {(par === 3 || par === 5) && (
               <span style={{
                 fontSize: 9, fontWeight: 700, letterSpacing: 0.3,
@@ -6523,7 +6523,7 @@ function CourseSetupScreen({
               {/* Grouped exactly as the paper form groups them, so which round a
                   column belongs to is answered before it is asked. */}
               <tr>
-                <th rowSpan={2} style={{ ...th, width: "13%" }}>HOLE</th>
+                <th rowSpan={2} style={{ ...th, width: "12%" }}>HOLE</th>
                 <th colSpan={2} style={{ ...groupTh("this"), ...(dayHasPlay ? {} : { background: "#f6f8fa", color: "#8c959f" }) }}>
                   {roundFull(roundLabel)}
                   {!dayHasPlay && <><br /><span style={{ fontWeight: 600 }}>no play</span></>}
@@ -6549,11 +6549,11 @@ function CourseSetupScreen({
                 </th>
               </tr>
               <tr>
-                <th style={{ ...th, width: "11%" }}>From<br />BOT</th>
-                <th style={{ ...th, width: "14%" }}>Par 3<br />y / m</th>
-                <th style={{ ...th, width: "10%" }}>Front</th>
+                <th style={{ ...th, width: "10%" }}>From<br />BOT</th>
+                <th style={{ ...th, width: "13%" }}>Par 3<br />y / m</th>
+                <th style={{ ...th, width: "9%" }}>Front</th>
                 <th style={{ ...th, width: "13%" }}>Side</th>
-                <th style={{ ...th, width: "39%" }}>Stimp</th>
+                <th style={{ ...th, width: "43%" }}>Stimp</th>
               </tr>
             </thead>
             <tbody>
