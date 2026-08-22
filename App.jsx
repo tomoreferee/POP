@@ -2810,12 +2810,11 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center" }}>
           {/* Left column: title */}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.15, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", letterSpacing: 0, color: "#1f2328" }}>
-              PACE OF PLAY<br />
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                SETUP
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
-              </span>
+            {/* One line, so the size is set to whatever keeps it there — the
+                title and its badge belong together and shouldn't be split. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.15, letterSpacing: 0.2, color: "#1f2328", whiteSpace: "nowrap" }}>PACE OF PLAY SETUP</div>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 0.8, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 3, padding: "1px 4px", flexShrink: 0 }}>BETA</span>
             </div>
             <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
           </div>
