@@ -6284,14 +6284,17 @@ function CourseSetupScreen({
     const hasToday = !recordedHere && today && (today.front != null || today.side != null);
     return (
       <tr key={i}>
-        <td style={{ ...cell, textAlign: "center", padding: "4px 2px", background: locked ? "#f6f8fa" : "#ffffff" }}>
+        <td style={{ ...cell, textAlign: "center", padding: "3px 2px", verticalAlign: "middle", background: locked ? "#f6f8fa" : "#ffffff" }}>
           {/* Par above the hole number. The side-alternating and short-pin
               guidelines are both worded per par, so knowing which holes are the
               3s and 5s is part of reading the sheet — and the par 3 column only
               opens on those holes, which otherwise looks arbitrary. Par 4s are
               left unmarked: they are most of the card, and labelling them all
               would bury the two that matter. */}
-          <div style={{ height: 10, lineHeight: "10px" }}>
+          {/* The 3px above comes from the cell's own padding, so the same 3px
+              is set below: the label then sits centred in the gap between the
+              grid line and the hole number rather than crowding one of them. */}
+          <div style={{ height: 9, lineHeight: "9px", marginBottom: 3 }}>
             {(par === 3 || par === 5) && (
               <span style={{
                 fontSize: 8, fontWeight: 700, letterSpacing: 0.3,
@@ -6300,14 +6303,14 @@ function CourseSetupScreen({
               }}>Par {par}</span>
             )}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.1, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
           {/* The positions actually in play today, carried over from the day
               they were cut. Tucked under the hole number so it travels with the
               row without costing a column the screen doesn't have. Front and
               Side are separate measurements, so they are spaced rather than
               joined by a slash, which read as one fraction. */}
           {hasToday && (
-            <div style={{ fontSize: 9, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap", display: "flex", justifyContent: "center", gap: 4 }}>
+            <div style={{ fontSize: 9, lineHeight: "9px", marginTop: 3, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap", display: "flex", justifyContent: "center", gap: 4 }}>
               <span>{today.front ?? "–"}</span>
               <span>{today.side ?? "–"}{today.sideLR || ""}</span>
             </div>
