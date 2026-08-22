@@ -5855,6 +5855,10 @@ function btnStyle(bg, color) {
 // practice green; R1 walks the back nine. Each can only edit what they measured,
 // which is what stops two referees on opposite sides of the course from
 // overwriting each other's readings.
+// The nine-by-nine split is not cosmetic. R2 walks the front nine and reads the
+// practice green; R1 walks the back nine. Each can edit and delete exactly what
+// they measured, which is what stops two referees on opposite sides of the
+// course from overwriting each other's readings. TD and CR hold the whole sheet.
 const COURSE_SETUP_EDIT_ALL = ["TD", "CR"];
 
 function canEditHoleSetup({ isAdmin, position, holeIdx }) {
@@ -5948,6 +5952,7 @@ function CourseSetupScreen({
   const [par3Base, setPar3Base] = useState(() => courseSetup?.par3Base ?? {});
   const par3Holes = parList.map((p, i) => (p === 3 ? i : null)).filter(i => i !== null);
   const setBase = (i, raw) => {
+    if (!canEditHoleSetup({ isAdmin, position, holeIdx: i })) return;
     setSaved(false);
     setPar3Base(b => ({ ...b, [i]: raw }));
   };
@@ -5977,29 +5982,77 @@ function CourseSetupScreen({
   // Clear empties the form and waits for Save; this throws the saved sheet away
   // outright. They are different actions and are worth keeping apart — one is
   // recoverable by walking away without saving, the other is not.
-  const canDeleteAll = isAdmin || COURSE_SETUP_EDIT_ALL.includes(position);
+  // Deleting is part of the job, not an administrative privilege — a referee
+  // who misreads a green needs to be able to take the reading back out. So R1
+  // and R2 can delete too, within the same nine they are allowed to edit: the
+  // delete reaches exactly as far as their pencil does, never into the other
+  // referee's half of the course.
+  const canDelete = holes.some((_, i) => canEditHoleSetup({ isAdmin, position, holeIdx: i }))
+    || canEditPracticeGreen({ isAdmin, position });
+  const editableScopeNote = (isAdmin || COURSE_SETUP_EDIT_ALL.includes(position))
+    ? "all 18 holes"
+    : position === "R2" ? "the front nine (H1–H9)"
+    : position === "R1" ? "the back nine (H10–H18)"
+    : "the holes you can edit";
+
+  // The yardage-book distances are shared across the week, so removing them is
+  // deliberately separate from deleting a day's readings — and it says so.
+  const deletePar3Base = () => {
+    if (!window.confirm(
+      `Delete the par 3 distances on ${editableScopeNote}?\n\n` +
+      "They come from the yardage book and are shared by every round, so the Par 3 column will be blank on all of them until they are entered again."
+    )) return;
+    const keep = {};
+    Object.entries(par3Base).forEach(([k, v]) => {
+      if (!canEditHoleSetup({ isAdmin, position, holeIdx: Number(k) })) keep[k] = v;
+    });
+    setPar3Base(keep);
+    setSaved(false);
+    onSave({
+      holes: holes.map(h => ({
+        bot: h.bot === "" ? null : Number(h.bot),
+        front: h.front === "" ? null : Number(h.front),
+        side: h.side === "" ? null : Number(h.side),
+        sideLR: h.sideLR || null,
+        stimp: h.stimp ?? null,
+      })),
+      positionsFor: positionsNeeded ? positionsFor : null,
+      practiceGreen: practiceGreen ?? null,
+      par3Base: keep,
+      updatedBy: currentUser || null,
+      updatedAt: new Date().toISOString(),
+    }, { all18: averageStimp(holes, 0, 17) });
+  };
   const deleteSaved = () => {
     if (!window.confirm(
       `Delete the saved course setup for ${roundFull(roundLabel)}?\n\n` +
-      "Every reading on this sheet — distances, hole positions and stimp — is removed for this day and cannot be undone."
+      `This removes the readings on ${editableScopeNote} — distances, hole positions and stimp — for this day. It cannot be undone.`
     )) return;
-    const blank = Array.from({ length: 18 }, () => blankHole());
+    // Only the holes this referee is responsible for; the rest of the sheet is
+    // someone else's work and is written back untouched.
+    const blank = holes.map((h, i) => (canEditHoleSetup({ isAdmin, position, holeIdx: i }) ? blankHole() : h));
     setHoles(blank);
-    setPracticeGreen(null);
+    if (canEditPracticeGreen({ isAdmin, position })) setPracticeGreen(null);
     setSaved(false);
     // Written straight away: a delete that needed a second press on Save would
     // leave the sheet looking empty while the old readings were still stored.
     onSave({
-      holes: blank.map(() => ({ bot: null, front: null, side: null, sideLR: null, stimp: null })),
-      positionsFor: null,
-      practiceGreen: null,
+      holes: blank.map(h => ({
+        bot: h.bot === "" ? null : Number(h.bot),
+        front: h.front === "" ? null : Number(h.front),
+        side: h.side === "" ? null : Number(h.side),
+        sideLR: h.sideLR || null,
+        stimp: h.stimp ?? null,
+      })),
+      positionsFor: positionsNeeded ? positionsFor : null,
+      practiceGreen: canEditPracticeGreen({ isAdmin, position }) ? null : (practiceGreen ?? null),
       // The yardage-book figures belong to the holes rather than to this day,
       // so they survive: deleting a day's readings shouldn't cost the course
       // measurements that every other day is relying on.
       par3Base,
       updatedBy: currentUser || null,
       updatedAt: new Date().toISOString(),
-    }, { all18: null });
+    }, { all18: averageStimp(blank, 0, 17) });
   };
 
   // The positions in play today, read back from whichever round recorded them.
@@ -6645,7 +6698,7 @@ function CourseSetupScreen({
             </button>
             {baseOpen && (<div style={{ padding: "0 14px 14px" }}>
             <div style={{ fontSize: 11, color: "#818b98", marginBottom: 10 }}>
-              From the yardage book, in yards.
+              From the yardage book, in yards. Shared by every round.
             </div>
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
               {par3Holes.map(i => (
@@ -6657,6 +6710,22 @@ function CourseSetupScreen({
                 </div>
               ))}
             </div>
+
+            {/* Kept inside this card rather than beside the sheet's own delete:
+                these figures belong to the course and are shared by every
+                round, so clearing them is a different act from clearing a day's
+                readings and shouldn't sit next to it. */}
+            {canDelete && (
+              <button
+                onClick={deletePar3Base}
+                style={{
+                  width: "100%", marginTop: 12, padding: "9px 0", borderRadius: 6, cursor: "pointer",
+                  fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                  background: "#ffebe9", border: "1px solid #cf222e55", color: "#cf222e",
+                }}>
+                Delete these distances
+              </button>
+            )}
             </div>)}
           </div>
         )}
@@ -6769,7 +6838,7 @@ function CourseSetupScreen({
 
         {/* Set apart from Save and Clear, and phrased so there is no mistaking
             it for either: this one reaches the stored record. */}
-        {canDeleteAll && (
+        {canDelete && (
           <button
             onClick={deleteSaved}
             style={{
