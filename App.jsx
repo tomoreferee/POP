@@ -5908,22 +5908,21 @@ function CourseSetupScreen({
   // positive; left as-is it would lengthen the par-3 calculation instead of
   // shortening it, so it is corrected on the way in.
   const normaliseHole = (h) => {
-    const n = Number(h.bot);
-    if (h.bot !== "" && h.bot != null && Number.isFinite(n) && n > 0) return { ...h, bot: String(-n) };
-    return h;
+    const out = {
+      ...h,
+      bot: h.bot == null ? "" : h.bot,
+      front: h.front == null ? "" : h.front,
+      side: h.side == null ? "" : h.side,
+      sideLR: h.sideLR || "",
+    };
+    const n = Number(out.bot);
+    if (out.bot !== "" && Number.isFinite(n) && n > 0) out.bot = String(-n);
+    return out;
   };
 
   const [holes, setHoles] = useState(() => {
     const saved = courseSetup?.holes;
-    return Array.from({ length: 18 }, (_, i) => {
-      const h = { ...blankHole(), ...(saved?.[i] || {}) };
-      // Anything entered before the sign was applied automatically comes back
-      // positive; left as-is it would lengthen the par-3 calculation instead of
-      // shortening it, so it is corrected on the way in.
-      const n = Number(h.bot);
-      if (h.bot !== "" && h.bot != null && Number.isFinite(n) && n > 0) h.bot = String(-n);
-      return h;
-    });
+    return Array.from({ length: 18 }, (_, i) => normaliseHole({ ...blankHole(), ...(saved?.[i] || {}) }));
   });
   const nextLabel = nextRoundOf(roundLabel, availableRoundLabels);
   const nextInherits = nextLabel ? SHARES_POSITIONS_WITH[nextLabel] : null;
@@ -5995,6 +5994,39 @@ function CourseSetupScreen({
     : position === "R1" ? "the back nine (H10–H18)"
     : "the holes you can edit";
 
+  // Saving writes only the holes this referee is responsible for. The rest of
+  // the sheet is copied from the stored version rather than from what is on
+  // screen — two referees work the two nines at the same time, and the copy in
+  // front of one of them can be minutes old by the time they press Save. Sending
+  // the whole array back would quietly undo the other's work.
+  const mine = (i) => canEditHoleSetup({ isAdmin, position, holeIdx: i });
+
+  // "Empty" arrives in three shapes: the blank string a fresh field holds, and
+  // the null or undefined a saved-but-unfilled reading comes back as. Only the
+  // first was being checked, so the other two went through Number() — which
+  // turns null into 0. A hole nobody had measured came back as a reading of
+  // zero, and the set-up guidelines then flagged the whole nine.
+  const numOrNull = (v) => {
+    if (v === "" || v == null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const holePayload = () => holes.map((h, i) => {
+    if (!mine(i)) return courseSetup?.holes?.[i] ?? null;
+    return {
+      bot: numOrNull(h.bot),
+      front: numOrNull(h.front),
+      side: numOrNull(h.side),
+      sideLR: h.sideLR || null,
+      stimp: h.stimp ?? null,
+    };
+  });
+  const basePayload = () => {
+    const out = { ...(courseSetup?.par3Base ?? {}) };
+    Object.entries(par3Base).forEach(([k, v]) => { if (mine(Number(k))) out[k] = v; });
+    return out;
+  };
+
   // The yardage-book distances are shared across the week, so removing them is
   // deliberately separate from deleting a day's readings — and it says so.
   const deletePar3Base = () => {
@@ -6009,16 +6041,12 @@ function CourseSetupScreen({
     setPar3Base(keep);
     setSaved(false);
     onSave({
-      holes: holes.map(h => ({
-        bot: h.bot === "" ? null : Number(h.bot),
-        front: h.front === "" ? null : Number(h.front),
-        side: h.side === "" ? null : Number(h.side),
-        sideLR: h.sideLR || null,
-        stimp: h.stimp ?? null,
-      })),
+      holes: holePayload(),
       positionsFor: positionsNeeded ? positionsFor : null,
-      practiceGreen: practiceGreen ?? null,
-      par3Base: keep,
+      practiceGreen: canEditPracticeGreen({ isAdmin, position })
+        ? (practiceGreen ?? null)
+        : (courseSetup?.practiceGreen ?? null),
+      par3Base: { ...(courseSetup?.par3Base ?? {}), ...keep },
       updatedBy: currentUser || null,
       updatedAt: new Date().toISOString(),
     }, { all18: averageStimp(holes, 0, 17) });
@@ -6037,13 +6065,16 @@ function CourseSetupScreen({
     // Written straight away: a delete that needed a second press on Save would
     // leave the sheet looking empty while the old readings were still stored.
     onSave({
-      holes: blank.map(h => ({
-        bot: h.bot === "" ? null : Number(h.bot),
-        front: h.front === "" ? null : Number(h.front),
-        side: h.side === "" ? null : Number(h.side),
-        sideLR: h.sideLR || null,
-        stimp: h.stimp ?? null,
-      })),
+      holes: blank.map((h, i) => {
+        if (!mine(i)) return courseSetup?.holes?.[i] ?? null;
+        return {
+          bot: numOrNull(h.bot),
+          front: numOrNull(h.front),
+          side: numOrNull(h.side),
+          sideLR: h.sideLR || null,
+          stimp: h.stimp ?? null,
+        };
+      }),
       positionsFor: positionsNeeded ? positionsFor : null,
       practiceGreen: canEditPracticeGreen({ isAdmin, position }) ? null : (practiceGreen ?? null),
       // The yardage-book figures belong to the holes rather than to this day,
@@ -6289,16 +6320,12 @@ function CourseSetupScreen({
 
   const handleSave = () => {
     onSave({
-      holes: holes.map(h => ({
-        bot: h.bot === "" ? null : Number(h.bot),
-        front: h.front === "" ? null : Number(h.front),
-        side: h.side === "" ? null : Number(h.side),
-        sideLR: h.sideLR || null,
-        stimp: h.stimp ?? null,
-      })),
+      holes: holePayload(),
       positionsFor: positionsNeeded ? positionsFor : null,
-      par3Base,
-      practiceGreen: practiceGreen ?? null,
+      par3Base: basePayload(),
+      practiceGreen: canEditPracticeGreen({ isAdmin, position })
+        ? (practiceGreen ?? null)
+        : (courseSetup?.practiceGreen ?? null),
       // Averages are deliberately not stored. They are one edit away from
       // disagreeing with the readings above them, and a stale average on a
       // course report is worse than no average at all.
