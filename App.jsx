@@ -5935,12 +5935,19 @@ function CourseSetupScreen({
   };
 
   // The positions in play today, read back from whichever round recorded them.
+  //
+  // A round that plays to another round's flags has none filed under its own
+  // name — Practice is played to the Qualifying positions, and nobody records a
+  // separate set for it. Looking it up by its own label therefore found nothing
+  // and the day showed no positions at all, when in fact it has the same ones
+  // as Qualifying. So the lookup asks under the round it inherits from.
+  const positionsSourceLabel = SHARES_POSITIONS_WITH[roundLabel] || roundLabel;
   const [todayPositions, setTodayPositions] = useState(null);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   useEffect(() => {
     let dead = false;
     setPositionsLoaded(false);
-    fetchHolePositionsFor(tournamentId, roundLabel).then(r => {
+    fetchHolePositionsFor(tournamentId, positionsSourceLabel).then(r => {
       if (dead) return;
       setTodayPositions(r?.holes?.length ? r : null);
       // Only seed; never overwrite what this round already holds.
@@ -5950,7 +5957,7 @@ function CourseSetupScreen({
       setPositionsLoaded(true);
     });
     return () => { dead = true; };
-  }, [tournamentId, roundLabel]);
+  }, [tournamentId, positionsSourceLabel]);
 
   // Which round the Front/Side columns are being filled in for.
   //
@@ -6483,7 +6490,10 @@ function CourseSetupScreen({
 
         {todayPositions && !recordedHere && (
           <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
-            Today’s positions (shown under each hole number) were recorded on{" "}
+            Today’s positions (shown under each hole number)
+            {positionsSourceLabel !== roundLabel
+              ? ` are the ${roundFull(positionsSourceLabel)} positions — ${roundFull(roundLabel)} is played to the same flags. Recorded on `
+              : " were recorded on "}
             {todayPositions.fromLabel ? roundFull(todayPositions.fromLabel) : "an earlier day"}.
           </div>
         )}
