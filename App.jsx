@@ -6475,34 +6475,6 @@ function CourseSetupScreen({
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "16px 12px 40px" }}>
 
-        {/* Par 3 lengths are not written down, they are worked out: the yardage
-            book gives the fixed distance from the back of the tee to the front
-            of the green, and the day's playing length is that, plus however far
-            forward the tee was set, plus how far on the green the flag is cut.
-            Entering the total by hand invited it to disagree with the numbers it
-            is made of. The book figure is a property of the hole, so it is asked
-            for once here rather than on every row. */}
-        {par3Holes.length > 0 && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 2 }}>
-              PAR 3 · BACK OF TEE → FRONT OF GREEN
-            </div>
-            <div style={{ fontSize: 11, color: "#818b98", marginBottom: 10 }}>
-              From the yardage book, in yards. Fixed for the hole — the Par 3 column works itself out from this.
-            </div>
-            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
-              {par3Holes.map(i => (
-                <div key={i} style={{ flex: "1 1 0", minWidth: 60 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#59636e", textAlign: "center", marginBottom: 3 }}>H{i + 1}</div>
-                  <div style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: editableHoles[i] ? "#ffffff" : "#f6f8fa", height: 32, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    {numInput(par3Base[i] ?? "", v => setBase(i, v), !editableHoles[i], "y")}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Which day's sheet this is. Separate from the round the app has open
             elsewhere, because the set-up work for a day is done before it, and
             Pre in particular is never a round anyone opens to record play. */}
@@ -6523,29 +6495,31 @@ function CourseSetupScreen({
           </div>
         )}
 
-        <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
-          {isPreDay
-            ? (positionsFor
-                ? `No play today — Front and Side are the flags being cut for ${roundFull(positionsFor)}.`
-                : "No play today, and no round follows this one.")
-            : positionsAreForToday
-              ? `Front and Side are the positions ${roundFull(roundLabel)} itself is played to.`
-              : positionsNeeded
-                ? `Front and Side are cut today for ${roundFull(positionsFor)}.`
-                : nextInherits
-                  ? `${roundFull(nextLabel)} is played to the ${roundFull(nextInherits)} positions, so Front and Side are not recorded today.`
-                  : inheritsOwn
-                    ? `${roundFull(roundLabel)} is played to the ${roundFull(inheritsSource)} positions, and nothing follows it, so there is nothing to cut today.`
-                    : `${roundFull(roundLabel)} is the last round, so there are no positions to cut.`}
-        </div>
-
-        {todayPositions && !recordedHere && (
-          <div style={{ fontSize: 11, color: "#59636e", marginBottom: 6 }}>
-            Today’s positions (shown under each hole number)
-            {positionsSourceLabel !== roundLabel
-              ? ` are the ${roundFull(positionsSourceLabel)} positions — ${roundFull(roundLabel)} is played to the same flags. Recorded on `
-              : " were recorded on "}
-            {todayPositions.fromLabel ? roundFull(todayPositions.fromLabel) : "an earlier day"}.
+        {/* Par 3 lengths are not written down, they are worked out: the yardage
+            book gives the fixed distance from the back of the tee to the front
+            of the green, and the day's playing length is that, plus however far
+            forward the tee was set, plus how far on the green the flag is cut.
+            Entering the total by hand invited it to disagree with the numbers it
+            is made of. The book figure is a property of the hole, so it is asked
+            for once here rather than on every row. */}
+        {par3Holes.length > 0 && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 2 }}>
+              PAR 3 · BACK OF TEE → FRONT OF GREEN
+            </div>
+            <div style={{ fontSize: 11, color: "#818b98", marginBottom: 10 }}>
+              From the yardage book, in yards.
+            </div>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+              {par3Holes.map(i => (
+                <div key={i} style={{ flex: "1 1 0", minWidth: 60 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#59636e", textAlign: "center", marginBottom: 3 }}>H{i + 1}</div>
+                  <div style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: editableHoles[i] ? "#ffffff" : "#f6f8fa", height: 32, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                    {numInput(par3Base[i] ?? "", v => setBase(i, v), !editableHoles[i], "y")}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
