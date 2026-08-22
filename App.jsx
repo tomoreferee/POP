@@ -6280,10 +6280,10 @@ function CourseSetupScreen({
           <div style={{ fontSize: 13, fontWeight: 700, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
           {/* The positions actually in play today, carried over from the day
               they were cut. Tucked under the hole number so it travels with the
-              row without costing a column the screen doesn't have. */}
+              row without costing a column the screen doesn't have. Front and
+              Side are separate measurements, so they are spaced rather than
+              joined by a slash, which read as one fraction. */}
           {hasToday && (
-            {/* Two separate measurements, so a space rather than a slash — the
-                slash read as though 17 and 5L were one fraction. */}
             <div style={{ fontSize: 9, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap", display: "flex", justifyContent: "center", gap: 4 }}>
               <span>{today.front ?? "–"}</span>
               <span>{today.side ?? "–"}{today.sideLR || ""}</span>
