@@ -6470,20 +6470,6 @@ function CourseSetupScreen({
           </div>
         )}
 
-        {(sideClashes.size > 0 || frontFlags.size > 0) && (
-          <div style={{ background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 6, padding: "10px 12px", marginBottom: 8, fontSize: 11, color: "#7d4e00" }}>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>Set-up guidelines — underlined in red below</div>
-            {sideClashes.size > 0 && <div>· Sides: avoid three holes running on the same side, and split the par 3s and par 5s of a nine between left and right.</div>}
-            {frontFlags.size > 0 && (
-              <>
-                <div>· Front: avoid more than {SINGLE_DIGIT_MAX_PER_NINE} single-figure pins on a nine, and three of them in a row.</div>
-                <div>· Front: avoid using the same figure more than {FRONT_REPEAT_MAX} times, and keep repeats at least {FRONT_REPEAT_MIN_GAP} holes apart.</div>
-              </>
-            )}
-            <div style={{ marginTop: 4, color: "#9a6700" }}>These are guidelines only — the course may leave you no choice, and saving is not blocked.</div>
-          </div>
-        )}
-
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
@@ -6531,6 +6517,20 @@ function CourseSetupScreen({
             </tbody>
           </table>
         </div>
+
+        {(sideClashes.size > 0 || frontFlags.size > 0) && (
+          <div style={{ background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 6, padding: "10px 12px", marginTop: 10, fontSize: 11, color: "#7d4e00" }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>Set-up guidelines — underlined in red above</div>
+            {sideClashes.size > 0 && <div>· Sides: avoid three holes running on the same side, and split the par 3s and par 5s of a nine between left and right.</div>}
+            {frontFlags.size > 0 && (
+              <>
+                <div>· Front: avoid more than {SINGLE_DIGIT_MAX_PER_NINE} single-figure pins on a nine, and three of them in a row.</div>
+                <div>· Front: avoid using the same figure more than {FRONT_REPEAT_MAX} times, and keep repeats at least {FRONT_REPEAT_MIN_GAP} holes apart.</div>
+              </>
+            )}
+            <div style={{ marginTop: 4, color: "#9a6700" }}>These are guidelines only — the course may leave you no choice, and saving is not blocked.</div>
+          </div>
+        )}
 
         {courseSetup?.updatedBy && (
           <div style={{ fontSize: 11, color: "#818b98", marginTop: 8 }}>
@@ -7854,7 +7854,7 @@ function RoundSelectorBar({ tournamentId, roundLabel, isAdmin, onOpen, compact }
         {(!label || loadingRounds) && <option value="">{loadingRounds ? "…" : "—"}</option>}
         {roundChoices.map(r => (
           <option key={r.label} value={r.label}>
-            {roundShort(r.label)}{r.exists ? "" : " +"}
+            {roundShort(r.label)}
           </option>
         ))}
       </select>
