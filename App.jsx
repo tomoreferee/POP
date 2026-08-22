@@ -5892,7 +5892,7 @@ function averageStimp(holes, from, to) {
 }
 
 function CourseSetupScreen({
-  courseSetup, onSave, pars, roundLabel, tournamentName, hostVenue, tournamentId,
+  courseSetup, onSave, pars, onSavePars, roundLabel, tournamentName, hostVenue, tournamentId,
   availableRoundLabels, onOpenDay, currentUser, isAdmin, position,
   onAccount, onChangePassword, onManageUsers, onManageTournaments,
   onGoToDashboard, onGoToSetup, onLogout,
@@ -5923,11 +5923,29 @@ function CourseSetupScreen({
   });
   const nextLabel = nextRoundOf(roundLabel, availableRoundLabels);
   const nextInherits = nextLabel ? SHARES_POSITIONS_WITH[nextLabel] : null;
+  // Par is edited here as well as on the pace set-up screen. It has to be: a
+  // Pre-tournament day has no pace set-up screen of its own, and the par 3
+  // column on this very sheet depends on knowing which holes those are. Both
+  // screens write to the same place, so a change on either shows on the other.
+  const [parList, setParList] = useState(() => (pars?.length === 18 ? [...pars] : Array(18).fill(4)));
+  const [parOpen, setParOpen] = useState(false);
+  const parKey = (pars || []).join(",");
+  useEffect(() => {
+    if (pars?.length === 18) setParList([...pars]);
+  }, [parKey]);
+  const setPar = (i, v) => {
+    if (!isAdmin) return;
+    const next = [...parList];
+    next[i] = Number(v);
+    setParList(next);
+    onSavePars?.(next);
+  };
+
   const [practiceGreen, setPracticeGreen] = useState(courseSetup?.practiceGreen ?? null);
   // Yardage-book distance, back of tee to front of green. A property of the
   // hole rather than of the day, so it carries across rounds.
   const [par3Base, setPar3Base] = useState(() => courseSetup?.par3Base ?? {});
-  const par3Holes = (pars || []).map((p, i) => (p === 3 ? i : null)).filter(i => i !== null);
+  const par3Holes = parList.map((p, i) => (p === 3 ? i : null)).filter(i => i !== null);
   const setBase = (i, raw) => {
     setSaved(false);
     setPar3Base(b => ({ ...b, [i]: raw }));
@@ -6075,11 +6093,11 @@ function CourseSetupScreen({
 
       propose(i + 1, OPP[next]);
 
-      const par = pars?.[i];
+      const par = parList[i];
       if (par === 3 || par === 5) {
         out.forEach((_, idx) => {
           if (idx === i) return;
-          if (pars?.[idx] !== par) return;
+          if (parList[idx] !== par) return;
           if (nineOf(idx) !== nineOf(i)) return;
           propose(idx, OPP[next]);
         });
@@ -6105,7 +6123,7 @@ function CourseSetupScreen({
       [0, 1].forEach(nine => {
         const group = holes
           .map((h, i) => ({ h, i }))
-          .filter(({ i }) => pars?.[i] === par && nineOf(i) === nine && holes[i]?.sideLR);
+          .filter(({ i }) => parList[i] === par && nineOf(i) === nine && holes[i]?.sideLR);
         ["L", "R"].forEach(dir => {
           const same = group.filter(({ h }) => h.sideLR === dir);
           if (same.length > 1) same.forEach(({ i }) => bad.add(i));
@@ -6320,7 +6338,7 @@ function CourseSetupScreen({
     const i = from + k;
     const h = holes[i];
     const locked = !editableHoles[i];
-    const par = pars?.[i];
+    const par = parList[i];
     const isPar3 = par === 3;
     const today = todayPositions?.holes?.[i];
     // Only worth echoing when it came from somewhere else. When this form is
@@ -6511,6 +6529,65 @@ function CourseSetupScreen({
             </div>
           </div>
         )}
+
+        {/* Collapsed by default: par is set once for the week and then left
+            alone, so it shouldn't take up room above the sheet that is filled
+            in every day. It lives here because the Pre-tournament day has no
+            pace set-up screen, and because the par 3 column below depends on it. */}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, marginBottom: 14, overflow: "hidden" }}>
+          <button
+            onClick={() => setParOpen(v => !v)}
+            style={{ width: "100%", background: "none", border: "none", padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontFamily: "inherit" }}>
+            <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>HOLE PAR</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, color: "#8c959f" }}>
+                {parList.filter(p => p === 3).length} × par 3 · {parList.filter(p => p === 5).length} × par 5
+              </span>
+              <span style={{ fontSize: 10, color: "#8c959f" }}>{parOpen ? "▾" : "▸"}</span>
+            </span>
+          </button>
+          {parOpen && (
+            <div style={{ padding: "0 14px 14px" }}>
+              <div style={{ fontSize: 11, color: "#818b98", marginBottom: 10 }}>
+                {isAdmin
+                  ? "Shared with the pace of play setup — changing it here changes it everywhere."
+                  : "Set by an administrator."}
+              </div>
+              {[0, 9].map(offset => (
+                <div key={offset} style={{ marginBottom: offset === 0 ? 10 : 0 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 4, marginBottom: 4 }}>
+                    {Array.from({ length: 9 }, (_, i) => (
+                      <div key={i} style={{ fontSize: 10, color: "#59636e", textAlign: "center" }}>H{offset + i + 1}</div>
+                    ))}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 4 }}>
+                    {Array.from({ length: 9 }, (_, i) => {
+                      const idx = offset + i;
+                      return (
+                        <select
+                          key={idx}
+                          value={parList[idx]}
+                          disabled={!isAdmin}
+                          onChange={e => setPar(idx, e.target.value)}
+                          style={{
+                            width: "100%", minWidth: 0, boxSizing: "border-box",
+                            background: "#f6f8fa", border: "1px solid #d1d9e0",
+                            color: isAdmin ? "#1f2328" : "#818b98",
+                            borderRadius: 6, padding: "5px 0", fontSize: 14, fontFamily: "inherit",
+                            textAlign: "center", textAlignLast: "center",
+                            cursor: isAdmin ? "pointer" : "default",
+                            appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
+                          }}>
+                          <option value={3}>3</option><option value={4}>4</option><option value={5}>5</option>
+                        </select>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Par 3 lengths are not written down, they are worked out: the yardage
             book gives the fixed distance from the back of the tee to the front
@@ -12157,6 +12234,13 @@ function AppShell() {
       // written — Practice and Pro-Am days have no pace set-up screen to write
       // it on — take the competition's, so the par 3 holes are still known.
       pars={pars?.length === 18 ? pars : (currentTournament?.pars?.length === 18 ? currentTournament.pars : pars)}
+      // Writes through the same handler the pace set-up screen uses, so the two
+      // stay in step and the tournament default is updated with them.
+      onSavePars={(nextPars) => handleApplyLiveEdits(
+        groups, nextPars,
+        (parTimes?.length === 18 ? parTimes : nextPars.map(p => parTimeTable(playersPerGroup)[p])),
+        playersPerGroup, turnTime, turnTimeBack, greenSpeed, preferredLies
+      )}
       roundLabel={currentRound?.label}
       tournamentName={currentTournament?.name}
       hostVenue={currentTournament?.host_venue}
