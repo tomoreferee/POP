@@ -5929,6 +5929,7 @@ function CourseSetupScreen({
   // screens write to the same place, so a change on either shows on the other.
   const [parList, setParList] = useState(() => (pars?.length === 18 ? [...pars] : Array(18).fill(4)));
   const [parOpen, setParOpen] = useState(false);
+  const [baseOpen, setBaseOpen] = useState(false);
   const parKey = (pars || []).join(",");
   useEffect(() => {
     if (pars?.length === 18) setParList([...pars]);
@@ -6596,11 +6597,25 @@ function CourseSetupScreen({
             Entering the total by hand invited it to disagree with the numbers it
             is made of. The book figure is a property of the hole, so it is asked
             for once here rather than on every row. */}
+        {/* Collapsed like the par card above, and for the same reason: these
+            come off the yardage book once and then stand for the week. The
+            header carries the count so the state is readable while shut. */}
         {par3Holes.length > 0 && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700, marginBottom: 2 }}>
-              PAR 3 · BACK OF TEE → FRONT OF GREEN
-            </div>
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, marginBottom: 14, overflow: "hidden" }}>
+            <button
+              onClick={() => setBaseOpen(v => !v)}
+              style={{ width: "100%", background: "none", border: "none", padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontFamily: "inherit", textAlign: "left" }}>
+              <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>
+                PAR 3 · BACK OF TEE → FRONT OF GREEN
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: "#8c959f" }}>
+                  {par3Holes.filter(i => String(par3Base[i] ?? "") !== "").length}/{par3Holes.length}
+                </span>
+                <span style={{ fontSize: 10, color: "#8c959f" }}>{baseOpen ? "▾" : "▸"}</span>
+              </span>
+            </button>
+            {baseOpen && (<div style={{ padding: "0 14px 14px" }}>
             <div style={{ fontSize: 11, color: "#818b98", marginBottom: 10 }}>
               From the yardage book, in yards.
             </div>
@@ -6614,6 +6629,7 @@ function CourseSetupScreen({
                 </div>
               ))}
             </div>
+            </div>)}
           </div>
         )}
 
