@@ -6217,7 +6217,7 @@ function CourseSetupScreen({
         width: "100%", minWidth: 0, boxSizing: "border-box", border: "none", outline: "none",
         background: disabled ? "#f6f8fa" : "#ffffff",
         color: disabled ? "#8c959f" : "#1f2328",
-        fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+        fontFamily: "inherit", fontSize: 15, fontWeight: 600,
         textAlign: "center", padding: "0 2px", height: "100%",
       }}
     />
@@ -6227,20 +6227,20 @@ function CourseSetupScreen({
   // from here so every row lines up whether the cell holds one control or two.
   const plainCell = (disabled, children) => (
     <div style={{
-      height: 34, background: disabled ? "#f6f8fa" : "#ffffff",
+      height: 38, background: disabled ? "#f6f8fa" : "#ffffff",
       display: "flex", alignItems: "center", overflow: "hidden",
     }}>{children}</div>
   );
   const selStyle = (disabled) => ({
     flex: 1, minWidth: 0, width: "100%", boxSizing: "border-box",
-    border: "1px solid #d1d9e0", borderRadius: 4, height: 28, padding: 0,
+    border: "1px solid #d1d9e0", borderRadius: 4, height: 32, padding: 0,
     background: disabled ? "#f6f8fa" : "#ffffff",
-    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+    fontFamily: "inherit", fontSize: 15, fontWeight: 700,
     textAlign: "center", textAlignLast: "center",
     color: disabled ? "#8c959f" : "#1f2328",
   });
   const stimpPicker = (value, onChange, disabled) => (
-    <div style={{ display: "flex", gap: 2, padding: 2 }}>
+    <div style={{ display: "flex", gap: 3, padding: 3 }}>
       <select
         value={value?.ft ?? ""}
         disabled={disabled}
@@ -6344,7 +6344,7 @@ function CourseSetupScreen({
                 background: "transparent",
                 color: (locked || !positionsNeeded) ? "#8c959f" : frontFlags.has(i) ? "#cf222e" : "#1f2328",
                 textDecoration: frontFlags.has(i) ? "underline" : "none",
-                fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+                fontFamily: "inherit", fontSize: 15, fontWeight: 600,
                 textAlign: "center", padding: "0 2px", height: "100%",
               }}
             />
@@ -6369,7 +6369,7 @@ function CourseSetupScreen({
                     flex: 1, minWidth: 0, width: "50%", boxSizing: "border-box",
                     border: "none", outline: "none", background: "transparent",
                     color: off ? "#8c959f" : "#1f2328",
-                    fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                    fontFamily: "inherit", fontSize: 15, fontWeight: 700,
                     textAlign: "right", paddingRight: 2, height: "100%",
                   }}
                 />
@@ -6384,7 +6384,7 @@ function CourseSetupScreen({
                     cursor: off ? "default" : "pointer",
                     // Same size and weight as the number: together they are one
                     // reading, not a figure with a label attached.
-                    fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                    fontFamily: "inherit", fontSize: 15, fontWeight: 700,
                     color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#1f2328" : "#c2c8cf",
                     textDecoration: clash ? "underline" : "none",
                   }}>{v || "–"}</span>
@@ -6549,11 +6549,11 @@ function CourseSetupScreen({
                 </th>
               </tr>
               <tr>
-                <th style={{ ...th, width: "12%" }}>From<br />BOT</th>
-                <th style={{ ...th, width: "16%" }}>Par 3<br />y / m</th>
-                <th style={{ ...th, width: "11%" }}>Front</th>
-                <th style={{ ...th, width: "15%" }}>Side</th>
-                <th style={{ ...th, width: "33%" }}>Stimp</th>
+                <th style={{ ...th, width: "11%" }}>From<br />BOT</th>
+                <th style={{ ...th, width: "14%" }}>Par 3<br />y / m</th>
+                <th style={{ ...th, width: "10%" }}>Front</th>
+                <th style={{ ...th, width: "13%" }}>Side</th>
+                <th style={{ ...th, width: "39%" }}>Stimp</th>
               </tr>
             </thead>
             <tbody>
