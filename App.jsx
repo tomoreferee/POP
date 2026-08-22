@@ -2960,7 +2960,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
                   borderRadius: 6, padding: "10px", cursor: "pointer",
                   fontFamily: "inherit", fontSize: 13, fontWeight: 700,
                 }}>
-                Go to Dashboard — weather &amp; referee calls
+                Go to Dashboard
               </button>
             )}
           </div>
