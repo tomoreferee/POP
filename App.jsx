@@ -6235,7 +6235,7 @@ function CourseSetupScreen({
     flex: 1, minWidth: 0, width: "100%", boxSizing: "border-box",
     border: "1px solid #d1d9e0", borderRadius: 4, height: 28, padding: 0,
     background: disabled ? "#f6f8fa" : "#ffffff",
-    fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
     textAlign: "center", textAlignLast: "center",
     color: disabled ? "#8c959f" : "#1f2328",
   });
@@ -6294,23 +6294,23 @@ function CourseSetupScreen({
           {/* The 3px above comes from the cell's own padding, so the same 3px
               is set below: the label then sits centred in the gap between the
               grid line and the hole number rather than crowding one of them. */}
-          <div style={{ height: 9, lineHeight: "9px", marginBottom: 3 }}>
+          <div style={{ height: 10, lineHeight: "10px", marginBottom: 3 }}>
             {(par === 3 || par === 5) && (
               <span style={{
-                fontSize: 8, fontWeight: 700, letterSpacing: 0.3,
+                fontSize: 9, fontWeight: 700, letterSpacing: 0.3,
                 color: par === 3 ? "#0969da" : "#1a7f37",
                 whiteSpace: "nowrap",
               }}>Par {par}</span>
             )}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, color: locked ? "#8c959f" : "#1f2328" }}>{i + 1}</div>
           {/* The positions actually in play today, carried over from the day
               they were cut. Tucked under the hole number so it travels with the
               row without costing a column the screen doesn't have. Front and
               Side are separate measurements, so they are spaced rather than
               joined by a slash, which read as one fraction. */}
           {hasToday && (
-            <div style={{ fontSize: 9, lineHeight: "9px", marginTop: 3, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap", display: "flex", justifyContent: "center", gap: 4 }}>
+            <div style={{ fontSize: 10, lineHeight: "10px", marginTop: 3, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap", display: "flex", justifyContent: "center", gap: 4 }}>
               <span>{today.front ?? "–"}</span>
               <span>{today.side ?? "–"}{today.sideLR || ""}</span>
             </div>
@@ -6369,7 +6369,7 @@ function CourseSetupScreen({
                     flex: 1, minWidth: 0, width: "50%", boxSizing: "border-box",
                     border: "none", outline: "none", background: "transparent",
                     color: off ? "#8c959f" : "#1f2328",
-                    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    fontFamily: "inherit", fontSize: 14, fontWeight: 700,
                     textAlign: "right", paddingRight: 2, height: "100%",
                   }}
                 />
@@ -6384,7 +6384,7 @@ function CourseSetupScreen({
                     cursor: off ? "default" : "pointer",
                     // Same size and weight as the number: together they are one
                     // reading, not a figure with a label attached.
-                    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                    fontFamily: "inherit", fontSize: 14, fontWeight: 700,
                     color: off ? "#8c959f" : clash ? "#cf222e" : v ? "#1f2328" : "#c2c8cf",
                     textDecoration: clash ? "underline" : "none",
                   }}>{v || "–"}</span>
@@ -6523,7 +6523,7 @@ function CourseSetupScreen({
               {/* Grouped exactly as the paper form groups them, so which round a
                   column belongs to is answered before it is asked. */}
               <tr>
-                <th rowSpan={2} style={{ ...th, width: "9%" }}>HOLE</th>
+                <th rowSpan={2} style={{ ...th, width: "13%" }}>HOLE</th>
                 <th colSpan={2} style={{ ...groupTh("this"), ...(dayHasPlay ? {} : { background: "#f6f8fa", color: "#8c959f" }) }}>
                   {roundFull(roundLabel)}
                   {!dayHasPlay && <><br /><span style={{ fontWeight: 600 }}>no play</span></>}
@@ -6549,11 +6549,11 @@ function CourseSetupScreen({
                 </th>
               </tr>
               <tr>
-                <th style={{ ...th, width: "14%" }}>From<br />BOT</th>
-                <th style={{ ...th, width: "19%" }}>Par 3<br />y / m</th>
-                <th style={{ ...th, width: "12%" }}>Front</th>
-                <th style={{ ...th, width: "17%" }}>Side</th>
-                <th style={{ ...th, width: "29%" }}>Stimp</th>
+                <th style={{ ...th, width: "12%" }}>From<br />BOT</th>
+                <th style={{ ...th, width: "16%" }}>Par 3<br />y / m</th>
+                <th style={{ ...th, width: "11%" }}>Front</th>
+                <th style={{ ...th, width: "15%" }}>Side</th>
+                <th style={{ ...th, width: "33%" }}>Stimp</th>
               </tr>
             </thead>
             <tbody>
