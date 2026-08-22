@@ -6448,9 +6448,7 @@ function CourseSetupScreen({
             <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.15, color: "#1f2328" }}>COURSE SETUP</div>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670055", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>BETA</span>
           </div>
-          <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {tournamentName || "—"}{roundLabel ? ` — ${roundLong(roundLabel)}` : ""}
-          </div>
+          <div style={{ fontSize: 11, color: "#59636e", marginTop: 1, lineHeight: 1.3 }}>Golf Referee · Pace of Play System</div>
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", minWidth: 0 }}>
           {currentUser && (
@@ -6479,19 +6477,25 @@ function CourseSetupScreen({
             elsewhere, because the set-up work for a day is done before it, and
             Pre in particular is never a round anyone opens to record play. */}
         {onOpenDay && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>SET-UP DAY</span>
-            <select
-              value={roundLabel || ""}
-              onChange={e => onOpenDay(e.target.value)}
-              style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: "#ffffff", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
-              {schedule.map(l => <option key={l} value={l}>{roundFull(l)}</option>)}
-            </select>
-            {!dayHasPlay && (
-              <span style={{ fontSize: 11, color: "#8250df", background: "#faf2ff", border: "1px solid #8250df44", borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>
-                no play — hole positions only
-              </span>
-            )}
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "12px 14px", marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2328", marginBottom: 8, lineHeight: 1.3 }}>
+              {tournamentName || "—"}
+              {hostVenue && <span style={{ fontWeight: 400, color: "#59636e" }}> · {hostVenue}</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, color: "#59636e", letterSpacing: 1, fontWeight: 700 }}>SET-UP DAY</span>
+              <select
+                value={roundLabel || ""}
+                onChange={e => onOpenDay(e.target.value)}
+                style={{ border: "1px solid #d1d9e0", borderRadius: 6, background: "#ffffff", padding: "6px 10px", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#1f2328" }}>
+                {schedule.map(l => <option key={l} value={l}>{roundFull(l)}</option>)}
+              </select>
+              {!dayHasPlay && (
+                <span style={{ fontSize: 11, color: "#8250df", background: "#faf2ff", border: "1px solid #8250df44", borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>
+                  no play — hole positions only
+                </span>
+              )}
+            </div>
           </div>
         )}
 
