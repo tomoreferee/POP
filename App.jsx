@@ -6282,8 +6282,11 @@ function CourseSetupScreen({
               they were cut. Tucked under the hole number so it travels with the
               row without costing a column the screen doesn't have. */}
           {hasToday && (
-            <div style={{ fontSize: 9, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap" }}>
-              {today.front ?? "–"}/{today.side ?? "–"}{today.sideLR || ""}
+            {/* Two separate measurements, so a space rather than a slash — the
+                slash read as though 17 and 5L were one fraction. */}
+            <div style={{ fontSize: 9, color: "#0969da", fontWeight: 700, whiteSpace: "nowrap", display: "flex", justifyContent: "center", gap: 4 }}>
+              <span>{today.front ?? "–"}</span>
+              <span>{today.side ?? "–"}{today.sideLR || ""}</span>
             </div>
           )}
         </td>
@@ -6504,8 +6507,13 @@ function CourseSetupScreen({
                       part that changes, so it gets its own line instead of
                       wrapping mid-name as "Pro-" / "Am". */}
                   HOLE POSITIONS
-                  <br />{positionsFor ? roundFull(positionsFor) : "—"}
-                  {!positionsNeeded && <><br /><span style={{ fontWeight: 600 }}>not recorded today</span></>}
+                  {/* Name the day even when nothing is being cut for it. A bare
+                      dash said only "nothing here"; naming it answers the
+                      question that follows — which day, and why not. */}
+                  <br />{(positionsFor || nextLabel) ? roundFull(positionsFor || nextLabel) : "—"}
+                  {!positionsNeeded && (
+                    <><br /><span style={{ fontWeight: 600 }}>not recorded today</span></>
+                  )}
                 </th>
                 <th style={{ ...groupTh("this"), ...(dayHasPlay ? {} : { background: "#f6f8fa", color: "#8c959f" }) }}>
                   {roundFull(roundLabel)}
