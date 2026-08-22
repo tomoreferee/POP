@@ -6227,7 +6227,7 @@ function CourseSetupScreen({
   // from here so every row lines up whether the cell holds one control or two.
   const plainCell = (disabled, children) => (
     <div style={{
-      height: 38, background: disabled ? "#f6f8fa" : "#ffffff",
+      height: 40, background: disabled ? "#f6f8fa" : "#ffffff",
       display: "flex", alignItems: "center", overflow: "hidden",
     }}>{children}</div>
   );
@@ -6239,15 +6239,15 @@ function CourseSetupScreen({
     width: "100%", boxSizing: "border-box",
     WebkitAppearance: "none", MozAppearance: "none", appearance: "none",
     border: "none", outline: "none", borderRadius: 4, height: "100%",
-    padding: "0 12px 0 4px", margin: 0,
+    padding: "0 13px 0 5px", margin: 0,
     background: "transparent",
-    fontFamily: "inherit", fontSize: 15, fontWeight: 700,
+    fontFamily: "inherit", fontSize: 16, fontWeight: 700,
     textAlign: "center", textAlignLast: "center",
     color: disabled ? "#8c959f" : "#1f2328",
   });
   const selectShell = (disabled, children) => (
     <div style={{
-      position: "relative", flex: 1, minWidth: 0, height: 32,
+      position: "relative", flex: 1, minWidth: 0, height: 34,
       border: "1px solid #d1d9e0", borderRadius: 4,
       background: disabled ? "#f6f8fa" : "#ffffff",
       display: "flex", alignItems: "center", overflow: "hidden",
@@ -6255,12 +6255,12 @@ function CourseSetupScreen({
       {children}
       <span aria-hidden style={{
         position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
-        fontSize: 9, color: disabled ? "#c2c8cf" : "#8c959f", pointerEvents: "none",
+        fontSize: 10, color: disabled ? "#c2c8cf" : "#8c959f", pointerEvents: "none",
       }}>▾</span>
     </div>
   );
   const stimpPicker = (value, onChange, disabled) => (
-    <div style={{ display: "flex", gap: 5, padding: "3px 6px" }}>
+    <div style={{ display: "flex", gap: 5, padding: "3px 4px" }}>
       {selectShell(disabled, (
         <select
           value={value?.ft ?? ""}
@@ -6573,11 +6573,11 @@ function CourseSetupScreen({
                 </th>
               </tr>
               <tr>
-                <th style={{ ...th, width: "10%" }}>From<br />BOT</th>
-                <th style={{ ...th, width: "13%" }}>Par 3<br />y / m</th>
-                <th style={{ ...th, width: "9%" }}>Front</th>
-                <th style={{ ...th, width: "13%" }}>Side</th>
-                <th style={{ ...th, width: "43%" }}>Stimp</th>
+                <th style={{ ...th, width: "9%" }}>From<br />BOT</th>
+                <th style={{ ...th, width: "12%" }}>Par 3<br />y / m</th>
+                <th style={{ ...th, width: "8%" }}>Front</th>
+                <th style={{ ...th, width: "12%" }}>Side</th>
+                <th style={{ ...th, width: "47%" }}>Stimp</th>
               </tr>
             </thead>
             <tbody>
