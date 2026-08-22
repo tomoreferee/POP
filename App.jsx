@@ -2822,7 +2822,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
                 onLogout={onLogout}
                 onManageUsers={isTrueAdmin ? onManageUsers : null}
                 onManageTournaments={isTrueAdmin ? onSwitchTournament : null}
-                onGoToDashboard={hasLiveSession ? onGoToDashboard : null}
+                onGoToDashboard={onGoToDashboard}
                 onGoToCourseSetup={onGoToCourseSetup}
                 badges={
                   <>
@@ -2948,6 +2948,21 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
         {!paceRound && (
           <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "16px 20px", marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
             <b style={{ color: "#1f2328" }}>{roundFull(roundLabel)}</b> is not monitored for pace of play, so there are no groups or tee times to set up. Green speed above still applies.
+            {/* The Dashboard still carries the weather and the referee calls,
+                which are wanted on these days too — so it is offered here
+                rather than left to be found in the account menu. */}
+            {onGoToDashboard && (
+              <button
+                onClick={onGoToDashboard}
+                style={{
+                  display: "block", width: "100%", marginTop: 12,
+                  background: "#ddf4ff", border: "1px solid #0969da44", color: "#0969da",
+                  borderRadius: 6, padding: "10px", cursor: "pointer",
+                  fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                }}>
+                Go to Dashboard — weather &amp; referee calls
+              </button>
+            )}
           </div>
         )}
 
