@@ -6239,9 +6239,9 @@ function CourseSetupScreen({
     width: "100%", boxSizing: "border-box",
     WebkitAppearance: "none", MozAppearance: "none", appearance: "none",
     border: "none", outline: "none", borderRadius: 4, height: "100%",
-    padding: "0 12px 0 6px", margin: 0,
+    padding: "0 11px 0 4px", margin: 0,
     background: "transparent",
-    fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+    fontFamily: "inherit", fontSize: 11, fontWeight: 700,
     textAlign: "center", textAlignLast: "center",
     color: disabled ? "#8c959f" : "#1f2328",
   });
@@ -6254,8 +6254,8 @@ function CourseSetupScreen({
     }}>
       {children}
       <span aria-hidden style={{
-        position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
-        fontSize: 10, color: disabled ? "#c2c8cf" : "#8c959f", pointerEvents: "none",
+        position: "absolute", right: 3, top: "50%", transform: "translateY(-50%)",
+        fontSize: 8, color: disabled ? "#c2c8cf" : "#8c959f", pointerEvents: "none",
       }}>▾</span>
     </div>
   );
