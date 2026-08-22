@@ -6500,7 +6500,11 @@ function CourseSetupScreen({
                   ...groupTh(positionsAreForToday ? "this" : "next"),
                   ...(positionsNeeded ? {} : { background: "#f6f8fa", color: "#8c959f" }),
                 }}>
-                  HOLE POSITIONS · {positionsFor ? roundFull(positionsFor) : "—"}
+                  {/* Two lines rather than one run-on: the round name is the
+                      part that changes, so it gets its own line instead of
+                      wrapping mid-name as "Pro-" / "Am". */}
+                  HOLE POSITIONS
+                  <br />{positionsFor ? roundFull(positionsFor) : "—"}
                   {!positionsNeeded && <><br /><span style={{ fontWeight: 600 }}>not recorded today</span></>}
                 </th>
                 <th style={{ ...groupTh("this"), ...(dayHasPlay ? {} : { background: "#f6f8fa", color: "#8c959f" }) }}>
