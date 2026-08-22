@@ -2947,66 +2947,17 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
           </div>
         )}
 
-        {/* Everything from here down builds the pace-of-play sheet: how many
-            play together, the par times it is measured against, and the groups
-            themselves. A Practice or Pro-Am day is not measured, so none of it
-            applies — and a screenful of fields that do nothing is an invitation
-            to fill them in. Green speed above stays, because the greens are
-            still read on those days. */}
-        {!paceRound && (
-          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "16px 20px", marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
-            <b style={{ color: "#1f2328" }}>{roundFull(roundLabel)}</b> is not monitored for pace of play, so there are no groups or tee times to set up. Green speed above still applies.
-            {/* The Dashboard still carries the weather and the referee calls,
-                which are wanted on these days too — so it is offered here
-                rather than left to be found in the account menu. */}
-            {onGoToDashboard && (
-              <button
-                onClick={onGoToDashboard}
-                style={{
-                  display: "block", width: "100%", marginTop: 12,
-                  background: "#ddf4ff", border: "1px solid #0969da44", color: "#0969da",
-                  borderRadius: 6, padding: "10px", cursor: "pointer",
-                  fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                }}>
-                Go to Dashboard
-              </button>
-            )}
-          </div>
-        )}
-
-        {paceRound && (<>
-        {/* ─── Players per group ─────────────────────────────────────────────── */}
-        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
-          <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>PLAYERS PER GROUP</div>
-          {isAdmin ? (
-            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              {[2, 3, 4].map(n => (
-                <button key={n} onClick={() => {
-                  const oldTbl = parTimeTable(playersPerGroup);
-                  const newTbl = parTimeTable(n);
-                  // Re-apply defaults for holes still sitting on the old default,
-                  // leaving any hand-tuned minutes untouched.
-                  setParTimes(pt => pt.map((mins, i) => mins === oldTbl[pars[i]] ? newTbl[pars[i]] : mins));
-                  setPlayersPerGroup(n);
-                }}
-                  style={{
-                    width: 36, height: 36, borderRadius: 6, cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 16, fontWeight: 600, flexShrink: 0,
-                    background: playersPerGroup === n ? "#ddf4ff" : "#f6f8fa",
-                    border: `1px solid ${playersPerGroup === n ? "#0969da" : "#d1d9e0"}`,
-                    color: playersPerGroup === n ? "#1f2328" : "#59636e",
-                  }}>{n}</button>
-              ))}
-            </div>
-          ) : (
-            <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>{playersPerGroup} players</span>
-          )}
-        </div>
-
-        {/* Par Setup */}
+        {/* Par is a property of the course rather than of the day — the same
+            hole is a par 3 whether or not pace is being measured — so this card
+            sits above the pace-only section and shows on every round. The
+            minutes, transit and totals within it are pace figures and stay
+            hidden on days that aren't measured. */}
         <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 24, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, gap: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12, color: "#1f2328", letterSpacing: 1, fontWeight: 700 }}>HOLE SETUP — PAR & TIME</div>
-            {isAdmin && (
+            <div style={{ fontSize: 12, color: "#1f2328", letterSpacing: 1, fontWeight: 700 }}>
+              {paceRound ? "HOLE SETUP — PAR & TIME" : "HOLE SETUP — PAR"}
+            </div>
+            {isAdmin && paceRound && (
               <button
                 onClick={() => setParTimes(pars.map(p => parTimeTable(playersPerGroup)[p]))}
                 style={{ background: "#f6f8fa", border: "1px solid #d1d9e0", color: "#59636e", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}
@@ -3041,6 +2992,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
             ))}
           </div>
 
+          {paceRound && (
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 12, alignItems: "center" }}>
             <div style={{ fontSize: 12, color: "#59636e", textAlign: "right", paddingRight: 8 }}>min</div>
             {parTimes.slice(0, 9).map((t, i) => (
@@ -3053,6 +3005,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
               </select>
             ))}
           </div>
+          )}
 
           <div style={{ borderTop: "1px dashed #d1d9e0", marginBottom: 12 }} />
 
@@ -3080,6 +3033,7 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
             ))}
           </div>
 
+          {paceRound && (
           <div style={{ display: "grid", gridTemplateColumns: "44px repeat(9, 1fr)", gap: 6, marginBottom: 16, alignItems: "center" }}>
             <div style={{ fontSize: 12, color: "#59636e", textAlign: "right", paddingRight: 8 }}>min</div>
             {parTimes.slice(9).map((t, i) => (
@@ -3092,7 +3046,9 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
               </select>
             ))}
           </div>
+          )}
 
+          {paceRound && (<>
           <div style={{ borderTop: "1px dashed #d1d9e0", marginBottom: 12 }} />
 
           {/* Transit time — the two turn walks are different distances on most
@@ -3164,7 +3120,64 @@ function SetupScreen({ onStart, onGoToCourseSetup, currentUser, isAdmin, isTrueA
               );
             })()}
           </div>
+          </>)}
 
+        </div>
+
+
+        {/* Everything from here down builds the pace-of-play sheet: how many
+            play together, the par times it is measured against, and the groups
+            themselves. A Practice or Pro-Am day is not measured, so none of it
+            applies — and a screenful of fields that do nothing is an invitation
+            to fill them in. Green speed above stays, because the greens are
+            still read on those days. */}
+        {!paceRound && (
+          <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: "16px 20px", marginBottom: 24, fontSize: 12, color: "#59636e", lineHeight: 1.6 }}>
+            <b style={{ color: "#1f2328" }}>{roundFull(roundLabel)}</b> is not monitored for pace of play, so there are no groups or tee times to set up. Green speed above still applies.
+            {/* The Dashboard still carries the weather and the referee calls,
+                which are wanted on these days too — so it is offered here
+                rather than left to be found in the account menu. */}
+            {onGoToDashboard && (
+              <button
+                onClick={onGoToDashboard}
+                style={{
+                  display: "block", width: "100%", marginTop: 12,
+                  background: "#ddf4ff", border: "1px solid #0969da44", color: "#0969da",
+                  borderRadius: 6, padding: "10px", cursor: "pointer",
+                  fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                }}>
+                Go to Dashboard
+              </button>
+            )}
+          </div>
+        )}
+
+        {paceRound && (<>
+        {/* ─── Players per group ─────────────────────────────────────────────── */}
+        <div style={{ background: "#ffffff", border: "1px solid #d1d9e0", borderRadius: 6, padding: 20, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "nowrap" }}>
+          <div style={{ fontSize: 13, color: "#1f2328", letterSpacing: 1, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>PLAYERS PER GROUP</div>
+          {isAdmin ? (
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              {[2, 3, 4].map(n => (
+                <button key={n} onClick={() => {
+                  const oldTbl = parTimeTable(playersPerGroup);
+                  const newTbl = parTimeTable(n);
+                  // Re-apply defaults for holes still sitting on the old default,
+                  // leaving any hand-tuned minutes untouched.
+                  setParTimes(pt => pt.map((mins, i) => mins === oldTbl[pars[i]] ? newTbl[pars[i]] : mins));
+                  setPlayersPerGroup(n);
+                }}
+                  style={{
+                    width: 36, height: 36, borderRadius: 6, cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", fontSize: 16, fontWeight: 600, flexShrink: 0,
+                    background: playersPerGroup === n ? "#ddf4ff" : "#f6f8fa",
+                    border: `1px solid ${playersPerGroup === n ? "#0969da" : "#d1d9e0"}`,
+                    color: playersPerGroup === n ? "#1f2328" : "#59636e",
+                  }}>{n}</button>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: 11, color: "#9a6700", background: "#fff8c5", border: "1px solid #9a670044", borderRadius: 6, padding: "3px 10px", letterSpacing: 1, flexShrink: 0, whiteSpace: "nowrap" }}>{playersPerGroup} players</span>
+          )}
         </div>
 
         {/* ─── Auto-fill Time Panel ──────────────────────────────────────────── */}
